@@ -1,12 +1,19 @@
 geoid-toolkit
 =============
 
+[![Language](https://img.shields.io/badge/python-v3.7-green.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/tsutterley/geoid-toolkit/blob/master/LICENSE)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/tsutterley/geoid-toolkit/master)
+[![Binder](https://binder.pangeo.io/badge.svg)](https://binder.pangeo.io/v2/gh/tsutterley/geoid-toolkit/master)
+
 Reads static gravity field coefficients and calculates geoid heights
 
 - [GFZ International Centre for Global Earth Models (ICGEM)](http://icgem.gfz-potsdam.de)  
 
 #### Dependencies
- - [numpy: Scientific Computing Tools For Python](http://www.numpy.org)  
+- [numpy: Scientific Computing Tools For Python](https://www.numpy.org)  
+- [matplotlib: Python 2D plotting library](https://matplotlib.org)   
+- [cartopy: Python package designed for geospatial data processing](https://scitools.org.uk/cartopy)   
 
 #### References
 Drewes, Kuglitsch, Ad&aacute;m and R&oacute;zsa "The Geodesist’s Handbook 2016",
