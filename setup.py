@@ -1,7 +1,12 @@
 from setuptools import setup, find_packages
 
+# get long_description from README.md
 with open("README.md", "r") as fh:
     long_description = fh.read()
+
+# get install requirements
+with open('requirements.txt') as fh:
+    install_requires = fh.read().splitlines()
 
 setup(
     name='geoid-toolkit',
@@ -23,5 +28,6 @@ setup(
     ],
     keywords='static gravity field, geoid height',
     packages=find_packages(),
-    install_requires=['numpy','matplotlib','cartopy'],
+    install_requires=install_requires,
+    include_package_data=True,
 )

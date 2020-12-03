@@ -7,3 +7,4 @@ dependencies:
   - numpy
   - matplotlib
   - cartopy
+  - lxml

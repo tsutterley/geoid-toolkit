@@ -3,7 +3,11 @@ utilities.py
 Written by Tyler Sutterley (09/2020)
 Download and management utilities for syncing time and auxiliary files
 
+PYTHON DEPENDENCIES:
+    lxml: processing XML and HTML in Python (https://pypi.python.org/pypi/lxml)
+
 UPDATE HISTORY:
+    Updated 11/2020: added list function for finding files on the GFZ ICGEM
     Updated 09/2020: copy from http and https to bytesIO object in chunks
     Written 08/2020
 """
@@ -20,6 +24,7 @@ import socket
 import inspect
 import hashlib
 import posixpath
+import lxml.etree
 import calendar,time
 if sys.version_info[0] == 2:
     from urllib import quote_plus
@@ -50,20 +55,31 @@ def get_data_path(relpath):
 #-- PURPOSE: get the MD5 hash value of a file
 def get_hash(local):
     """
-    Get the MD5 hash value from a local file
+    Get the MD5 hash value from a local file or BytesIO object
 
     Arguments
     ---------
-    local: path to file
+    local: BytesIO object or path to file
     """
-    #-- check if local file exists
-    if os.access(os.path.expanduser(local),os.F_OK):
+    #-- check if open file object or if local file exists
+    if isinstance(local, io.IOBase):
+        return hashlib.md5(local.getvalue()).hexdigest()
+    elif os.access(os.path.expanduser(local),os.F_OK):
         #-- generate checksum hash for local file
         #-- open the local_file in binary read mode
         with open(os.path.expanduser(local), 'rb') as local_buffer:
             return hashlib.md5(local_buffer.read()).hexdigest()
     else:
         return ''
+
+#-- PURPOSE: recursively split a url path
+def url_split(s):
+    head, tail = posixpath.split(s)
+    if head in ('http:','https:'):
+        return s,
+    elif head in ('', posixpath.sep):
+        return tail,
+    return url_split(head) + (tail,)
 
 #-- PURPOSE: returns the Unix timestamp value for a formatted date string
 def get_unix_time(time_string, format='%Y-%m-%d %H:%M:%S'):
@@ -100,6 +116,8 @@ def copy(source, destination, verbose=False, move=False):
     verbose: print file transfer information
     move: remove the source file
     """
+    source = os.path.abspath(os.path.expanduser(source))
+    destination = os.path.abspath(os.path.expanduser(destination))
     print('{0} -->\n\t{1}'.format(source,destination)) if verbose else None
     shutil.copyfile(source, destination)
     shutil.copystat(source, destination)
@@ -297,3 +315,36 @@ def from_http(HOST,timeout=None,local=None,hash='',chunk=16384,
         #-- return the bytesIO object
         remote_buffer.seek(0)
         return remote_buffer
+
+#-- PURPOSE: list a directory on the GFZ ICGEM https server
+#-- http://icgem.gfz-potsdam.de
+def icgem_list(host='http://icgem.gfz-potsdam.de/tom_longtime',timeout=None,
+    parser=lxml.etree.HTMLParser()):
+    """
+    Parse the table of static gravity field models on the GFZ
+    International Centre for Global Earth Models (ICGEM) server
+
+    Keyword arguments
+    -----------------
+    host: url for the GFZ ICGEM gravity field table
+    timeout: timeout in seconds for blocking operations
+    parser: HTML parser for lxml
+
+    Returns
+    -------
+    colfiles: dictionary of static file urls mapped by field name
+    """
+    #-- try listing from https
+    try:
+        #-- Create and submit request.
+        request = urllib2.Request(host)
+        tree = lxml.etree.parse(urllib2.urlopen(request,timeout=timeout),parser)
+    except:
+        raise Exception('List error from {0}'.format(host))
+    else:
+        #-- read and parse request for files
+        colfiles = tree.xpath('//td[@class="tom-cell-modelfile"]//a/@href')
+        #-- reduce list of files to find gfc files
+        #-- return the dict of model files mapped by name
+        return {re.findall('(.*?).gfc',posixpath.basename(f)).pop():url_split(f)
+            for i,f in enumerate(colfiles) if re.search('gfc$',f)}
