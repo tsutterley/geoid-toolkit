@@ -8,17 +8,17 @@ GFZ International Centre for Global Earth Models (ICGEM)
     http://icgem.gfz-potsdam.de/
 
 INPUTS:
-    input_file: full path to *.gfc file with spherical harmonic coefficients
+    model_file: full path to *.gfc file with spherical harmonic coefficients
     LMAX: maximum degree and order of output spherical harmonic coefficients
 
 OPTIONS:
-    LMAX: maximum spherical harmonic degree (level of truncation)
     TIDE: tide system of output geoid
         http://mitgcm.org/~mlosch/geoidcookbook/node9.html
         tide_free: no permanent direct and indirect tidal potentials
             this is the default (leaving the model as is)
         mean_tide: restores permanent tidal potentials (direct and indirect)
         zero_tide: restores permanent direct tidal potential
+    FLAG: string denoting data lines
 
 OUTPUTS:
     clm: cosine spherical harmonics of input data
@@ -53,13 +53,13 @@ import numpy as np
 from geoid_toolkit.calculate_tidal_offset import calculate_tidal_offset
 
 #-- PURPOSE: read spherical harmonic coefficients of a gravity model
-def read_gravity_model(input_file, LMAX, TIDE='tide_free', FLAG='gfc'):
+def read_gravity_model(model_file, LMAX, TIDE='tide_free', FLAG='gfc'):
     """
     Extract gravity model spherical harmonics from GFZ ICGEM gfc files
 
     Arguments
     ---------
-    input_file: full path to *.gfc file with spherical harmonic coefficients
+    model_file: full path to *.gfc file with spherical harmonic coefficients
     LMAX: maximum degree and order of output spherical harmonic coefficients
 
     Keyword arguments
@@ -83,7 +83,7 @@ def read_gravity_model(input_file, LMAX, TIDE='tide_free', FLAG='gfc'):
     """
 
     #-- read input data
-    with open(os.path.expanduser(input_file),'r') as f:
+    with open(os.path.expanduser(model_file),'r') as f:
         file_contents = f.read().splitlines()
     #-- python dictionary with model input and headers
     model_input = {}

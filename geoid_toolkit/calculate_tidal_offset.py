@@ -6,7 +6,7 @@ Calculates the spherical harmonic offset for a tide system to change from a tide
     free state where there is no permanent direct and indirect tidal potentials
 
 CALLING SEQUENCE:
-    deltaC20 = calculate_tidal_offset(TIDE, GM, R, refell)
+    delta = calculate_tidal_offset(TIDE, GM, R, refell)
 
 INPUT:
     TIDE: output tidal system (changing from tide free)
@@ -30,7 +30,7 @@ INPUT:
         EGM96 = EGM 1996 gravity model
 
 OUTPUT:
-    deltaC20: offset for changing from tide free system
+    delta: offset for changing from tide free system
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python

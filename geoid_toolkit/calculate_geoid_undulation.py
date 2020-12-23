@@ -7,7 +7,7 @@ Wrapper function for computing geoid undulations from a gravity model
 INPUTS:
     lon: longitudinal points to calculate geoid height
     lat: latitudinal points to calculate geoid height
-    GRAVITY: full path to *.gfc file with spherical harmonic coefficients
+    gravity_model_file: full path to static gravity model file
 
 OPTIONS:
     REFERENCE: reference ellipsoid name
@@ -59,7 +59,7 @@ from geoid_toolkit.geoid_undulation import geoid_undulation
 from geoid_toolkit.read_gravity_model import read_gravity_model
 
 #-- PURPOSE: calculate geoid heights at a set of latitudes and longitudes
-def calculate_geoid_undulation(lon, lat, GRAVITY, REFERENCE='WGS84',
+def calculate_geoid_undulation(lon, lat, gravity_model_file, REFERENCE='WGS84',
     LMAX=None, TIDE='tide_free', GAUSS=0):
     """
     Wrapper function for computing geoid undulations from a gravity model
@@ -68,7 +68,7 @@ def calculate_geoid_undulation(lon, lat, GRAVITY, REFERENCE='WGS84',
     ---------
     lon: longitudinal points to calculate geoid height
     lat: latitudinal points to calculate geoid height
-    GRAVITY: full path to *.gfc file with spherical harmonic coefficients
+    gravity_model_file: full path to static gravity model file
 
     Keyword arguments
     -----------------
@@ -82,7 +82,7 @@ def calculate_geoid_undulation(lon, lat, GRAVITY, REFERENCE='WGS84',
     N: geoidal undulation for a given ellipsoid in meters
     """
     #-- read gravity model Ylms and change tide if specified
-    Ylms = read_gravity_model(GRAVITY,LMAX,TIDE=TIDE)
+    Ylms = read_gravity_model(gravity_model_file,LMAX,TIDE=TIDE)
     R = np.float(Ylms['radius'])
     GM = np.float(Ylms['earth_gravity_constant'])
     LMAX = np.int(Ylms['max_degree']) if not LMAX else LMAX

@@ -9,7 +9,7 @@ CALLING SEQUENCE
     wgs84 = ref_ellipsoid('WGS84',UNITS='MKS')
 
 INPUT:
-    refell - reference ellipsoid
+    refell - reference ellipsoid name
         CLK66 = Clarke 1866
         GRS67 = Geodetic Reference System 1967
         GRS80 = Geodetic Reference System 1980
