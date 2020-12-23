@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 u"""
 norm_gravity.py
-Written by Tyler Sutterley (11/2020)
+Written by Tyler Sutterley (12/2020)
 Calculates the normal gravity of an ellipsoid at a given latitude and height
     and calculates the derivative with respect to height
 
 CALLING SEQUENCE:
-    gamma_h, dgamma_dh = norm_gravity(lat, h, 'WGS84')
+    gamma_h, dgamma_dh = norm_gravity(latitude, height, 'WGS84')
 
 INPUT:
     latitude: latitude in degrees
@@ -27,7 +27,7 @@ INPUT:
         EGM96 = EGM 1996 gravity model
 
 OUTPUT:
-    gamma_h: normal gravity for ellipsoid at height h
+    gamma_h: normal gravity for ellipsoid at height
     dgamma_dh: derivative of normal gravity with respect to height
 
 PYTHON DEPENDENCIES:
@@ -50,15 +50,15 @@ REFERENCE:
         https://doi.org/10.1007/s12145-012-0102-2
 
 UPDATE HISTORY:
+    Updated 12/2020: updated comments and reorganized functions
     Updated 11/2020: added function docstrings
     Updated 07/2017: added header text. higher order expansion of normal gravity
-    Updated 04/2015: changed DEGREES option from 1/0 to Y/N
     Written 08/2013
 """
 import numpy as np
 from geoid_toolkit.ref_ellipsoid import ref_ellipsoid
 
-def norm_gravity(latitude, h, refell):
+def norm_gravity(latitude, height, refell):
     """
     Calculates the normal gravity of an ellipsoid at latitudes and heights
         and calculates the derivative with respect to height
@@ -71,7 +71,7 @@ def norm_gravity(latitude, h, refell):
 
     Returns
     -------
-    gamma_h: normal gravity for ellipsoid at height h
+    gamma_h: normal gravity for ellipsoid at height
     dgamma_dh: derivative of normal gravity with respect to height
     """
 
@@ -83,16 +83,15 @@ def norm_gravity(latitude, h, refell):
     a = ellip['a']
     b = ellip['b']
     #-- eccentricity
-    lin_ecc = ellip['ecc']
     ecc2 = ellip['ecc2']
     GM = ellip['GM']
-    omega = ellip['omega']
     #-- m parameter [omega^2*a^2*b/(GM)]
     m = ellip['mp']
     #-- flattening components
     f = ellip['f']
-    f_2 = -f + (5./2.)*m + (1./2.)*f**2. - (26./7.)*f*m + (15./4.)*m**2.0
-    f_4 = -(1./2.)*f**2. + (5./2.)*f*m
+    f_2 = -f + (5.0/2.0)*m + (1.0/2.0)*f**2.0 - \
+        (26.0/7.0)*f*m + (15.0/4.0)*m**2.0
+    f_4 = -(1.0/2.0)*f**2.0 + (5.0/2.0)*f*m
 
     #-- Normal gravity at the equator.
     #-- p. 79, Eqn.(2-186)
@@ -100,11 +99,11 @@ def norm_gravity(latitude, h, refell):
     #-- Normal gravity
     #-- p. 80, Eqn.(2-199)
     gamma_0 = gamma_a * (1.0 + f_2*np.sin(phi)**2.0 + f_4*np.sin(phi)**4.0)
-    #-- Normal gravity at height h
+    #-- Normal gravity at height
     #-- p. 82, Eqn.(2-215)
-    gamma_h = gamma_0 * (1. - (2./a)*(1. + f + m - 2.*f*np.sin(phi)**2.)*h +
-        (3./a**2.)*h**2.)
-    #-- derivative of normal gravity with respect to h
-    dgamma_dh = ((-2.0 * gamma_0) / a) * (1.0 + f + m - 2.0*f*np.sin(phi)**2.0)
+    p_1 = (1.0 + f + m - 2.0*f*np.sin(phi)**2.0)
+    gamma_h = gamma_0 * (1.0 - (2.0/a)*p_1*height + (3.0/(a**2.0))*height**2.0)
+    #-- approximate derivative of normal gravity with respect to height
+    dgamma_dh = ((-2.0 * gamma_0) / a) * p_1
     #-- return the normal gravity and the derivative
     return (gamma_h,dgamma_dh)

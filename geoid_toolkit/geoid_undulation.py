@@ -9,8 +9,8 @@ CALLING SEQUENCE:
     geoid = geoid_undulation(lat, lon, 'WGS84', clm, slm, lmax, R, GM)
 
 INPUT:
-    latitude: latitude in degrees
-    longitude: latitude in degrees
+    lat: latitude in degrees
+    lon: latitude in degrees
     refell: reference ellipsoid name
         CLK66 = Clarke 1866
         GRS67 = Geodetic Reference System 1967
@@ -78,8 +78,8 @@ def geoid_undulation(lat, lon, refell, clm, slm, lmax, R, GM, GAUSS=0, EPS=1e-8)
 
     Arguments
     ---------
-    latitude: latitude in degrees
-    longitude: latitude in degrees
+    lat: latitude in degrees
+    lon: latitude in degrees
     refell: reference ellipsoid name
     clm: cosine spherical harmonics for a gravity model
     slm: sine spherical harmonics for a gravity model

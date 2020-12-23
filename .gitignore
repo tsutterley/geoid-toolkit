@@ -31,6 +31,13 @@
 .RData
 .Rhistory
 __pycache__
+build/
+run/
+develop-eggs/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
 # OS generated files #
 ######################
@@ -43,7 +50,7 @@ ehthumbs.db
 Thumbs.db
 
 # LaTeX and Vim #
-######################
+#################
 *.aux
 *.bbl
 *.blg

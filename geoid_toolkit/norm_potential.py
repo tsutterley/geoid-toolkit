@@ -83,7 +83,6 @@ def norm_potential(latitude, longitude, h, refell, lmax):
     #-- get ellipsoid parameters for refell
     ellip = ref_ellipsoid(refell)
     a = np.float128(ellip['a'])
-    ecc = np.float128(ellip['ecc'])
     ecc1 = np.float128(ellip['ecc1'])
     GM = np.float128(ellip['GM'])
     J2 = np.float128(ellip['J2'])
@@ -96,8 +95,7 @@ def norm_potential(latitude, longitude, h, refell, lmax):
     Y = (N + h) * np.cos(latitude_geodetic_rad) * np.sin(longitude_rad)
     Z = (N * (1.0 - ecc1**2.0) + h) * np.sin(latitude_geodetic_rad)
     rr = np.sqrt(X**2.0 + Y**2.0 + Z**2.0)
-    latitude_geocentric_rad = np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))
-    latitude_geocentric = 180.0*latitude_geocentric_rad/np.pi
+    latitude_geocentric = np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))
 
     #-- calculate even zonal harmonics
     n = np.arange(2, 12+2, 2, dtype=np.float128)
@@ -117,7 +115,7 @@ def norm_potential(latitude, longitude, h, refell, lmax):
     C_12 = -J2n[5]/np.sqrt(25.0)
 
     #-- calculate legendre polynomials at latitude and their first derivative
-    Pl,dPl = legendre_polynomials(lmax, np.sin(latitude_geocentric_rad),
+    Pl,dPl = legendre_polynomials(lmax, np.sin(latitude_geocentric),
         ASTYPE=np.float128)
 
     #-- normal potentials and derivatives
