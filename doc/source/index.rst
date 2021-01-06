@@ -20,6 +20,9 @@ and calculating geoid heights
     user_guide/calculate_tidal_offset.md
     user_guide/gauss_weights.md
     user_guide/geoid_undulation.md
+    user_guide/gravity_anomaly.md
+    user_guide/gravity_disturbance.md
+    user_guide/height_anomaly.md
     user_guide/legendre_polynomials.md
     user_guide/norm_gravity.md
     user_guide/norm_potential.md
