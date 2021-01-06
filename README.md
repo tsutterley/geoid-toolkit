@@ -3,7 +3,7 @@ geoid-toolkit
 
 [![Language](https://img.shields.io/badge/python-v3.7-green.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/tsutterley/geoid-toolkit/blob/main/LICENSE)
-[![Documentation Status](https://readthedocs.org/projects/geoid-toolkit/badge/?version=latest)](https://geoid-toolkit.readthedocs.io/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/geoid-toolkit/badge/?version=latest)](https://read-grace-harmonics.readthedocs.io/projects/geoid-toolkit/en/latest/?badge=latest)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/tsutterley/geoid-toolkit/main)
 [![Binder](https://binder.pangeo.io/badge.svg)](https://binder.pangeo.io/v2/gh/tsutterley/geoid-toolkit/main)
 
