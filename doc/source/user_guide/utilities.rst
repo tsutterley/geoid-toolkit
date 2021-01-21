@@ -102,7 +102,7 @@ General Methods
         `mtimes`: list of last modification times for items in the directory
 
 
-.. method:: geoid_toolkit.utilities.from_ftp(HOST,timeout=None,local=None,hash='',chunk=16384,verbose=False,fid=sys.stdout,mode=0o775)
+.. method:: geoid_toolkit.utilities.from_ftp(HOST,timeout=None,local=None,hash='',chunk=8192,verbose=False,fid=sys.stdout,mode=0o775)
 
     Download a file from a ftp host
 

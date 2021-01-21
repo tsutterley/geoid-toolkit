@@ -6,15 +6,17 @@ and calculating geoid heights
 
 .. toctree::
     :maxdepth: 2
-    :caption: Getting Started:
+    :caption: Getting Started
 
-    getting_started/Install.md
-    getting_started/Resources.md
-    getting_started/Citations.md
+    getting_started/Install.rst
+    getting_started/Examples.rst
+    getting_started/Resources.rst
+    getting_started/Citations.rst
 
 .. toctree::
     :maxdepth: 1
-    :caption: User Guide:
+    :hidden:
+    :caption: User Guide
 
     user_guide/calculate_geoid_undulation.md
     user_guide/calculate_tidal_offset.md

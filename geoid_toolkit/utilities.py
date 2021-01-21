@@ -225,7 +225,7 @@ def ftp_list(HOST,username=None,password=None,timeout=None,
 
 #-- PURPOSE: download a file from a ftp host
 def from_ftp(HOST,username=None,password=None,timeout=None,local=None,
-    hash='',chunk=16384,verbose=False,fid=sys.stdout,mode=0o775):
+    hash='',chunk=8192,verbose=False,fid=sys.stdout,mode=0o775):
     """
     Download a file from a ftp host
 
@@ -261,7 +261,8 @@ def from_ftp(HOST,username=None,password=None,timeout=None,local=None,
         ftp_remote_path = posixpath.join(*HOST[1:])
         #-- copy remote file contents to bytesIO object
         remote_buffer = io.BytesIO()
-        ftp.retrbinary('RETR {0}'.format(ftp_remote_path), remote_buffer.write)
+        ftp.retrbinary('RETR {0}'.format(ftp_remote_path),
+            remote_buffer.write, blocksize=chunk)
         remote_buffer.seek(0)
         #-- save file basename with bytesIO object
         remote_buffer.filename = HOST[-1]
@@ -272,6 +273,8 @@ def from_ftp(HOST,username=None,password=None,timeout=None,local=None,
         remote_mtime = get_unix_time(mdtm[4:], format="%Y%m%d%H%M%S")
         #-- compare checksums
         if local and (hash != remote_hash):
+            #-- convert to absolute path
+            local = os.path.abspath(local)
             #-- create directory if non-existent
             if not os.access(os.path.dirname(local), os.F_OK):
                 os.makedirs(os.path.dirname(local), mode)
@@ -353,6 +356,8 @@ def from_http(HOST,timeout=None,context=ssl.SSLContext(),local=None,hash='',
         remote_hash = hashlib.md5(remote_buffer.getvalue()).hexdigest()
         #-- compare checksums
         if local and (hash != remote_hash):
+            #-- convert to absolute path
+            local = os.path.abspath(local)
             #-- create directory if non-existent
             if not os.access(os.path.dirname(local), os.F_OK):
                 os.makedirs(os.path.dirname(local), mode)
