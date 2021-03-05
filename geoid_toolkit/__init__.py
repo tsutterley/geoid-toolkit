@@ -9,6 +9,6 @@ from geoid_toolkit.height_anomaly import height_anomaly
 from geoid_toolkit.legendre_polynomials import legendre_polynomials
 from geoid_toolkit.norm_gravity import norm_gravity
 from geoid_toolkit.norm_potential import norm_potential
-from geoid_toolkit.read_gravity_model import read_gravity_model
+from geoid_toolkit.read_ICGEM_harmonics import read_ICGEM_harmonics
 from geoid_toolkit.real_potential import real_potential
 from geoid_toolkit.ref_ellipsoid import ref_ellipsoid

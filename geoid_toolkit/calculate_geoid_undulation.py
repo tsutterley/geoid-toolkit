@@ -41,7 +41,7 @@ PYTHON DEPENDENCIES:
 
 PROGRAM DEPENDENCIES:
     geoid_undulation.py: geoidal undulation at a given latitude and longitude
-    read_gravity_model.py: reads the coefficients for a given gravity model file
+    read_ICGEM_harmonics.py: reads the coefficients for a given gravity model file
     calculate_tidal_offset.py: calculates the C20 offset for a tidal system
     real_potential.py: real potential at a latitude and height for gravity model
     norm_potential.py: normal potential of an ellipsoid at a latitude and height
@@ -56,7 +56,7 @@ UPDATE HISTORY:
 """
 import numpy as np
 from geoid_toolkit.geoid_undulation import geoid_undulation
-from geoid_toolkit.read_gravity_model import read_gravity_model
+from geoid_toolkit.read_ICGEM_harmonics import read_ICGEM_harmonics
 
 #-- PURPOSE: calculate geoid heights at a set of latitudes and longitudes
 def calculate_geoid_undulation(lon, lat, gravity_model_file, REFERENCE='WGS84',
@@ -82,7 +82,7 @@ def calculate_geoid_undulation(lon, lat, gravity_model_file, REFERENCE='WGS84',
     N: geoidal undulation for a given ellipsoid in meters
     """
     #-- read gravity model Ylms and change tide if specified
-    Ylms = read_gravity_model(gravity_model_file,LMAX,TIDE=TIDE)
+    Ylms = read_ICGEM_harmonics(gravity_model_file,LMAX=LMAX,TIDE=TIDE)
     R = np.float(Ylms['radius'])
     GM = np.float(Ylms['earth_gravity_constant'])
     LMAX = np.int(Ylms['max_degree']) if not LMAX else LMAX

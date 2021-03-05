@@ -28,7 +28,7 @@ and calculating geoid heights
     user_guide/legendre_polynomials.md
     user_guide/norm_gravity.md
     user_guide/norm_potential.md
-    user_guide/read_gravity_model.md
+    user_guide/read_ICGEM_harmonics.md
     user_guide/real_potential.md
     user_guide/ref_ellipsoid.md
     user_guide/utilities.rst
