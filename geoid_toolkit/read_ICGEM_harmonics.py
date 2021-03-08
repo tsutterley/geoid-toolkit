@@ -3,9 +3,18 @@ u"""
 read_ICGEM_harmonics.py
 Written by Tyler Sutterley (07/2020)
 Reads the coefficients for a given gravity model file
+Particular cases for SWARM and GRAZ data
 
 GFZ International Centre for Global Earth Models (ICGEM)
     http://icgem.gfz-potsdam.de/
+
+GRAZ: https://www.tugraz.at/institute/ifg/downloads/gravity-field-models
+data can be downloaded from this ftp server:
+    ftp://ftp.tugraz.at/outgoing/ITSG/GRACE/
+
+SWARM: https://earth.esa.int/eogateway/missions/swarm
+data can be downloaded from this ftp server:
+    ftp://swarm-diss.eo.esa.int/Level2longterm/EGF/
 
 INPUTS:
     model_file: full path to *.gfc file with spherical harmonic coefficients
@@ -56,7 +65,7 @@ from geoid_toolkit.calculate_tidal_offset import calculate_tidal_offset
 #-- PURPOSE: read spherical harmonic coefficients of a gravity model
 def read_ICGEM_harmonics(model_file, LMAX=None, TIDE='tide_free', FLAG='gfc'):
     """
-    Extract gravity model spherical harmonics from GFZ ICGEM gfc files
+    Extract gravity model spherical harmonics from GFZ/GRAZ/SWARM ICGEM gfc files
 
     Arguments
     ---------
@@ -81,13 +90,67 @@ def read_ICGEM_harmonics(model_file, LMAX=None, TIDE='tide_free', FLAG='gfc'):
     errors: error type of the gravity model
     norm: normalization of the spherical harmonics
     tide_system: tide system of gravity model
+
+    Special case for gfc files from GRAZ and SWARM
+    time: mid-month date in decimal form
+    start: Julian dates of the start date
+    end: Julian dates of the start date
     """
+    # -- python dictionary with model input and headers
+    model_input = {}
+
+    if 'ITSG' in model_file:
+        # -- compile numerical expression operator for parameters from files
+        # -- GRAZ: Institute of Geodesy from GRAZ University of Technology
+        regex_pattern = (r'(.*?)-({0})_(.*?)_(\d+)-(\d+)'
+                         r'(\.gz|\.gfc|\.txt)').format(r'Grace_operational|Grace2018')
+        rx = re.compile(regex_pattern, re.VERBOSE)
+        # -- extract parameters from input filename
+        PFX, SAT, trunc, year, month, SFX = rx.findall(os.path.basename(model_file)).pop()
+
+        # -- convert string to integer
+        year, month = int(year), int(month)
+
+    elif 'SW_' in model_file:
+        # -- compile numerical expression operator for parameters from files
+        # -- SWARM: data from SWARM satellite
+        regex_pattern = (r'({0})_(.*?)_(EGF_SHA_2)__(.*?)_(.*?)_(.*?)'
+                         r'(\.gz|\.gfc|\.txt)').format(r'SW')
+        rx = re.compile(regex_pattern, re.VERBOSE)
+        SAT, tmp, PROD, start_date, end_date, RL, SFX = rx.findall(os.path.basename(model_file)).pop()
+
+        # -- convert string to integer
+        year = int(start_date[:4])
+        month = int(start_date[4:6])
+
+    if 'ITSG' in model_file or 'SW_' in model_file:
+        # -- calculate mid-month date taking into account if measurements are
+        # -- on different years
+        if (year % 4) == 0:  # -- Leap Year
+            dpy = 366.0
+            dpm = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+        else:  # -- Standard Year
+            dpy = 365.0
+            dpm = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+        start_day = np.sum(dpm[:month - 1]) + 1
+        end_day = np.sum(dpm[:month])
+
+        # -- Calculation of Mid-month value
+        mid_day = np.mean([start_day, end_day])
+        # -- Calculating the mid-month date in decimal form
+        model_input['time'] = year + mid_day / dpy
+        # -- Calculating the Julian dates of the start and end date
+        model_input['start'] = np.float(367.0 * year - np.floor(7.0 * year / 4.0) -
+                                        np.floor(3.0 * (np.floor((year - 8.0 / 7.0) / 100.0) + 1.0) / 4.0) +
+                                        np.floor(275.0 / 9.0) + start_day + 1721028.5)
+        model_input['end'] = np.float(367.0 * year - np.floor(7.0 * year / 4.0) -
+                                      np.floor(3.0 * (np.floor((year - 8.0 / 7.0) / 100.0) + 1.0) / 4.0) +
+                                      np.floor(275.0 / 9.0) + end_day + 1721028.5)
 
     #-- read input data
     with open(os.path.expanduser(model_file),'r') as f:
         file_contents = f.read().splitlines()
-    #-- python dictionary with model input and headers
-    model_input = {}
     #-- extract parameters from header
     header_parameters = ['modelname','earth_gravity_constant','radius',
         'max_degree','errors','norm','tide_system']
