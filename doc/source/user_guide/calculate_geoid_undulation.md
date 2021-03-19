@@ -6,7 +6,7 @@ calculate_geoid_undulation.py
 
 #### Calling Sequence
 ```python
-from gravity_toolkit.calculate_geoid_undulation import calculate_geoid_undulation
+from geoid_toolkit.calculate_geoid_undulation import calculate_geoid_undulation
 N = calculate_geoid_undulation(lon, lat, gravity_model_file, REFERENCE='WGS84')
 ```
 [Source code](https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/calculate_geoid_undulation.py)

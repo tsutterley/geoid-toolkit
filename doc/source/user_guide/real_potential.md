@@ -6,7 +6,7 @@ real_potential.py
 
 #### Calling Sequence
 ```python
-from gravity_toolkit.real_potential import real_potential
+from geoid_toolkit.real_potential import real_potential
 W, dW_dr, dW_dtheta = real_potential(lat, lon, h, clm, slm, lmax)
 ```
 [Source code](https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/real_potential.py)

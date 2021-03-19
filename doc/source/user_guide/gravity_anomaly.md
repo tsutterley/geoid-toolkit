@@ -6,7 +6,7 @@ gravity_anomaly.py
 
 #### Calling Sequence
 ```python
-from gravity_toolkit.gravity_anomaly import gravity_anomaly
+from geoid_toolkit.gravity_anomaly import gravity_anomaly
 zeta = gravity_anomaly(lat, lon, h, 'WGS84', clm, slm, lmax, R, GM, METHOD='first')
 ```
 [Source code](https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/height_anomaly.py)

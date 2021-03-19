@@ -6,7 +6,7 @@ height_anomaly.py
 
 #### Calling Sequence
 ```python
-from gravity_toolkit.height_anomaly import height_anomaly
+from geoid_toolkit.height_anomaly import height_anomaly
 zeta = height_anomaly(lat, lon, h, 'WGS84', clm, slm, lmax, R, GM)
 ```
 [Source code](https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/height_anomaly.py)

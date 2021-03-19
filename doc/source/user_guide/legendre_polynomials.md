@@ -6,7 +6,7 @@ legendre_polynomials.py
 
 #### Calling Sequence
 ```python
-from gravity_toolkit.legendre_polynomials import legendre_polynomials
+from geoid_toolkit.legendre_polynomials import legendre_polynomials
 pl,dpl = legendre_polynomials(LMAX, x)
 ```
 [Source code](https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/legendre_polynomials.py)

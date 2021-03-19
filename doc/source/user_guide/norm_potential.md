@@ -6,7 +6,7 @@ norm_potential.py
 
 #### Calling Sequence
 ```python
-from gravity_toolkit.norm_potential import norm_potential
+from geoid_toolkit.norm_potential import norm_potential
 U, dU_dr, dU_dtheta = norm_potential(lat, lon, h, 'WGS84', lmax)
 ```
 [Source code](https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/norm_potential.py)

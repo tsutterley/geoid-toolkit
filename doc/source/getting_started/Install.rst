@@ -2,7 +2,7 @@
 Installation
 ============
 
-Presently `geoid-toolkit` is only available for use as a `GitHub repository <https://github.com/tsutterley/geoid-toolkit>`_.
+Presently ``geoid-toolkit`` is only available for use as a `GitHub repository <https://github.com/tsutterley/geoid-toolkit>`_.
 The contents of the repository can be download as a `zipped file <https://github.com/tsutterley/geoid-toolkit/archive/main.zip>`_  or cloned.
 
 To use this repository, please fork into your own account and then clone onto your system:
@@ -11,19 +11,19 @@ To use this repository, please fork into your own account and then clone onto yo
 
     git clone https://github.com/tsutterley/geoid-toolkit.git
 
-Can then install using `setuptools`:
+Can then install using ``setuptools``:
 
 .. code-block:: bash
 
     python3 setup.py install
 
-or `pip`
+or ``pip``
 
 .. code-block:: bash
 
     python3 -m pip install --user .
 
-Alternatively can install the `gravity_toolkit` utilities directly from GitHub with `pip`:
+Alternatively can install the ``geoid_toolkit`` utilities directly from GitHub with ``pip``:
 
 .. code-block:: bash
 

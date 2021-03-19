@@ -6,7 +6,7 @@ gravity_disturbance.py
 
 #### Calling Sequence
 ```python
-from gravity_toolkit.gravity_disturbance import gravity_disturbance
+from geoid_toolkit.gravity_disturbance import gravity_disturbance
 delta_g_h = gravity_disturbance(lat, lon, h, 'WGS84', clm, slm, lmax, R, GM)
 ```
 [Source code](https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/gravity_disturbance.py)

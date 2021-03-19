@@ -5,7 +5,7 @@ ref_ellipsoid.py
 
 #### Calling Sequence
 ```python
-from gravity_toolkit.ref_ellipsoid import ref_ellipsoid
+from geoid_toolkit.ref_ellipsoid import ref_ellipsoid
 params = ref_ellipsoid(refell)
 ```
 [Source code](https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/ref_ellipsoid.py)

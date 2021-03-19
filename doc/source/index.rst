@@ -10,6 +10,7 @@ and calculating geoid heights
 
     getting_started/Install.rst
     getting_started/Examples.rst
+    getting_started/Contributing.rst
     getting_started/Resources.rst
     getting_started/Citations.rst
 
