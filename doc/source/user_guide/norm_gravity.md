@@ -5,12 +5,12 @@ norm_gravity.py
 
 #### Calling Sequence
 ```python
-from gravity_toolkit.norm_gravity import norm_gravity
+from geoid_toolkit.norm_gravity import norm_gravity
 gamma_h,dgamma_dh = norm_gravity(latitude, height, 'WGS84')
 ```
 [Source code](https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/norm_gravity.py)
 
-#### Inputs
+#### Arguments
 1. `latitude`: latitude in degrees
 2. `height`: height above reference ellipsoid in meters
 3. `refell`: reference ellipsoid name
@@ -28,6 +28,6 @@ gamma_h,dgamma_dh = norm_gravity(latitude, height, 'WGS84')
     * `'TOPEX'`: TOPEX/POSEIDON ellipsoid
     * `'EGM96'`: EGM 1996 gravity model
 
-#### Outputs
+#### Returns
 - `gamma_h`: normal gravity for ellipsoid at height
 - `dgamma_dh`: derivative of normal gravity with respect to height

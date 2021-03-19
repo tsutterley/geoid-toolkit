@@ -10,10 +10,10 @@ Ylms = read_ICGEM_harmonics(model_file)
 ```
 [Source code](https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/read_ICGEM_harmonics.py)
 
-#### Inputs
+#### Arguments
 1. `model_file`: full path to GFZ ICGEM gfc spherical harmonic data file
 
-#### Options
+#### Keyword arguments
 - `LMAX`: maximum degree and order of output spherical harmonic coefficients
 - `TIDE`: [tide system of output geoid](http://mitgcm.org/~mlosch/geoidcookbook/node9.html)
     * `'tide_free'`: no permanent direct and indirect tidal potentials
@@ -21,7 +21,7 @@ Ylms = read_ICGEM_harmonics(model_file)
     * `'zero_tide'`: restores permanent direct tidal potential
 - `FLAG`: string denoting data lines
 
-#### Outputs
+#### Returns
 - `clm`: cosine spherical harmonics of input data
 - `slm`: sine spherical harmonics of input data
 - `eclm`: cosine spherical harmonic standard deviations of type errors

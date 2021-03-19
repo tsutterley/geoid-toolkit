@@ -6,14 +6,14 @@ gauss_weights.py
 
 #### Calling Sequence
 ```python
-from gravity_toolkit.gauss_weights import gauss_weights
+from geoid_toolkit.gauss_weights import gauss_weights
 wl = 2.0*np.pi*gauss_weights(hw,LMAX)
 ```
 [Source code](https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/gauss_weights.py)
 
-#### Inputs
+#### Arguments
 1. `hw`: Gaussian smoothing radius in km
 2. `LMAX`: Upper bound of Spherical Harmonic Degrees
 
-#### Outputs
+#### Returns
 - `wl`: Gaussian weights for each degree `l`

@@ -6,17 +6,17 @@ calculate_geoid_undulation.py
 
 #### Calling Sequence
 ```python
-from gravity_toolkit.calculate_geoid_undulation import calculate_geoid_undulation
+from geoid_toolkit.calculate_geoid_undulation import calculate_geoid_undulation
 N = calculate_geoid_undulation(lon, lat, gravity_model_file, REFERENCE='WGS84')
 ```
 [Source code](https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/calculate_geoid_undulation.py)
 
-#### Inputs
+#### Arguments
 1. `lon`: longitudinal points to calculate geoid height
 2. `lat`: latitudinal points to calculate geoid height
 3. `gravity_model_file`: full path to static gravity file with spherical harmonic coefficients
 
-#### Options
+#### Keyword arguments
 - `REFERENCE`: reference ellipsoid name
     * `'CLK66'`: Clarke 1866
     * `'GRS67'`: Geodetic Reference System 1967
@@ -35,5 +35,5 @@ N = calculate_geoid_undulation(lon, lat, gravity_model_file, REFERENCE='WGS84')
 - `TIDE`: tide system of output geoid
 - `GAUSS`: Gaussian Smoothing Radius in km
 
-#### Outputs
+#### Returns
 - `N`: geoidal undulation for a given ellipsoid in meters

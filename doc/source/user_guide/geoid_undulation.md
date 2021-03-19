@@ -6,12 +6,12 @@ geoid_undulation.py
 
 #### Calling Sequence
 ```python
-from gravity_toolkit.geoid_undulation import geoid_undulation
+from geoid_toolkit.geoid_undulation import geoid_undulation
 N = geoid_undulation(lat, lon, 'WGS84', clm, slm, lmax, R, GM)
 ```
 [Source code](https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/geoid_undulation.py)
 
-#### Inputs
+#### Arguments
 1. `lat`: latitudinal points to calculate geoid height
 2. `lon`: longitudinal points to calculate geoid height
 3. `refell`: reference ellipsoid name
@@ -34,9 +34,9 @@ N = geoid_undulation(lat, lon, 'WGS84', clm, slm, lmax, R, GM)
 7. `R`: average radius used in gravity model
 8. `GM`: geocentric graviational constant used in gravity model
 
-#### Options
+#### Keyword arguments
 - `GAUSS`: Gaussian Smoothing Radius in km
 - `EPS`: level of precision for calculating geoid height
 
-#### Outputs
+#### Returns
 - `N`: geoidal undulation for a given ellipsoid in meters

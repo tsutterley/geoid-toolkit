@@ -6,12 +6,12 @@ height_anomaly.py
 
 #### Calling Sequence
 ```python
-from gravity_toolkit.height_anomaly import height_anomaly
+from geoid_toolkit.height_anomaly import height_anomaly
 zeta = height_anomaly(lat, lon, h, 'WGS84', clm, slm, lmax, R, GM)
 ```
 [Source code](https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/height_anomaly.py)
 
-#### Inputs
+#### Arguments
 1. `lat`: latitudinal points to calculate geoid height
 2. `lon`: longitudinal points to calculate geoid height
 3. `h`: ellipsoidal height
@@ -35,9 +35,9 @@ zeta = height_anomaly(lat, lon, h, 'WGS84', clm, slm, lmax, R, GM)
 8. `R`: average radius used in gravity model
 9. `GM`: geocentric graviational constant used in gravity model
 
-#### Options
+#### Keyword arguments
 - `GAUSS`: Gaussian Smoothing Radius in km
 - `EPS`: level of precision for calculating height anomaly
 
-#### Outputs
+#### Returns
 - `zeta`: height anomaly for a given ellipsoid in meters

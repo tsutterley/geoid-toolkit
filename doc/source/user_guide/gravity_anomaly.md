@@ -6,12 +6,12 @@ gravity_anomaly.py
 
 #### Calling Sequence
 ```python
-from gravity_toolkit.gravity_anomaly import gravity_anomaly
+from geoid_toolkit.gravity_anomaly import gravity_anomaly
 zeta = gravity_anomaly(lat, lon, h, 'WGS84', clm, slm, lmax, R, GM, METHOD='first')
 ```
 [Source code](https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/height_anomaly.py)
 
-#### Inputs
+#### Arguments
 1. `lat`: latitudinal points to calculate geoid height
 2. `lon`: longitudinal points to calculate geoid height
 3. `h`: ellipsoidal height
@@ -35,12 +35,12 @@ zeta = gravity_anomaly(lat, lon, h, 'WGS84', clm, slm, lmax, R, GM, METHOD='firs
 8. `R`: average radius used in gravity model
 9. `GM`: geocentric graviational constant used in gravity model
 
-#### Options
+#### Keyword arguments
 - `METHOD`: method for calculating gravity anomalies
     * `first`: classic first approximation method
     * `second`: classic second approximation method
     * `molodensky`: Molodensky method (1958)
 - `GAUSS`: Gaussian Smoothing Radius in km
 
-#### Outputs
+#### Returns
 - `ddelta_g`: gravity anomaly for a given ellipsoid in meters

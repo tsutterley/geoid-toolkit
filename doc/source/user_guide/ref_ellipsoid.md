@@ -5,12 +5,12 @@ ref_ellipsoid.py
 
 #### Calling Sequence
 ```python
-from gravity_toolkit.ref_ellipsoid import ref_ellipsoid
+from geoid_toolkit.ref_ellipsoid import ref_ellipsoid
 params = ref_ellipsoid(refell)
 ```
 [Source code](https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/ref_ellipsoid.py)
 
-#### Inputs
+#### Arguments
  1. `refell`: reference ellipsoid name
     * `'CLK66'`: Clarke 1866
     * `'GRS67'`: Geodetic Reference System 1967
@@ -26,12 +26,12 @@ params = ref_ellipsoid(refell)
     * `'TOPEX'`: TOPEX/POSEIDON ellipsoid
     * `'EGM96'`: EGM 1996 gravity model
 
-#### Options
+#### Keyword arguments
 - `UNITS`: output units
     * `'MKS'`: meters, kilograms, seconds
     * `'CGS'`: centimeters, grams, seconds
 
-#### Outputs
+#### Returns
 - `a`: semimajor semi-axis (m)
 - `b`: semiminor semi-axis (m)
 - `f : flattening

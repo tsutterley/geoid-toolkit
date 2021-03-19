@@ -6,12 +6,12 @@ norm_potential.py
 
 #### Calling Sequence
 ```python
-from gravity_toolkit.norm_potential import norm_potential
+from geoid_toolkit.norm_potential import norm_potential
 U, dU_dr, dU_dtheta = norm_potential(lat, lon, h, 'WGS84', lmax)
 ```
 [Source code](https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/norm_potential.py)
 
-#### Inputs
+#### Arguments
 1. `latitude`: latitude in degrees
 2. `longitude`: longitude in degrees
 3. `height`: height above reference ellipsoid in meters
@@ -31,7 +31,7 @@ U, dU_dr, dU_dtheta = norm_potential(lat, lon, h, 'WGS84', lmax)
     * `'EGM96'`: EGM 1996 gravity model
 5. `lmax`: maximum spherical harmonic degree
 
-#### Outputs
+#### Returns
 - `U`: normal potential at height h
 - `dU_dr`: derivative of normal potential with respect to radius
 - `dU_dtheta`: derivative of normal potential with respect to theta

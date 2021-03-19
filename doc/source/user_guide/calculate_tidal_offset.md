@@ -5,12 +5,12 @@ calculate_tidal_offset.py
 
 #### Calling Sequence
 ```python
-from gravity_toolkit.calculate_tidal_offset import calculate_tidal_offset
+from geoid_toolkit.calculate_tidal_offset import calculate_tidal_offset
 delta = calculate_tidal_offset(TIDE, GM, R, refell)
 ```
 [Source code](https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/calculate_tidal_offset.py)
 
-#### Inputs
+#### Arguments
 1. `TIDE`: output tidal system
     `'mean_tide'`: restores permanent tidal potentials (direct and indirect)
     `'zero_tide'`: restores permanent direct tidal potential
@@ -31,5 +31,5 @@ delta = calculate_tidal_offset(TIDE, GM, R, refell)
     * `'TOPEX'`: TOPEX/POSEIDON ellipsoid
     * `'EGM96'`: EGM 1996 gravity model
 
-#### Outputs
+#### Returns
 - `delta`: offset for changing from tide free system
