@@ -1,23 +1,27 @@
 import os
 from setuptools import setup, find_packages
 
-# get long_description from README.md
-with open("README.md", "r") as fh:
+# get long_description from README.rst
+with open("README.rst", "r") as fh:
     long_description = fh.read()
 
 # get install requirements
 with open('requirements.txt') as fh:
     install_requires = fh.read().splitlines()
 
+# get version
+with open('version.txt') as fh:
+    version = fh.read()
+
 # list of all scripts to be included with package
 scripts=[os.path.join('scripts',f) for f in os.listdir('scripts') if f.endswith('.py')]
 
 setup(
     name='geoid-toolkit',
-    version='1.0.0.0',
+    version=version,
     description='Reads gravity model coefficients and calculates geoid heights',
     long_description=long_description,
-    long_description_content_type="text/markdown",
+    long_description_content_type="text/x-rst",
     url='https://github.com/tsutterley/geoid-toolkit',
     author='Tyler Sutterley',
     author_email='tsutterl@uw.edu',

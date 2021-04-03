@@ -18,7 +18,8 @@ most recently to the following work:
 
 Contributors
 ############
-- `Tyler Sutterley (University of Washington) <http://psc.apl.uw.edu/people/investigators/tyler-sutterley/>`_
+
+.. include:: ../../../CONTRIBUTORS.rst
 
 Development
 ###########
