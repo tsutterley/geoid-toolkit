@@ -11,7 +11,7 @@ CALLING SEQUENCE
 INPUT:
     refell - reference ellipsoid name
         CLK66 = Clarke 1866
-        GRS67 = Geodetic Reference System 1967
+        GRS67 = Geodetic Reference System 1967 (IAU ellipsoid)
         GRS80 = Geodetic Reference System 1980
         WGS72 = World Geodetic System 1972
         WGS84 = World Geodetic System 1984
@@ -98,6 +98,7 @@ def ref_ellipsoid(refell, UNITS='MKS'):
 
     elif (refell.upper() == 'GRS67'):
         #-- Geodetic Reference System 1967
+        #-- International Astronomical Union (IAU ellipsoid)
         a_axis = 6378160.0#-- [m] semimajor axis of the ellipsoid
         flat = 1.0/298.247167427#-- flattening of the ellipsoid
         GM = 3.98603e14#-- [m^3/s^2] Geocentric Gravitational Constant

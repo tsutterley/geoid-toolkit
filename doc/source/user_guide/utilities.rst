@@ -7,7 +7,7 @@ Download and management utilities for syncing time and auxiliary files
  - Can list a directory on a ftp host
  - Can list the available static gravity field models from the `ICGEM`__
  - Can download a file from a ftp or http host
- - Checks MD5 hashes between local and remote files
+ - Checks ``MD5`` or ``sha1`` hashes between local and remote files
 
 .. __: http://icgem.gfz-potsdam.de/home
 
