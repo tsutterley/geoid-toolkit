@@ -4,7 +4,7 @@
 Examples
 ========
 
-Jupyter Notebooks providing demonstrations of the `geoid-toolkit` functionality:
+Jupyter Notebooks providing demonstrations of the ``geoid-toolkit`` functionality:
 
 - Creating Spatial Maps |github spatial| |nbviewer spatial|
     Creates a spatial map of geoidal undulations on a global Equirectangular projection using coefficients from a gravity field model

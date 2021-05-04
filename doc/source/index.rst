@@ -1,3 +1,4 @@
+=============
 geoid-toolkit
 =============
 
@@ -10,6 +11,7 @@ and calculating geoid heights
 
     getting_started/Install.rst
     getting_started/Examples.rst
+    getting_started/Contributing.rst
     getting_started/Resources.rst
     getting_started/Citations.rst
 
@@ -18,17 +20,24 @@ and calculating geoid heights
     :hidden:
     :caption: User Guide
 
-    user_guide/calculate_geoid_undulation.md
-    user_guide/calculate_tidal_offset.md
-    user_guide/gauss_weights.md
-    user_guide/geoid_undulation.md
-    user_guide/gravity_anomaly.md
-    user_guide/gravity_disturbance.md
-    user_guide/height_anomaly.md
-    user_guide/legendre_polynomials.md
-    user_guide/norm_gravity.md
-    user_guide/norm_potential.md
-    user_guide/read_ICGEM_harmonics.md
-    user_guide/real_potential.md
-    user_guide/ref_ellipsoid.md
+    user_guide/calculate_geoid_undulation.rst
+    user_guide/calculate_tidal_offset.rst
+    user_guide/gauss_weights.rst
+    user_guide/geoid_undulation.rst
+    user_guide/gravity_anomaly.rst
+    user_guide/gravity_disturbance.rst
+    user_guide/height_anomaly.rst
+    user_guide/legendre_polynomials.rst
+    user_guide/norm_gravity.rst
+    user_guide/norm_potential.rst
+    user_guide/read_ICGEM_harmonics.rst
+    user_guide/real_potential.rst
+    user_guide/ref_ellipsoid.rst
     user_guide/utilities.rst
+
+.. toctree::
+    :maxdepth: 1
+    :hidden:
+    :caption: Use Cases
+
+    user_guide/read_ICGEM_geoid_grids.rst
