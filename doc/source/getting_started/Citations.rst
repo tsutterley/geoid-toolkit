@@ -18,16 +18,19 @@ most recently to the following work:
 
 Contributors
 ############
-- `Tyler Sutterley (University of Washington) <http://psc.apl.uw.edu/people/investigators/tyler-sutterley/>`_
+
+.. include:: ../../../CONTRIBUTORS.rst
 
 Development
 ###########
 This is an open source project.  We welcome any help in maintaining and developing the software and documentation.
 Anyone at any career stage and with any level of coding experience can contribute.
+Please see the `Contribution Guidelines <./Contributing.html>`_ for more information.
 
 Problem Reports
 ###############
-If you have found a problem in these programs, or you would like to suggest an improvement or modification, please submit a `GitHub issue <https://github.com/tsutterley/geoid-toolkit/issues>`_ and we will get back to you.
+If you have found a problem in these programs, or you would like to suggest an improvement or modification,
+please submit a `GitHub issue <https://github.com/tsutterley/geoid-toolkit/issues>`_ and we will get back to you.
 
 Dependencies
 ############
@@ -42,4 +45,4 @@ This software is also dependent on other commonly used Python packages:
 Disclaimer
 ##########
 This program is not sponsored or maintained by the Universities Space Research Association (USRA), the Center for Space Research at the University of Texas (UTCSR), the Jet Propulsion Laboratory (JPL), the German Research Centre for Geosciences (GeoForschungsZentrum, GFZ) or NASA.
-It is provided here for your convenience but `with no guarantees whatsoever`.
+It is provided here for your convenience but *with no guarantees whatsoever*.

@@ -1,19 +1,20 @@
 #!/usr/bin/env python
 u"""
 read_ICGEM_geoid_grids.py
-Written by Tyler Sutterley (12/2020)
+Written by Tyler Sutterley (03/2021)
 Reads geoid height spatial grids from the GFZ Geoid Calculation Service
     http://icgem.gfz-potsdam.de/home
+Outputs spatial grids as netCDF4 files
 
 INPUTS:
     input geoid height spatial grids (*.gdf)
 
 COMMAND LINE OPTIONS:
-    -F X, --filename=X: Output filename (default: input with netCDF4 suffix)
-    -H X, --header=X: Marker denoting the end of the header text
-    -S X, --spacing=X: Change output grid spacing (via binning)
-    -M X, --mode=X: Permission mode of directories and files
+    -F X, --filename X: Output filename (default: input with netCDF4 suffix)
+    -H X, --header X: Marker denoting the end of the header text
+    -S X, --spacing X: Change output grid spacing (via binning)
     -V, --verbose: Output information for each output file
+    -M X, --mode X: Permission mode of output files
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
@@ -22,6 +23,7 @@ PYTHON DEPENDENCIES:
         https://unidata.github.io/netcdf4-python/
 
 UPDATE HISTORY:
+    Updated 03/2021: updated comments and argparse help text
     Updated 12/2020: using argparse to set parameters
     Updated 04/2019: verify that the divide count is greater than zero
     Updated 03/2018: generalized program using getopt to set parameters
@@ -38,7 +40,7 @@ import netCDF4
 import argparse
 import numpy as np
 
-#-- Program that reads .gdf grids from the GFZ calculation service
+#-- PURPOSE: Reads .gdf grids from the GFZ calculation service
 def read_ICGEM_geoid_grids(FILE, FILENAME=None, MARKER='', SPACING=None,
     VERBOSE=False, MODE=0o775):
     #-- split filename into basename and extension
@@ -164,15 +166,6 @@ def ncdf_geoid_write(dinput, parameters, FILENAME=None, VERBOSE=False):
     #-- Closing the NetCDF file
     fileID.close()
 
-#-- PURPOSE: help module to describe the optional input parameters
-def usage():
-    print('\nHelp: {}'.format(os.path.basename(sys.argv[0])))
-    print(' -F X, --filename=X\tOutput filename ')
-    print(' -H X, --header=X\tMarker denoting the end of the header text')
-    print(' -S X, --spacing=X\tChange output grid spacing (via binning)')
-    print(' -M X, --mode=X\t\tPermission mode of directories and files')
-    print(' -V, --verbose\t\tOutput information for each output file\n')
-
 #-- Main program that calls read_ICGEM_geoid_grids()
 def main():
     #-- Read the system arguments listed after the program
@@ -204,7 +197,7 @@ def main():
     #-- permissions mode of the local directories and files (number in octal)
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
-        help='permissions mode of output files')
+        help='Permissions mode of output files')
     args = parser.parse_args()
 
     #-- for each input grid file
