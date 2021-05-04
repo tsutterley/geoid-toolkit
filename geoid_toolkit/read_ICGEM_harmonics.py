@@ -3,7 +3,7 @@ u"""
 read_ICGEM_harmonics.py
 Written by Tyler Sutterley (07/2020)
 Reads the coefficients for a given gravity model file
-Particular cases for SWARM and GRAZ data
+Particular cases for SWARM, COST-G and GRAZ data
 
 GFZ International Centre for Global Earth Models (ICGEM)
     http://icgem.gfz-potsdam.de/
@@ -15,6 +15,9 @@ data can be downloaded from this ftp server:
 SWARM: https://earth.esa.int/eogateway/missions/swarm
 data can be downloaded from this ftp server:
     ftp://swarm-diss.eo.esa.int/Level2longterm/EGF/
+
+COST-G: https://cost-g.org/
+data can be downloaded from the ICGEM website
 
 INPUTS:
     model_file: full path to *.gfc file with spherical harmonic coefficients
@@ -51,6 +54,7 @@ PROGRAM DEPENDENCIES:
     calculate_tidal_offset.py: calculates the C20 offset for a tidal system
 
 UPDATE HISTORY:
+    Updated 05/2021: Add GRAZ/SWARM/COST-G ICGEM file
     Updated 03/2021: made degree of truncation LMAX a keyword argument
     Updated 07/2020: added function docstrings
     Updated 07/2019: split read and wrapper funciton into separate files
@@ -65,7 +69,8 @@ from geoid_toolkit.calculate_tidal_offset import calculate_tidal_offset
 #-- PURPOSE: read spherical harmonic coefficients of a gravity model
 def read_ICGEM_harmonics(model_file, LMAX=None, TIDE='tide_free', FLAG='gfc'):
     """
-    Extract gravity model spherical harmonics from GFZ/GRAZ/SWARM ICGEM gfc files
+    Extract gravity model spherical harmonics from GFZ/GRAZ/SWARM/COST-G ICGEM gfc files
+    In case of GRAZ/SWARM/COST-G, save also the date of the series
 
     Arguments
     ---------
@@ -91,7 +96,7 @@ def read_ICGEM_harmonics(model_file, LMAX=None, TIDE='tide_free', FLAG='gfc'):
     norm: normalization of the spherical harmonics
     tide_system: tide system of gravity model
 
-    Special case for gfc files from GRAZ and SWARM
+    Special case for gfc files from GRAZ, SWARM and COST-G
     time: mid-month date in decimal form
     start: Julian dates of the start date
     end: Julian dates of the start date
@@ -123,6 +128,19 @@ def read_ICGEM_harmonics(model_file, LMAX=None, TIDE='tide_free', FLAG='gfc'):
         year = int(start_date[:4])
         month = int(start_date[4:6])
 
+    elif 'COSTG' in model_file:
+        # -- compile numerical expression operator for parameters from files
+        # -- COST-G: Combine product of the IGFS
+        regex_pattern = (r'(.*?)-2_(\d+)-(\d+)_(.*?)_({0})_(.*?)_(\d+)(.*?)'
+                         r'(\.gz|\.gfc|\.txt)?$').format('COSTG')
+        rx = re.compile(regex_pattern, re.VERBOSE)
+        PFX, SD, ED, N, PRC, F1, DRL, F2, SFX = rx.findall(os.path.basename(model_file)).pop()
+
+        start_yr = np.float(SD[:4])
+        end_yr = np.float(ED[:4])
+        start_day = np.float(SD[4:])
+        end_day = np.float(ED[4:])
+
     if 'ITSG' in model_file or 'SW_' in model_file:
         # -- calculate mid-month date taking into account if measurements are
         # -- on different years
@@ -148,6 +166,29 @@ def read_ICGEM_harmonics(model_file, LMAX=None, TIDE='tide_free', FLAG='gfc'):
                                       np.floor(3.0 * (np.floor((year - 8.0 / 7.0) / 100.0) + 1.0) / 4.0) +
                                       np.floor(275.0 / 9.0) + end_day + 1721028.5)
 
+    elif 'COSTG' in model_file:
+        # -- calculate mid-month date taking into account if measurements are
+        # -- on different years
+        if (start_yr % 4) == 0:  # -- Leap Year
+            dpy = 366.0
+        else:  # -- Standard Year
+            dpy = 365.0
+
+        # -- For data that crosses years (end_yr - start_yr should be at most 1)
+        end_cyclic = ((end_yr - start_yr) * dpy + end_day)
+        # -- Calculate mid-month value
+        mid_day = np.mean([start_day, end_cyclic])
+
+        # -- Calculating the mid-month date in decimal form
+        model_input['time'] = start_yr + mid_day / dpy
+        # -- Calculating the Julian dates of the start and end date
+        model_input['start'] = np.float(367.0 * start_yr - np.floor(7.0 * start_yr / 4.0) -
+                                        np.floor(3.0 * (np.floor((start_yr - 8.0 / 7.0) / 100.0) + 1.0) / 4.0) +
+                                        np.floor(275.0 / 9.0) + start_day + 1721028.5)
+        model_input['end'] = np.float(367.0 * end_yr - np.floor(7.0 * end_yr / 4.0) -
+                                      np.floor(3.0 * (np.floor((end_yr - 8.0 / 7.0) / 100.0) + 1.0) / 4.0) +
+                                      np.floor(275.0 / 9.0) + end_day + 1721028.5)
+
     #-- read input data
     with open(os.path.expanduser(model_file),'r') as f:
         file_contents = f.read().splitlines()
@@ -165,8 +206,9 @@ def read_ICGEM_harmonics(model_file, LMAX=None, TIDE='tide_free', FLAG='gfc'):
     #-- allocate for each Coefficient
     model_input['clm'] = np.zeros((LMAX+1,LMAX+1))
     model_input['slm'] = np.zeros((LMAX+1,LMAX+1))
-    model_input['eclm'] = np.zeros((LMAX+1,LMAX+1))
-    model_input['eslm'] = np.zeros((LMAX+1,LMAX+1))
+    if not('SW_' in model_file): #-- SWARM doesn't contain errors
+        model_input['eclm'] = np.zeros((LMAX+1,LMAX+1))
+        model_input['eslm'] = np.zeros((LMAX+1,LMAX+1))
     #-- reduce file_contents to input data using data marker flag
     input_data = [l for l in file_contents if re.match(FLAG,l)]
     #-- for each line of data in the gravity file
@@ -180,8 +222,9 @@ def read_ICGEM_harmonics(model_file, LMAX=None, TIDE='tide_free', FLAG='gfc'):
         if ((l1 <= LMAX) and (m1 <= LMAX)):
             model_input['clm'][l1,m1] = np.float(line_contents[3])
             model_input['slm'][l1,m1] = np.float(line_contents[4])
-            model_input['eclm'][l1,m1] = np.float(line_contents[5])
-            model_input['eslm'][l1,m1] = np.float(line_contents[6])
+            if not ('SW_' in model_file):  # -- SWARM doesn't contain errors
+                model_input['eclm'][l1,m1] = np.float(line_contents[5])
+                model_input['eslm'][l1,m1] = np.float(line_contents[6])
     #-- calculate the tidal offset if changing the tide system
     if TIDE in ('mean_tide','zero_tide'):
         model_input['tide_system'] = TIDE
