@@ -1,5 +1,5 @@
 numpy
 matplotlib
-cartopy
+cartopy --no-binary=cartopy
 netCDF4
 lxml
