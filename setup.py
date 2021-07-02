@@ -16,7 +16,7 @@ if on_rtd:
 else:
     # get install requirements
     with open('requirements.txt') as fh:
-        install_requires = fh.read().splitlines()
+        install_requires = [line.split().pop(0) for line in fh.read().splitlines()]
 
 # get version
 with open('version.txt') as fh:
