@@ -56,7 +56,7 @@ REFERENCE:
         http://mitgcm.org/~mlosch/geoidcookbook/node9.html
 
 UPDATE HISTORY:
-    Updated 09/2021: can
+    Updated 09/2021: can change from different tidal systems and to tide free
     Updated 11/2020: added function docstrings
     Written 07/2017
 """
