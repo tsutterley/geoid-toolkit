@@ -1,3 +1,4 @@
+import geoid_toolkit.spatial
 import geoid_toolkit.utilities
 from geoid_toolkit.calculate_geoid_undulation import calculate_geoid_undulation
 from geoid_toolkit.calculate_tidal_offset import calculate_tidal_offset

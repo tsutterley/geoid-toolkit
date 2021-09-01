@@ -42,6 +42,7 @@ PROGRAM DEPENDENCIES:
     calculate_tidal_offset.py: calculates the C20 offset for a tidal system
 
 UPDATE HISTORY:
+    Updated 09/2021: define int/float precision to prevent deprecation warning
     Updated 03/2021: made degree of truncation LMAX a keyword argument
     Updated 07/2020: added function docstrings
     Updated 07/2019: split read and wrapper funciton into separate files
@@ -98,7 +99,7 @@ def read_ICGEM_harmonics(model_file, LMAX=None, TIDE='tide_free', FLAG='gfc'):
         line_contents = line.split()
         model_input[line_contents[0]] = line_contents[1]
     #-- set degree of truncation from model if not presently set
-    LMAX = np.int(model_input['max_degree']) if not LMAX else LMAX
+    LMAX = np.int64(model_input['max_degree']) if not LMAX else LMAX
     #-- allocate for each Coefficient
     model_input['clm'] = np.zeros((LMAX+1,LMAX+1))
     model_input['slm'] = np.zeros((LMAX+1,LMAX+1))
@@ -111,19 +112,19 @@ def read_ICGEM_harmonics(model_file, LMAX=None, TIDE='tide_free', FLAG='gfc'):
         #-- split the line into individual components replacing fortran d
         line_contents = re.sub('d','e',line,flags=re.IGNORECASE).split()
         #-- degree and order for the line
-        l1 = np.int(line_contents[1])
-        m1 = np.int(line_contents[2])
+        l1 = int(line_contents[1])
+        m1 = int(line_contents[2])
         #-- if degree and order are below the truncation limits
         if ((l1 <= LMAX) and (m1 <= LMAX)):
-            model_input['clm'][l1,m1] = np.float(line_contents[3])
-            model_input['slm'][l1,m1] = np.float(line_contents[4])
-            model_input['eclm'][l1,m1] = np.float(line_contents[5])
-            model_input['eslm'][l1,m1] = np.float(line_contents[6])
+            model_input['clm'][l1,m1] = np.float64(line_contents[3])
+            model_input['slm'][l1,m1] = np.float64(line_contents[4])
+            model_input['eclm'][l1,m1] = np.float64(line_contents[5])
+            model_input['eslm'][l1,m1] = np.float64(line_contents[6])
     #-- calculate the tidal offset if changing the tide system
     if TIDE in ('mean_tide','zero_tide'):
         model_input['tide_system'] = TIDE
-        GM = np.float(model_input['earth_gravity_constant'])
-        R = np.float(model_input['radius'])
+        GM = np.float64(model_input['earth_gravity_constant'])
+        R = np.float64(model_input['radius'])
         model_input['clm'][2,0] += calculate_tidal_offset(TIDE,GM,R,'WGS84')
     #-- return the spherical harmonics and parameters
     return model_input

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 read_ICGEM_geoid_grids.py
-Written by Tyler Sutterley (03/2021)
+Written by Tyler Sutterley (09/2021)
 Reads geoid height spatial grids from the GFZ Geoid Calculation Service
     http://icgem.gfz-potsdam.de/home
 Outputs spatial grids as netCDF4 files
@@ -23,6 +23,7 @@ PYTHON DEPENDENCIES:
         https://unidata.github.io/netcdf4-python/
 
 UPDATE HISTORY:
+    Updated 09/2021: define int/float precision to prevent deprecation warning
     Updated 03/2021: updated comments and argparse help text
     Updated 12/2020: using argparse to set parameters
     Updated 04/2019: verify that the divide count is greater than zero
@@ -72,16 +73,16 @@ def read_ICGEM_geoid_grids(FILE, FILENAME=None, MARKER='', SPACING=None,
         parameters = removekey(parameters, key)
 
     #-- extract necessary parameters
-    latlimit_north = np.float(parameters['latlimit_north'])
-    latlimit_south = np.float(parameters['latlimit_south'])
-    longlimit_west = np.float(parameters['longlimit_west'])
-    longlimit_east = np.float(parameters['longlimit_east'])
+    latlimit_north = np.float64(parameters['latlimit_north'])
+    latlimit_south = np.float64(parameters['latlimit_south'])
+    longlimit_west = np.float64(parameters['longlimit_west'])
+    longlimit_east = np.float64(parameters['longlimit_east'])
     #-- change grid spacing by binning data
     if SPACING is None:
-        nlat = np.int(parameters['latitude_parallels'])
-        nlon = np.int(parameters['longitude_parallels'])
-        dlon = np.float(parameters['gridstep'])
-        dlat = np.float(parameters['gridstep'])
+        nlat = np.int64(parameters['latitude_parallels'])
+        nlon = np.int64(parameters['longitude_parallels'])
+        dlon = np.float64(parameters['gridstep'])
+        dlat = np.float64(parameters['gridstep'])
     else:
         dlon,dlat = SPACING
         parameters['gridstep'] = '{0:g},{1:g}'.format(dlon,dlat)
@@ -102,17 +103,17 @@ def read_ICGEM_geoid_grids(FILE, FILENAME=None, MARKER='', SPACING=None,
     for j in range(count, file_lines):
         col = np.array(file_contents[j].split(), dtype=np.float)
         #-- calculating the lon/lat indice
-        ilon = np.int((longlimit_west + col[0])/dlon)
-        ilat = np.int((latlimit_north - col[1])/dlat)
+        ilon = int((longlimit_west + col[0])/dlon)
+        ilat = int((latlimit_north - col[1])/dlat)
         #-- if wanting data lat/lon
-        dinput[functional][ilat,ilon] += np.float(col[2])
+        dinput[functional][ilat,ilon] += np.float64(col[2])
         bin_count[ilat,ilon] += 1.0
 
     #-- take the mean of the binned data (if not regridding will divide by 1)
     ii,jj = np.nonzero(bin_count > 0)
     dinput[functional][ii,jj] /= bin_count[ii,jj]
     ii,jj = np.nonzero(bin_count == 0)
-    dinput[functional][ii,jj] = np.float(parameters['gapvalue'])
+    dinput[functional][ii,jj] = np.float64(parameters['gapvalue'])
 
     #-- output data and parameters to netCDF4
     FILENAME = '{0}.nc'.format(fileBasename) if (FILENAME is None) else FILENAME
@@ -138,7 +139,7 @@ def ncdf_geoid_write(dinput, parameters, FILENAME=None, VERBOSE=False):
     #-- defining the NetCDF variables
     nc = {}
     functional = parameters['functional']
-    gapvalue = np.float(parameters['gapvalue'])
+    gapvalue = np.float64(parameters['gapvalue'])
     nc['lat'] = fileID.createVariable('lat', dinput['lat'].dtype, ('lat',))
     nc['lon'] = fileID.createVariable('lon', dinput['lon'].dtype, ('lon',))
     nc[functional] = fileID.createVariable(functional, dinput[functional].dtype,
