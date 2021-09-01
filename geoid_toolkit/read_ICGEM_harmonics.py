@@ -15,9 +15,8 @@ OPTIONS:
     TIDE: tide system of output geoid
         http://mitgcm.org/~mlosch/geoidcookbook/node9.html
         tide_free: no permanent direct and indirect tidal potentials
-            this is the default (leaving the model as is)
-        mean_tide: restores permanent tidal potentials (direct and indirect)
-        zero_tide: restores permanent direct tidal potential
+        mean_tide: permanent tidal potentials (direct and indirect)
+        zero_tide: permanent direct tidal potential
     FLAG: string denoting data lines
 
 OUTPUTS:
@@ -55,7 +54,7 @@ import numpy as np
 from geoid_toolkit.calculate_tidal_offset import calculate_tidal_offset
 
 #-- PURPOSE: read spherical harmonic coefficients of a gravity model
-def read_ICGEM_harmonics(model_file, LMAX=None, TIDE='tide_free', FLAG='gfc'):
+def read_ICGEM_harmonics(model_file, LMAX=None, TIDE=None, FLAG='gfc'):
     """
     Extract gravity model spherical harmonics from GFZ ICGEM gfc files
 
@@ -121,10 +120,13 @@ def read_ICGEM_harmonics(model_file, LMAX=None, TIDE='tide_free', FLAG='gfc'):
             model_input['eclm'][l1,m1] = np.float64(line_contents[5])
             model_input['eslm'][l1,m1] = np.float64(line_contents[6])
     #-- calculate the tidal offset if changing the tide system
-    if TIDE in ('mean_tide','zero_tide'):
-        model_input['tide_system'] = TIDE
+    if TIDE in ('mean_tide','zero_tide','tide_free'):
+        #-- earth parameters
         GM = np.float64(model_input['earth_gravity_constant'])
         R = np.float64(model_input['radius'])
-        model_input['clm'][2,0] += calculate_tidal_offset(TIDE,GM,R,'WGS84')
+        model_input['clm'][2,0] += calculate_tidal_offset(TIDE,GM,R,'WGS84',
+            REFERENCE=model_input['tide_system'])
+        #-- update attribute for tide system
+        model_input['tide_system'] = TIDE
     #-- return the spherical harmonics and parameters
     return model_input

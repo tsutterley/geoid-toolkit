@@ -95,18 +95,20 @@ def calculate_tidal_offset(TIDE, GM, R, refell, LOVE=0.3,
     #-- standard gravitational acceleration
     gamma = 9.80665
     trans = (-0.198*gamma*R**3)/(np.sqrt(5.0)*GM*ellip['a']**2)
+    #-- conversion to switch to tide free
+    if (REFERENCE == 'tide_free'):
+        tide_free_conv = 0.0
+    elif (REFERENCE == 'mean_tide'):
+        tide_free_conv = -(1.0 + LOVE)
+    elif (REFERENCE == 'zero_tide'):
+        tide_free_conv = -LOVE
     #-- conversion for each tidal system
-    if (TIDE == 'mean_tide') and (REFERENCE == 'tide_free'):
-        conv = (1.0 + LOVE)
-    elif (TIDE == 'mean_tide') and (REFERENCE == 'zero_tide'):
-        conv = 1.0
-    elif (TIDE == 'zero_tide') and (REFERENCE == 'tide_free'):
-        conv = LOVE
-    elif (TIDE == 'zero_tide') and (REFERENCE == 'mean_tide'):
-        conv = -1.0
-    elif (TIDE == 'tide_free') and (REFERENCE == 'mean_tide'):
-        conv = -(1.0 + LOVE)
-    elif (TIDE == 'tide_free') and (REFERENCE == 'zero_tide'):
-        conv = -LOVE
+    if (TIDE == 'mean_tide'):
+        tide_conv = (1.0 + LOVE) + tide_free_conv
+    elif (TIDE == 'zero_tide'):
+        tide_conv = LOVE + tide_free_conv
+    elif (TIDE == 'tide_free'):
+        tide_conv = 0.0 + tide_free_conv
     #-- return the C20 offset to change tide systems
-    return conv*trans
+    delta = tide_conv*trans
+    return delta
