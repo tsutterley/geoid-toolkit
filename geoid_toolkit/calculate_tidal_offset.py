@@ -104,11 +104,11 @@ def calculate_tidal_offset(TIDE, GM, R, refell, LOVE=0.3,
         tide_free_conv = -LOVE
     #-- conversion for each tidal system
     if (TIDE == 'mean_tide'):
-        tide_conv = (1.0 + LOVE) + tide_free_conv
+        conv = (1.0 + LOVE) + tide_free_conv
     elif (TIDE == 'zero_tide'):
-        tide_conv = LOVE + tide_free_conv
+        conv = LOVE + tide_free_conv
     elif (TIDE == 'tide_free'):
-        tide_conv = 0.0 + tide_free_conv
+        conv = 0.0 + tide_free_conv
     #-- return the C20 offset to change tide systems
-    delta = tide_conv*trans
+    delta = conv*trans
     return delta
