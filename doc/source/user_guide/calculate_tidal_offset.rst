@@ -2,7 +2,7 @@
 calculate_tidal_offset.py
 =========================
 
-- Calculates the spherical harmonic offset for a tide system to change from a tide free state where there is no permanent direct and indirect tidal potentials [Losch2003]_
+- Calculates the spherical harmonic offset to change tide systems [Losch2003]_
 - Method described in [Barthelmes2013]_ and [Moazezi2012]_
 
 Calling Sequence
@@ -22,10 +22,11 @@ Arguments
 
 1. ``TIDE``: output tidal system
 
-    * ``'mean_tide'``: restores permanent tidal potentials (direct and indirect)
-    * ``'zero_tide'``: restores permanent direct tidal potential
+    * ``'tide_free'``: no permanent direct and indirect tidal potentials
+    * ``'mean_tide'``: permanent tidal potentials (direct and indirect)
+    * ``'zero_tide'``: permanent direct tidal potential
 2. ``R``: average radius used in gravity model
-3. ``GM``: geocentric graviational constant used in gravity model
+3. ``GM``: geocentric gravitational constant used in gravity model
 4. ``refell``: reference ellipsoid name
 
     * ``'CLK66'``: Clarke 1866
@@ -42,10 +43,20 @@ Arguments
     * ``'TOPEX'``: TOPEX/POSEIDON ellipsoid
     * ``'EGM96'``: EGM 1996 gravity model
 
+Keyword arguments
+#################
+
+- ``LOVE``: load love number for degree 2
+- ``REFERENCE``: original tidal system
+
+    * ``'tide_free'``: no permanent direct and indirect tidal potentials
+    * ``'zero_tide'``: permanent direct tidal potential
+    * ``'mean_tide'``: permanent tidal potentials (direct and indirect)
+
 Returns
 #######
 
-- ``delta``: offset for changing from tide free system
+- ``delta``: offset for changing to tide system
 
 References
 ##########
