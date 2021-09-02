@@ -33,6 +33,7 @@ and calculating geoid heights
     user_guide/read_ICGEM_harmonics.rst
     user_guide/real_potential.rst
     user_guide/ref_ellipsoid.rst
+    user_guide/spatial.rst
     user_guide/utilities.rst
 
 .. toctree::

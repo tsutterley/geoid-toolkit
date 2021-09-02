@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 calculate_geoid_undulation.py
-Written by Tyler Sutterley (11/2020)
+Written by Tyler Sutterley (09/2021)
 Wrapper function for computing geoid undulations from a gravity model
 
 INPUTS:
@@ -50,6 +50,7 @@ PROGRAM DEPENDENCIES:
     gauss_weights.py: Computes Gaussian weights as a function of degree
 
 UPDATE HISTORY:
+    Updated 09/2021: define int/float precision to prevent deprecation warning
     Updated 11/2020: added function docstrings
     Updated 07/2019: split read and wrapper funciton into separate files
     Written 07/2017
@@ -83,9 +84,9 @@ def calculate_geoid_undulation(lon, lat, gravity_model_file, REFERENCE='WGS84',
     """
     #-- read gravity model Ylms and change tide if specified
     Ylms = read_ICGEM_harmonics(gravity_model_file,LMAX=LMAX,TIDE=TIDE)
-    R = np.float(Ylms['radius'])
-    GM = np.float(Ylms['earth_gravity_constant'])
-    LMAX = np.int(Ylms['max_degree']) if not LMAX else LMAX
+    R = np.float64(Ylms['radius'])
+    GM = np.float64(Ylms['earth_gravity_constant'])
+    LMAX = np.int64(Ylms['max_degree']) if not LMAX else LMAX
     #-- calculate geoid at coordinates
     N = geoid_undulation(lat, lon, REFERENCE, Ylms['clm'], Ylms['slm'], LMAX,
         R, GM, GAUSS=GAUSS, EPS=1e-8)

@@ -28,13 +28,16 @@ Keyword arguments
 - ``TIDE``: `tide system of output geoid <http://mitgcm.org/~mlosch/geoidcookbook/node9.html>`_ [Losch2003]_
 
     * ``'tide_free'``: no permanent direct and indirect tidal potentials
-    * ``'mean_tide'``: restores permanent tidal potentials (direct and indirect)
-    * ``'zero_tide'``: restores permanent direct tidal potential
+    * ``'mean_tide'``: permanent tidal potentials (direct and indirect)
+    * ``'zero_tide'``: permanent direct tidal potential
 - ``FLAG``: string denoting data lines
+- ``ZIP``: input gravity field file is compressed in an archive file
 
 Returns
 #######
 
+- ``l``: spherical harmonic degree to maximum degree of model
+- ``m``: spherical harmonic order to maximum degree of model
 - ``clm``: cosine spherical harmonics of input data
 - ``slm``: sine spherical harmonics of input data
 - ``eclm``: cosine spherical harmonic standard deviations of type errors

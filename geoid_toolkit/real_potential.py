@@ -13,7 +13,7 @@ INPUT:
     longitude: longitude in degrees
     height: height above reference ellipsoid in meters
     R: average radius used in gravity model
-    GM: geocentric graviational constant used in gravity model
+    GM: geocentric gravitational constant used in gravity model
     clm: cosine spherical harmonics for a gravity model
     slm: sin spherical harmonics for a gravity model
     lmax: maximum spherical harmonic degree
@@ -74,7 +74,7 @@ def real_potential(latitude, longitude, h, refell, GM, R, clm, slm,
     longitude: longitude in degrees
     height: height above reference ellipsoid in meters
     R: average radius used in gravity model
-    GM: geocentric graviational constant used in gravity model
+    GM: geocentric gravitational constant used in gravity model
     clm: cosine spherical harmonics for a gravity model
     slm: sin spherical harmonics for a gravity model
     lmax: maximum spherical harmonic degree

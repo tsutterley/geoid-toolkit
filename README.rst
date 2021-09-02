@@ -11,7 +11,7 @@ geoid-toolkit
 .. |Language| image:: https://img.shields.io/badge/python-v3.7-green.svg
    :target: https://www.python.org/
 
-.. |License| image:: https://img.shields.io/badge/license-MIT-green.svg
+.. |License| image:: https://img.shields.io/github/license/tsutterley/geoid-toolkit
    :target: https://github.com/tsutterley/geoid-toolkit/blob/main/LICENSE
 
 .. |Documentation Status| image:: https://readthedocs.org/projects/geoid-toolkit/badge/?version=latest

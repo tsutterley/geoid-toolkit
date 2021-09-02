@@ -30,7 +30,7 @@ INPUT:
     slm: sine spherical harmonics for a gravity model
     lmax: maximum spherical harmonic degree
     R: average radius used in gravity model
-    GM: geocentric graviational constant used in gravity model
+    GM: geocentric gravitational constant used in gravity model
 
 OUTPUT:
      height anomaly for a given ellipsoid in meters
@@ -87,7 +87,7 @@ def height_anomaly(lat,lon,h,refell,clm,slm,lmax,R,GM,GAUSS=0,EPS=1e-8):
     slm: sine spherical harmonics for a gravity model
     lmax: maximum spherical harmonic degree
     R: average radius used in gravity model
-    GM: geocentric graviational constant used in gravity model
+    GM: geocentric gravitational constant used in gravity model
 
     Keyword arguments
     -----------------
