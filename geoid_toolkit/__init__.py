@@ -1,5 +1,6 @@
 import geoid_toolkit.spatial
 import geoid_toolkit.utilities
+import geoid_toolkit.version
 from geoid_toolkit.calculate_geoid_undulation import calculate_geoid_undulation
 from geoid_toolkit.calculate_tidal_offset import calculate_tidal_offset
 from geoid_toolkit.gauss_weights import gauss_weights
@@ -13,3 +14,5 @@ from geoid_toolkit.norm_potential import norm_potential
 from geoid_toolkit.read_ICGEM_harmonics import read_ICGEM_harmonics
 from geoid_toolkit.real_potential import real_potential
 from geoid_toolkit.ref_ellipsoid import ref_ellipsoid
+# get version number
+__version__ = geoid_toolkit.version.version
