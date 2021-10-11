@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 read_ICGEM_geoid_grids.py
-Written by Tyler Sutterley (09/2021)
+Written by Tyler Sutterley (10/2021)
 Reads geoid height spatial grids from the GFZ Geoid Calculation Service
     http://icgem.gfz-potsdam.de/home
 Outputs spatial grids as netCDF4 files
@@ -23,6 +23,7 @@ PYTHON DEPENDENCIES:
         https://unidata.github.io/netcdf4-python/
 
 UPDATE HISTORY:
+    Updated 10/2021: using python logging for handling verbose output
     Updated 09/2021: define int/float precision to prevent deprecation warning
     Updated 03/2021: updated comments and argparse help text
     Updated 12/2020: using argparse to set parameters
@@ -37,6 +38,7 @@ from __future__ import print_function
 import sys
 import os
 import re
+import logging
 import netCDF4
 import argparse
 import numpy as np
@@ -44,6 +46,11 @@ import numpy as np
 #-- PURPOSE: Reads .gdf grids from the GFZ calculation service
 def read_ICGEM_geoid_grids(FILE, FILENAME=None, MARKER='', SPACING=None,
     VERBOSE=False, MODE=0o775):
+
+    #-- create logger
+    loglevel = logging.INFO if VERBOSE else logging.critical
+    logging.basicConfig(level=loglevel)
+
     #-- split filename into basename and extension
     fileBasename,_ = os.path.splitext(FILE)
     #-- open input file and read contents
@@ -117,7 +124,7 @@ def read_ICGEM_geoid_grids(FILE, FILENAME=None, MARKER='', SPACING=None,
 
     #-- output data and parameters to netCDF4
     FILENAME = '{0}.nc'.format(fileBasename) if (FILENAME is None) else FILENAME
-    ncdf_geoid_write(dinput, parameters, FILENAME=FILENAME, VERBOSE=VERBOSE)
+    ncdf_geoid_write(dinput, parameters, FILENAME=FILENAME)
     #-- change permissions mode to MODE
     os.chmod(FILENAME, MODE)
 
@@ -128,7 +135,7 @@ def removekey(d, key):
     return r
 
 #-- PURPOSE: write output geoid height data to file
-def ncdf_geoid_write(dinput, parameters, FILENAME=None, VERBOSE=False):
+def ncdf_geoid_write(dinput, parameters, FILENAME=None):
     #-- opening NetCDF file for writing
     fileID = netCDF4.Dataset(FILENAME, 'w', format="NETCDF4")
 
@@ -160,9 +167,8 @@ def ncdf_geoid_write(dinput, parameters, FILENAME=None, VERBOSE=False):
         fileID.setncattr(key, parameters[key])
 
     #-- Output NetCDF structure information
-    if VERBOSE:
-        print(os.path.basename(FILENAME))
-        print(list(fileID.variables.keys()))
+    logging.info(os.path.basename(FILENAME))
+    logging.info(list(fileID.variables.keys()))
 
     #-- Closing the NetCDF file
     fileID.close()

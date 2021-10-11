@@ -8,6 +8,7 @@ PYTHON DEPENDENCIES:
     lxml: processing XML and HTML in Python (https://pypi.python.org/pypi/lxml)
 
 UPDATE HISTORY:
+    Updated 10/2021: using python logging for handling verbose output
     Updated 03/2021: added sha1 option for retrieving file hashes
     Updated 11/2020: added list function for finding files on the GFZ ICGEM
     Updated 09/2020: copy from http and https to bytesIO object in chunks
@@ -25,6 +26,7 @@ import shutil
 import socket
 import inspect
 import hashlib
+import logging
 import posixpath
 import lxml.etree
 import calendar,time
@@ -140,7 +142,11 @@ def copy(source, destination, verbose=False, move=False):
     """
     source = os.path.abspath(os.path.expanduser(source))
     destination = os.path.abspath(os.path.expanduser(destination))
-    print('{0} -->\n\t{1}'.format(source,destination)) if verbose else None
+    #-- create logger
+    loglevel = logging.INFO if verbose else logging.critical
+    logging.basicConfig(loglevel)
+    #-- log source and destination
+    logging.info('{0} -->\n\t{1}'.format(source,destination))
     shutil.copyfile(source, destination)
     shutil.copystat(source, destination)
     if move:
@@ -264,6 +270,9 @@ def from_ftp(HOST,username=None,password=None,timeout=None,local=None,
     -------
     remote_buffer: BytesIO representation of file
     """
+    #-- create logger
+    loglevel = logging.INFO if verbose else logging.critical
+    logging.basicConfig(stream=fid, level=loglevel)
     #-- try downloading from ftp
     try:
         #-- try to connect to ftp host
@@ -294,9 +303,8 @@ def from_ftp(HOST,username=None,password=None,timeout=None,local=None,
             if not os.access(os.path.dirname(local), os.F_OK):
                 os.makedirs(os.path.dirname(local), mode)
             #-- print file information
-            if verbose:
-                args = (posixpath.join(*HOST),local)
-                print('{0} -->\n\t{1}'.format(*args), file=fid)
+            args = (posixpath.join(*HOST),local)
+            logging.info('{0} -->\n\t{1}'.format(*args))
             #-- store bytes to file using chunked transfer encoding
             remote_buffer.seek(0)
             with open(os.path.expanduser(local), 'wb') as f:
@@ -353,6 +361,9 @@ def from_http(HOST,timeout=None,context=ssl.SSLContext(),local=None,hash='',
     -------
     remote_buffer: BytesIO representation of file
     """
+    #-- create logger
+    loglevel = logging.INFO if verbose else logging.critical
+    logging.basicConfig(stream=fid, level=loglevel)
     #-- try downloading from http
     try:
         #-- Create and submit request.
@@ -377,9 +388,8 @@ def from_http(HOST,timeout=None,context=ssl.SSLContext(),local=None,hash='',
             if not os.access(os.path.dirname(local), os.F_OK):
                 os.makedirs(os.path.dirname(local), mode)
             #-- print file information
-            if verbose:
-                args = (posixpath.join(*HOST),local)
-                print('{0} -->\n\t{1}'.format(*args), file=fid)
+            args = (posixpath.join(*HOST),local)
+            logging.info('{0} -->\n\t{1}'.format(*args))
             #-- store bytes to file using chunked transfer encoding
             remote_buffer.seek(0)
             with open(os.path.expanduser(local), 'wb') as f:

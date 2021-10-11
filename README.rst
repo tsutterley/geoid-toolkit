@@ -8,7 +8,7 @@ geoid-toolkit
 |Binder|
 |Pangeo|
 
-.. |Language| image:: https://img.shields.io/badge/python-v3.7-green.svg
+.. |Language| image:: https://img.shields.io/badge/python-v3.8-green.svg
    :target: https://www.python.org/
 
 .. |License| image:: https://img.shields.io/github/license/tsutterley/geoid-toolkit
