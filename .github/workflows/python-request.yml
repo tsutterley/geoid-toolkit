@@ -60,11 +60,12 @@ jobs:
         sudo ldconfig --verbose
         sudo projsync --system-directory --all
         pip install --upgrade pip
-        pip install flake8 pytest pytest-cov numpy cython
+        pip install numpy
         export CPLUS_INCLUDE_PATH=/usr/include/gdal
         export C_INCLUDE_PATH=/usr/include/gdal
         pip install git+https://github.com/SciTools/cartopy.git
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install .
+        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
     - name: Install dependencies for MacOS
       if: matrix.os == 'macos-latest'
       run: |
@@ -77,13 +78,14 @@ jobs:
         brew install libxslt
         brew install pkg-config
         pip install --upgrade pip
-        pip install flake8 pytest pytest-cov numpy cython
+        pip install numpy
         export LDFLAGS="-L/usr/local/opt/proj/lib"
         export CPPFLAGS="-I/usr/local/opt/proj/include"
         export ACCEPT_USE_OF_DEPRECATED_PROJ_API_H=1
         export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/usr/local/opt/proj/lib/pkgconfig"
         pip install git+https://github.com/SciTools/cartopy.git
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install .
+        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
