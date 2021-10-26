@@ -1,8 +1,8 @@
 =============================
-calculate_geoid_undulation.py
+corrected_geoid_undulation.py
 =============================
 
-- Wrapper function for computing geoid undulations from a gravity model
+- Calculates the topographically corrected geoidal undulation at a given latitude and longitude using an iterative approach
 - Method described in [Barthelmes2013]_ and [Moazezi2012]_
 
 Calling Sequence
@@ -10,24 +10,19 @@ Calling Sequence
 
 .. code-block:: python
 
-    from geoid_toolkit.calculate_geoid_undulation import calculate_geoid_undulation
-    N = calculate_geoid_undulation(lon, lat, gravity_model_file, ELLIPSOID='WGS84')
+    from geoid_toolkit.corrected_geoid_undulation import corrected_geoid_undulation
+    N = corrected_geoid_undulation(lat, lon, 'WGS84', clm, slm, tclm, tslm, lmax, R, GM)
 
 `Source code`__
 
-.. __: https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/calculate_geoid_undulation.py
+.. __: https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/corrected_geoid_undulation.py
 
 Arguments
 #########
 
-1. ``lon``: longitudinal points to calculate geoid height
-2. ``lat``: latitudinal points to calculate geoid height
-3. ``gravity_model_file``: full path to static gravity file with spherical harmonic coefficients
-
-Keyword arguments
-#################
-
-- ``ELLIPSOID``: reference ellipsoid name
+1. ``lat``: latitudinal points to calculate geoid height
+2. ``lon``: longitudinal points to calculate geoid height
+3. ``refell``: reference ellipsoid name
 
     * ``'CLK66'``: Clarke 1866
     * ``'GRS67'``: Geodetic Reference System 1967
@@ -42,11 +37,20 @@ Keyword arguments
     * ``'MAIRY'``: Modified Airy (Ireland 1965/1975)
     * ``'TOPEX'``: TOPEX/POSEIDON ellipsoid
     * ``'EGM96'``: EGM 1996 gravity model
-- ``LMAX``: maximum spherical harmonic degree
-- ``TIDE``: tide system of output geoid
+4. ``clm``: cosine spherical harmonics for a gravity model
+5. ``slm``: sine spherical harmonics for a gravity model
+6. ``tclm``: cosine spherical harmonics for a topographic model
+7. ``tslm``: sine spherical harmonics for a topographic model
+8. ``lmax``: maximum spherical harmonic degree
+9. ``R``: average radius used in gravity model
+10. ``GM``: geocentric graviational constant used in gravity model
+11. ``density``: density of the topography in the model
+
+Keyword arguments
+#################
+
 - ``GAUSS``: Gaussian Smoothing Radius in km
 - ``EPS``: level of precision for calculating geoid height
-- ``ZIP``: input gravity field file is compressed in an archive file
 
 Returns
 #######

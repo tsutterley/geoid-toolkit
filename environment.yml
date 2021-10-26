@@ -4,8 +4,11 @@ channels:
 dependencies:
   - python>=3.6
   - notebook
-  - numpy
-  - matplotlib
   - cartopy
-  - netCDF4
+  - gdal
+  - h5py
   - lxml
+  - matplotlib
+  - netCDF4
+  - numpy
+  - pyproj

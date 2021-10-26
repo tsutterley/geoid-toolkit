@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 calculate_geoid_undulation.py
-Written by Tyler Sutterley (09/2021)
+Written by Tyler Sutterley (10/2021)
 Wrapper function for computing geoid undulations from a gravity model
 
 INPUTS:
@@ -10,7 +10,7 @@ INPUTS:
     gravity_model_file: full path to static gravity model file
 
 OPTIONS:
-    REFERENCE: reference ellipsoid name
+    ELLIPSOID: reference ellipsoid name
         CLK66 = Clarke 1866
         GRS67 = Geodetic Reference System 1967
         GRS80 = Geodetic Reference System 1980
@@ -33,6 +33,8 @@ OPTIONS:
         mean_tide: restores permanent tidal potentials (direct and indirect)
         zero_tide: restores permanent direct tidal potential
     GAUSS: Gaussian Smoothing Radius in km (default is no filtering)
+    EPS: level of precision for calculating geoid height
+    ZIP: input gravity field file is compressed in an archive file
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
@@ -50,6 +52,7 @@ PROGRAM DEPENDENCIES:
     gauss_weights.py: Computes Gaussian weights as a function of degree
 
 UPDATE HISTORY:
+    Updated 10/2021: add more keyword options to match read ICGEM options
     Updated 09/2021: define int/float precision to prevent deprecation warning
     Updated 11/2020: added function docstrings
     Updated 07/2019: split read and wrapper funciton into separate files
@@ -60,8 +63,7 @@ from geoid_toolkit.geoid_undulation import geoid_undulation
 from geoid_toolkit.read_ICGEM_harmonics import read_ICGEM_harmonics
 
 #-- PURPOSE: calculate geoid heights at a set of latitudes and longitudes
-def calculate_geoid_undulation(lon, lat, gravity_model_file, REFERENCE='WGS84',
-    LMAX=None, TIDE='tide_free', GAUSS=0):
+def calculate_geoid_undulation(lon, lat, gravity_model_file, **kwargs):
     """
     Wrapper function for computing geoid undulations from a gravity model
 
@@ -73,22 +75,32 @@ def calculate_geoid_undulation(lon, lat, gravity_model_file, REFERENCE='WGS84',
 
     Keyword arguments
     -----------------
-    REFERENCE: reference ellipsoid name
+    ELLIPSOID: reference ellipsoid name
     LMAX: maximum spherical harmonic degree (level of truncation)
     TIDE: tide system of output geoid
     GAUSS: Gaussian Smoothing Radius in km (default is no filtering)
+    EPS: level of precision for calculating geoid height
+    ZIP: input gravity field file is compressed in an archive file
 
     Returns
     -------
     N: geoidal undulation for a given ellipsoid in meters
     """
+    #-- set default keyword arguments
+    kwargs.setdefault('LMAX',None)
+    kwargs.setdefault('ELLIPSOID','WGS84')
+    kwargs.setdefault('TIDE','tide_free')
+    kwargs.setdefault('GAUSS',0)
+    kwargs.setdefault('EPS',1e-8)
+    kwargs.setdefault('ZIP',False)
     #-- read gravity model Ylms and change tide if specified
-    Ylms = read_ICGEM_harmonics(gravity_model_file,LMAX=LMAX,TIDE=TIDE)
+    Ylms = read_ICGEM_harmonics(gravity_model_file,**kwargs)
     R = np.float64(Ylms['radius'])
     GM = np.float64(Ylms['earth_gravity_constant'])
-    LMAX = np.int64(Ylms['max_degree']) if not LMAX else LMAX
+    LMAX = np.int64(Ylms['max_degree'])
     #-- calculate geoid at coordinates
-    N = geoid_undulation(lat, lon, REFERENCE, Ylms['clm'], Ylms['slm'], LMAX,
-        R, GM, GAUSS=GAUSS, EPS=1e-8)
+    N = geoid_undulation(lat, lon, kwargs['ELLIPSOID'],
+        Ylms['clm'], Ylms['slm'], LMAX, R, GM,
+        GAUSS=kwargs['GAUSS'], EPS=kwargs['EPS'])
     #-- return the geoid undulation
     return N

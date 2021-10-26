@@ -105,6 +105,21 @@ def url_split(s):
         return tail,
     return url_split(head) + (tail,)
 
+#-- PURPOSE: convert file lines to arguments
+def convert_arg_line_to_args(arg_line):
+    """
+    Convert file lines to arguments
+
+    Arguments
+    ---------
+    arg_line: line string containing a single argument and/or comments
+    """
+    # remove commented lines and after argument comments
+    for arg in re.sub(r'\#(.*?)$',r'',arg_line).split():
+        if not arg.strip():
+            continue
+        yield arg
+
 #-- PURPOSE: returns the Unix timestamp value for a formatted date string
 def get_unix_time(time_string, format='%Y-%m-%d %H:%M:%S'):
     """
@@ -124,6 +139,17 @@ def get_unix_time(time_string, format='%Y-%m-%d %H:%M:%S'):
         return None
     else:
         return calendar.timegm(parsed_time)
+
+#-- PURPOSE: rounds a number to an even number less than or equal to original
+def even(value):
+    """
+    Rounds a number to an even number less than or equal to original
+
+    Arguments
+    ---------
+    value: number to be rounded
+    """
+    return 2*int(value//2)
 
 #-- PURPOSE: make a copy of a file with all system information
 def copy(source, destination, verbose=False, move=False):

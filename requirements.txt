@@ -1,5 +1,8 @@
-numpy
-matplotlib
 cartopy --no-binary=cartopy
-netCDF4
+gdal
+h5py
 lxml
+matplotlib
+netCDF4
+numpy
+pyproj
