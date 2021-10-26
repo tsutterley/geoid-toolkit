@@ -25,6 +25,21 @@ Keyword arguments
 #################
 
 - ``LMAX``: maximum degree and order of output spherical harmonic coefficients
+- ``ELLIPSOID``: reference ellipsoid name
+
+    * ``'CLK66'``: Clarke 1866
+    * ``'GRS67'``: Geodetic Reference System 1967
+    * ``'GRS80'``: Geodetic Reference System 1980
+    * ``'WGS72'``: World Geodetic System 1972
+    * ``'WGS84'``: World Geodetic System 1984
+    * ``'ATS77'``: Quasi-earth centred ellipsoid for ATS77
+    * ``'NAD27'``: North American Datum 1927 (=CLK66)
+    * ``'NAD83'``: North American Datum 1983 (=GRS80)
+    * ``'INTER'``: International
+    * ``'KRASS'``: Krassovsky (USSR)
+    * ``'MAIRY'``: Modified Airy (Ireland 1965/1975)
+    * ``'TOPEX'``: TOPEX/POSEIDON ellipsoid
+    * ``'EGM96'``: EGM 1996 gravity model
 - ``TIDE``: `tide system of output geoid <http://mitgcm.org/~mlosch/geoidcookbook/node9.html>`_ [Losch2003]_
 
     * ``'tide_free'``: no permanent direct and indirect tidal potentials

@@ -36,7 +36,8 @@ jobs:
         SQLITE3_LIBS: "-L/usr/local/lib -lsqlite3"
       run: |
         sudo apt-get update
-        sudo apt-get install libnetcdf-dev libgeos-dev
+        sudo apt-get install gdal-bin libgdal-dev libgeos-dev
+        sudo apt-get install libhdf5-dev libnetcdf-dev libgeos-dev
         sudo apt-get install libstdc++6 libxml2-dev libxslt1-dev libsqlite3-dev
         cd ${RUNNER_TEMP}
         wget -q https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz
@@ -59,26 +60,32 @@ jobs:
         sudo ldconfig --verbose
         sudo projsync --system-directory --all
         pip install --upgrade pip
-        pip install flake8 pytest pytest-cov numpy cython
+        pip install numpy
+        export CPLUS_INCLUDE_PATH=/usr/include/gdal
+        export C_INCLUDE_PATH=/usr/include/gdal
         pip install git+https://github.com/SciTools/cartopy.git
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install .
+        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
     - name: Install dependencies for MacOS
       if: matrix.os == 'macos-latest'
       run: |
         brew install proj
         brew install geos
+        brew install gdal
+        brew install hdf5
         brew install netcdf
         brew install libxml2
         brew install libxslt
         brew install pkg-config
         pip install --upgrade pip
-        pip install flake8 pytest pytest-cov numpy cython
+        pip install numpy
         export LDFLAGS="-L/usr/local/opt/proj/lib"
         export CPPFLAGS="-I/usr/local/opt/proj/include"
         export ACCEPT_USE_OF_DEPRECATED_PROJ_API_H=1
         export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/usr/local/opt/proj/lib/pkgconfig"
         pip install git+https://github.com/SciTools/cartopy.git
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install .
+        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 read_ICGEM_harmonics.py
-Written by Tyler Sutterley (09/2020)
+Written by Tyler Sutterley (10/2020)
 Reads the coefficients for a given gravity model file
 
 GFZ International Centre for Global Earth Models (ICGEM)
@@ -12,6 +12,21 @@ INPUTS:
 
 OPTIONS:
     LMAX: maximum degree and order of output spherical harmonic coefficients
+    ELLIPSOID: reference ellipsoid name
+        CLK66 = Clarke 1866
+        GRS67 = Geodetic Reference System 1967
+        GRS80 = Geodetic Reference System 1980
+        WGS72 = World Geodetic System 1972
+        WGS84 = World Geodetic System 1984
+        ATS77 = Quasi-earth centred ellipsoid for ATS77
+        NAD27 = North American Datum 1927 (=CLK66)
+        NAD83 = North American Datum 1983 (=GRS80)
+        INTER = International
+        KRASS = Krassovsky (USSR)
+        MAIRY = Modified Airy (Ireland 1965/1975)
+        TOPEX = TOPEX/POSEIDON ellipsoid
+        EGM96 = EGM 1996 gravity model
+        HGH80 = Hughes 1980 Ellipsoid used in some NSIDC data
     TIDE: tide system of output gravity fields
         http://mitgcm.org/~mlosch/geoidcookbook/node9.html
         tide_free: no permanent direct and indirect tidal potentials
@@ -44,6 +59,7 @@ PROGRAM DEPENDENCIES:
     calculate_tidal_offset.py: calculates the C20 offset for a tidal system
 
 UPDATE HISTORY:
+    Updated 10/2021: ellipsoid option for semi-major axis when changing tides
     Updated 09/2021: define int/float precision to prevent deprecation warning
         update tidal offset to be able to change to and from any reference
         output spherical harmonic degree and order in dict
@@ -61,18 +77,32 @@ import numpy as np
 from geoid_toolkit.calculate_tidal_offset import calculate_tidal_offset
 
 #-- PURPOSE: read spherical harmonic coefficients of a gravity model
-def read_ICGEM_harmonics(model_file, LMAX=None, TIDE=None,
-    FLAG='gfc', ZIP=False):
+def read_ICGEM_harmonics(model_file, **kwargs):
     """
     Extract gravity model spherical harmonics from GFZ ICGEM gfc files
 
     Arguments
     ---------
     model_file: full path to gfc spherical harmonic data file
-    LMAX: maximum degree and order of output spherical harmonics
 
     Keyword arguments
     -----------------
+    LMAX: maximum degree and order of output spherical harmonics
+    ELLIPSOID: reference ellipsoid name
+        CLK66 = Clarke 1866
+        GRS67 = Geodetic Reference System 1967
+        GRS80 = Geodetic Reference System 1980
+        WGS72 = World Geodetic System 1972
+        WGS84 = World Geodetic System 1984
+        ATS77 = Quasi-earth centred ellipsoid for ATS77
+        NAD27 = North American Datum 1927 (=CLK66)
+        NAD83 = North American Datum 1983 (=GRS80)
+        INTER = International
+        KRASS = Krassovsky (USSR)
+        MAIRY = Modified Airy (Ireland 1965/1975)
+        TOPEX = TOPEX/POSEIDON ellipsoid
+        EGM96 = EGM 1996 gravity model
+        HGH80 = Hughes 1980 Ellipsoid used in some NSIDC data
     TIDE: tide system of output gravity fields
         tide_free: no permanent direct and indirect tidal potentials
         mean_tide: permanent tidal potentials (direct and indirect)
@@ -96,9 +126,13 @@ def read_ICGEM_harmonics(model_file, LMAX=None, TIDE=None,
     norm: normalization of the spherical harmonics
     tide_system: tide system of gravity model
     """
-
+    #-- set default keyword arguments
+    kwargs.setdefault('ZIP',False)
+    kwargs.setdefault('ELLIPSOID','WGS84')
+    kwargs.setdefault('TIDE',None)
+    kwargs.setdefault('FLAG','gfc')
     #-- read data from compressed or gfc file
-    if ZIP:
+    if kwargs['ZIP']:
         #-- extract zip file with gfc file
         with zipfile.ZipFile(os.path.expanduser(model_file)) as zs:
             #-- find gfc file within zipfile
@@ -122,7 +156,10 @@ def read_ICGEM_harmonics(model_file, LMAX=None, TIDE=None,
         line_contents = line.split()
         model_input[line_contents[0]] = line_contents[1]
     #-- set degree of truncation from model if not presently set
-    LMAX = np.int64(model_input['max_degree']) if not LMAX else LMAX
+    LMAX = kwargs.get('LMAX') or np.int64(model_input['max_degree'])
+    #-- update maximum degree attribute if truncating
+    if (LMAX != np.int64(model_input['max_degree'])):
+        model_input['max_degree'] = str(LMAX)
     #-- output dimensions
     model_input['l'] = np.arange(LMAX+1)
     model_input['m'] = np.arange(LMAX+1)
@@ -132,7 +169,7 @@ def read_ICGEM_harmonics(model_file, LMAX=None, TIDE=None,
     model_input['eclm'] = np.zeros((LMAX+1,LMAX+1))
     model_input['eslm'] = np.zeros((LMAX+1,LMAX+1))
     #-- reduce file_contents to input data using data marker flag
-    input_data = [l for l in file_contents if re.match(FLAG,l)]
+    input_data = [l for l in file_contents if re.match(kwargs['FLAG'],l)]
     #-- for each line of data in the gravity file
     for line in input_data:
         #-- split the line into individual components replacing fortran d
@@ -148,16 +185,16 @@ def read_ICGEM_harmonics(model_file, LMAX=None, TIDE=None,
             try:
                 model_input['eclm'][l1,m1] = np.float64(line_contents[5])
                 model_input['eslm'][l1,m1] = np.float64(line_contents[6])
-            except:
+            except Exception as e:
                 pass
     #-- calculate the tidal offset if changing the tide system
-    if TIDE in ('mean_tide','zero_tide','tide_free'):
+    if kwargs['TIDE'] in ('mean_tide','zero_tide','tide_free'):
         #-- earth parameters
         GM = np.float64(model_input['earth_gravity_constant'])
         R = np.float64(model_input['radius'])
-        model_input['clm'][2,0] += calculate_tidal_offset(TIDE,GM,R,'WGS84',
-            REFERENCE=model_input['tide_system'])
+        model_input['clm'][2,0] += calculate_tidal_offset(kwargs['TIDE'],
+            GM,R,kwargs['ELLIPSOID'],REFERENCE=model_input['tide_system'])
         #-- update attribute for tide system
-        model_input['tide_system'] = TIDE
+        model_input['tide_system'] = kwargs['TIDE']
     #-- return the spherical harmonics and parameters
     return model_input

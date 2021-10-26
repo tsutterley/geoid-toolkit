@@ -31,11 +31,14 @@ and calculating geoid heights
 Dependencies
 ############
 
-- `numpy: Scientific Computing Tools For Python <https://www.numpy.org>`_
-- `matplotlib: Python 2D plotting library <https://matplotlib.org>`_
 - `cartopy: Python package designed for geospatial data processing <https://scitools.org.uk/cartopy>`_
-- `netCDF4: Python interface to the netCDF C library <https://unidata.github.io/netcdf4-python/>`_
+- `gdal: Pythonic interface to the Geospatial Data Abstraction Library (GDAL) <https://pypi.python.org/pypi/GDAL>`_
+- `h5py: Python interface for Hierarchal Data Format 5 (HDF5) <https://www.h5py.org/>`_
 - `lxml: processing XML and HTML in Python <https://pypi.python.org/pypi/lxml>`_
+- `matplotlib: Python 2D plotting library <https://matplotlib.org>`_
+- `netCDF4: Python interface to the netCDF C library <https://unidata.github.io/netcdf4-python/>`_
+- `numpy: Scientific Computing Tools For Python <https://www.numpy.org>`_
+- `pyproj: Python interface to PROJ library <https://pypi.org/project/pyproj/>`_
 
 References
 ##########
