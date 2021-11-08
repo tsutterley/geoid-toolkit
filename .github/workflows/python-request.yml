@@ -37,7 +37,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install gdal-bin libgdal-dev libgeos-dev
-        sudo apt-get install libhdf5-dev libnetcdf-dev libgeos-dev
+        sudo apt-get install libhdf5-dev libnetcdf-dev
         sudo apt-get install libstdc++6 libxml2-dev libxslt1-dev libsqlite3-dev
         cd ${RUNNER_TEMP}
         wget -q https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz
