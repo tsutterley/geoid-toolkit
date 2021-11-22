@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_geoidal_undulation.py
-Written by Tyler Sutterley (10/2021)
+Written by Tyler Sutterley (11/2021)
 Computes geoid undulations from a gravity model for an input file
 
 INPUTS:
@@ -62,6 +62,7 @@ PROGRAM DEPENDENCIES:
     gauss_weights.py: Computes Gaussian weights as a function of degree
 
 UPDATE HISTORY:
+    Updated 11/2021: add function for attempting to extract projection
     Updated 10/2021: using python logging for handling verbose output
     Updated 07/2021: can use prefix files to define command line arguments
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
@@ -82,6 +83,32 @@ import geoid_toolkit.spatial
 from geoid_toolkit.read_ICGEM_harmonics import read_ICGEM_harmonics
 from geoid_toolkit.geoid_undulation import geoid_undulation
 from geoid_toolkit.utilities import convert_arg_line_to_args
+
+#-- PURPOSE: try to get the projection information for the input file
+def get_projection(attributes, PROJECTION):
+    #-- coordinate reference system string from file
+    try:
+        crs = pyproj.CRS.from_string(attributes['projection'])
+    except (ValueError,pyproj.exceptions.CRSError):
+        pass
+    else:
+        return crs
+    #-- EPSG projection code
+    try:
+        crs = pyproj.CRS.from_string("epsg:{0:d}".format(int(PROJECTION)))
+    except (ValueError,pyproj.exceptions.CRSError):
+        pass
+    else:
+        return crs
+    #-- coordinate reference system string
+    try:
+        crs = pyproj.CRS.from_string(PROJECTION)
+    except (ValueError,pyproj.exceptions.CRSError):
+        pass
+    else:
+        return crs
+    #-- no projection can be made
+    raise pyproj.exceptions.CRSError
 
 #-- PURPOSE: read csv, netCDF or HDF5 data and compute geoid undulation
 def compute_geoidal_undulation(model_file, input_file, output_file,
@@ -157,13 +184,7 @@ def compute_geoidal_undulation(model_file, input_file, output_file,
             attrib[att_name] = dinput['attributes'][att_name]
 
     #-- converting x,y from projection to latitude/longitude
-    #-- could try to extract projection attributes from netCDF4 and HDF5 files
-    try:
-        #-- EPSG projection code string or int
-        crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(int(PROJECTION)))
-    except (ValueError,pyproj.exceptions.CRSError):
-        #-- Projection SRS string
-        crs1 = pyproj.CRS.from_string(PROJECTION)
+    crs1 = get_projection(dinput['attributes'], PROJECTION)
     crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     if (TYPE == 'grid'):
