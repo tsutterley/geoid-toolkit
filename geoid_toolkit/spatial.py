@@ -235,6 +235,7 @@ def from_netCDF4(filename, **kwargs):
             dinput['attributes']['crs'][att_name] = \
                 fileID.variables[nc].getncattr(ncattr)
         #-- get the spatial projection reference information from wkt
+        #-- and overwrite the file-level projection attribute (if existing)
         srs = osgeo.osr.SpatialReference()
         srs.ImportFromWkt(dinput['attributes']['crs']['crs_wkt'])
         dinput['attributes']['projection'] = srs.ExportToProj4()
@@ -319,6 +320,7 @@ def from_HDF5(filename, **kwargs):
         for att_name,att_val in fileID[grid_mapping].attrs.items():
             dinput['attributes']['crs'][att_name] = att_val
         #-- get the spatial projection reference information from wkt
+        #-- and overwrite the file-level projection attribute (if existing)
         srs = osgeo.osr.SpatialReference()
         srs.ImportFromWkt(dinput['attributes']['crs']['crs_wkt'])
         dinput['attributes']['projection'] = srs.ExportToProj4()
