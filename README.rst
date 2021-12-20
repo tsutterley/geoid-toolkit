@@ -7,6 +7,7 @@ geoid-toolkit
 |Documentation Status|
 |Binder|
 |Pangeo|
+|zenodo|
 
 .. |Language| image:: https://img.shields.io/badge/python-v3.8-green.svg
    :target: https://www.python.org/
@@ -22,6 +23,9 @@ geoid-toolkit
 
 .. |Pangeo| image:: https://binder.pangeo.io/badge.svg
    :target: https://binder.pangeo.io/v2/gh/tsutterley/geoid-toolkit/main
+
+.. |zenodo| image:: https://zenodo.org/badge/199943310.svg
+   :target: https://zenodo.org/badge/latestdoi/199943310
 
 Python tools for obtaining and working with static gravity field coefficients
 and calculating geoid heights
