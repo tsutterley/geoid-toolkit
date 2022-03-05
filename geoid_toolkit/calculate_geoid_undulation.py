@@ -30,8 +30,8 @@ OPTIONS:
         http://mitgcm.org/~mlosch/geoidcookbook/node9.html
         tide_free: no permanent direct and indirect tidal potentials
             this is the default (leaving the model as is)
-        mean_tide: restores permanent tidal potentials (direct and indirect)
-        zero_tide: restores permanent direct tidal potential
+        mean_tide: permanent tidal potentials (direct and indirect)
+        zero_tide: permanent direct tidal potential removed
     GAUSS: Gaussian Smoothing Radius in km (default is no filtering)
     EPS: level of precision for calculating geoid height
     ZIP: input gravity field file is compressed in an archive file

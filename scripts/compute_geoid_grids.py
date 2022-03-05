@@ -1,14 +1,8 @@
 #!/usr/bin/env python
 u"""
-compute_geoidal_undulation.py
-Written by Tyler Sutterley (11/2021)
-Computes geoid undulations from a gravity model for an input file
-
-INPUTS:
-    csv file with columns for spatial and temporal coordinates
-    HDF5 file with variables for spatial and temporal coordinates
-    netCDF4 file with variables for spatial and temporal coordinates
-    geotiff file with bands in spatial coordinates
+compute_geoid_grids.py
+Written by Tyler Sutterley (03/2022)
+Computes geoid undulations from a gravity model
 
 COMMAND LINE OPTIONS:
     -G X, --gravity X: Gravity model file to use (.gfc format)
@@ -19,18 +13,13 @@ COMMAND LINE OPTIONS:
         mean_tide: permanent tidal potentials (direct and indirect)
         zero_tide: permanent direct tidal potential removed
     -R X, --radius X: Gaussian smoothing radius (km)
-    --format X: input and output data format
+    --format X: output data format
         csv (default)
         netCDF4
         HDF5
         geotiff
-    --variables X: variable names of data in csv, HDF5 or netCDF4 file
-        for csv files: the order of the columns within the file
-        for HDF5 and netCDF4 files: time, y, x and data variable names
-    -H X, --header X: number of header lines for csv files
-    -t X, --type X: input data type
-        drift: drift buoys or satellite/airborne altimetry (time per data point)
-        grid: spatial grids or images (single time for all data points)
+    -S X, --spacing X: output grid spacing
+    -B X, --bounds X: output grid extents [xmin,xmax,ymin,ymax]
     -P X, --projection X: spatial projection as EPSG code or PROJ4 string
         4326: latitude and longitude coordinates on WGS84 reference ellipsoid
     -V, --verbose: Verbose output of processing run
@@ -61,14 +50,7 @@ PROGRAM DEPENDENCIES:
     gauss_weights.py: Computes Gaussian weights as a function of degree
 
 UPDATE HISTORY:
-    Updated 11/2021: add function for attempting to extract projection
-    Updated 10/2021: using python logging for handling verbose output
-    Updated 07/2021: can use prefix files to define command line arguments
-    Updated 02/2021: replaced numpy bool to prevent deprecation warning
-    Updated 11/2020: options to read from and write to geotiff image files
-    Updated 10/2020: using argparse to set command line parameters
-    Updated 09/2020: can use HDF5 and netCDF4 as inputs and outputs
-    Written 07/2017
+    Written 03/2012
 """
 from __future__ import print_function
 
@@ -83,18 +65,11 @@ from geoid_toolkit.read_ICGEM_harmonics import read_ICGEM_harmonics
 from geoid_toolkit.geoid_undulation import geoid_undulation
 from geoid_toolkit.utilities import convert_arg_line_to_args
 
-#-- PURPOSE: try to get the projection information for the input file
-def get_projection(attributes, PROJECTION):
-    #-- coordinate reference system string from file
-    try:
-        crs = pyproj.CRS.from_string(attributes['projection'])
-    except (ValueError,pyproj.exceptions.CRSError):
-        pass
-    else:
-        return crs
+#-- PURPOSE: try to get the projection information
+def get_projection(PROJECTION):
     #-- EPSG projection code
     try:
-        crs = pyproj.CRS.from_string("epsg:{0:d}".format(int(PROJECTION)))
+        crs = pyproj.CRS.from_epsg(int(PROJECTION))
     except (ValueError,pyproj.exceptions.CRSError):
         pass
     else:
@@ -109,15 +84,14 @@ def get_projection(attributes, PROJECTION):
     #-- no projection can be made
     raise pyproj.exceptions.CRSError
 
-#-- PURPOSE: read csv, netCDF or HDF5 data and compute geoid undulation
-def compute_geoidal_undulation(model_file, input_file, output_file,
+#-- PURPOSE: compute geoid undulation for a grid
+def compute_geoid_grids(model_file, output_file,
     LMAX=None,
     TIDE=None,
     GAUSS=0,
     FORMAT='csv',
-    VARIABLES=[],
-    HEADER=0,
-    TYPE='drift',
+    BOUNDS=[],
+    SPACING=[],
     PROJECTION='4326',
     VERBOSE=False,
     MODE=0o775):
@@ -135,22 +109,45 @@ def compute_geoidal_undulation(model_file, input_file, output_file,
     REFERENCE = 'WGS84'
     #-- invalid value
     fill_value = -9999.0
+
+    #-- converting x,y from projection to latitude/longitude
+    crs1 = get_projection(PROJECTION)
+    crs2 = pyproj.CRS.from_epsg(4326)
+    transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
+    #-- dictionary of coordinate reference system variables
+    crs_to_dict = crs1.to_dict()
+    #-- Climate and Forecast (CF) Metadata Conventions
+    if (crs1.to_epsg() == 4326):
+        y_cf,x_cf = crs1.cs_to_cf()
+    else:
+        x_cf,y_cf = crs1.cs_to_cf()
+
     #-- output netCDF4 and HDF5 file attributes
     #-- will be added to YAML header in csv files
-    attrib = {}
+    output,attrib = ({},{})
     #-- file level attributes
+    attrib['ROOT'] = {}
     attrib['ROOT']['model'] = Ylms['modelname']
     attrib['ROOT']['ellipsoid'] = REFERENCE
     attrib['ROOT']['earth_gravity_constant'] = GM
     attrib['ROOT']['radius'] = R
-    #-- latitude
-    attrib['lat'] = {}
-    attrib['lat']['long_name'] = 'Latitude'
-    attrib['lat']['units'] = 'Degrees_North'
-    #-- longitude
-    attrib['lon'] = {}
-    attrib['lon']['long_name'] = 'Longitude'
-    attrib['lon']['units'] = 'Degrees_East'
+    #-- projection attributes
+    attrib['crs'] = {}
+    #-- add projection attributes
+    attrib['crs']['standard_name'] = crs1.to_cf()['grid_mapping_name'].title()
+    attrib['crs']['spatial_epsg'] = crs1.to_epsg()
+    attrib['crs']['spatial_ref'] = crs1.to_wkt()
+    attrib['crs']['proj4_params'] = crs1.to_proj4()
+    for att_name,att_val in crs1.to_cf().items():
+        attrib['crs'][att_name] = att_val
+    if ('lat_0' in crs_to_dict.keys() and (crs1.to_epsg() != 4326)):
+        attrib['crs']['latitude_of_projection_origin'] = \
+            crs_to_dict['lat_0']
+    #-- x and y
+    attrib['x'],attrib['y'] = ({},{})
+    for att_name in ['long_name','standard_name','units']:
+        attrib['x'][att_name] = x_cf[att_name]
+        attrib['y'][att_name] = y_cf[att_name]
     #-- geoid undulation
     attrib['geoid_h'] = {}
     attrib['geoid_h']['units'] = 'm'
@@ -162,84 +159,61 @@ def compute_geoidal_undulation(model_file, input_file, output_file,
     attrib['geoid_h']['degree_of_truncation'] = LMAX
     attrib['geoid_h']['_FillValue'] = fill_value
 
-    #-- read input file to extract time, spatial coordinates and data
-    if (FORMAT == 'csv'):
-        dinput = geoid_toolkit.spatial.from_ascii(input_file,
-            columns=VARIABLES,
-            header=HEADER)
-    elif (FORMAT == 'netCDF4'):
-        dinput = geoid_toolkit.spatial.from_netCDF4(input_file,
-            timename=VARIABLES[0],
-            xname=VARIABLES[2],
-            yname=VARIABLES[1],
-            varname=VARIABLES[3])
-    elif (FORMAT == 'HDF5'):
-        dinput = geoid_toolkit.spatial.from_HDF5(input_file,
-            timename=VARIABLES[0],
-            xname=VARIABLES[2],
-            yname=VARIABLES[1],
-            varname=VARIABLES[3])
-    elif (FORMAT == 'geotiff'):
-        dinput = geoid_toolkit.spatial.from_geotiff(input_file)
-        #-- copy global geotiff attributes for projection and grid parameters
-        for att_name in ['projection','wkt','spacing','extent']:
-            attrib[att_name] = dinput['attributes'][att_name]
+    #-- projection variable
+    output['crs'] = np.array((),dtype=np.byte)
+    #-- spacing and bounds of output grid
+    dx,dy = np.broadcast_to(np.atleast_1d(SPACING),(2,))
+    xmin,xmax,ymin,ymax = np.copy(BOUNDS)
+    # create x and y from spacing and bounds
+    output['x'] = np.arange(xmin+dx/2.0,xmax+dx,dx)
+    if (FORMAT == 'geotiff'):
+        output['y'] = np.arange(ymax-dx/2.0,ymin-dy,-dy)
+    else:
+        output['y'] = np.arange(ymin+dx/2.0,ymax+dy,dy)
+    ny,nx = (len(output['y']),len(output['x']))
+    gridx,gridy = np.meshgrid(output['x'],output['y'])
+    lon,lat = transformer.transform(gridx,gridy)
+    #-- calculate geoid at coordinates and reshape to output
+    N = geoid_undulation(lat.flatten(), lon.flatten(),
+        REFERENCE, Ylms['clm'], Ylms['slm'],
+        LMAX, R, GM, GAUSS=GAUSS).reshape(ny,nx)
 
-    #-- converting x,y from projection to latitude/longitude
-    crs1 = get_projection(dinput['attributes'], PROJECTION)
-    crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
-    transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
-    if (TYPE == 'grid'):
-        ny,nx = (len(dinput['y']),len(dinput['x']))
-        gridx,gridy = np.meshgrid(dinput['x'],dinput['y'])
-        lon,lat = transformer.transform(gridx,gridy)
-        #-- calculate geoid at coordinates and reshape to output
-        N = geoid_undulation(lat.flatten(), lon.flatten(),
-            REFERENCE, Ylms['clm'], Ylms['slm'],
-            LMAX, R, GM, GAUSS=GAUSS).reshape(ny,nx)
-    elif (TYPE == 'drift'):
-        lon,lat = transformer.transform(dinput['x'],dinput['y'])
-        #-- calculate geoid at coordinates
-        N = geoid_undulation(lat, lon,
-            REFERENCE, Ylms['clm'], Ylms['slm'],
-            LMAX, R, GM, GAUSS=GAUSS)
     #-- replace fill values with fill value
-    N = np.ma.asarray(N,dtype=np.float64)
-    N.mask = np.copy(dinput['data'].mask)
-    N.fill_value = np.copy(fill_value)
-    N.data[N.mask] = N.fill_value
+    output['geoid_h'] = np.ma.asarray(N,dtype=np.float64)
+    output['geoid_h'].mask = np.logical_not(np.isfinite(N))
+    output['geoid_h'].fill_value = np.copy(fill_value)
+    output['geoid_h'].data[output['geoid_h'].mask] = fill_value
 
     #-- output to file
-    output = {'lon':lon,'lat':lat,'geoid_h':N}
     if (FORMAT == 'csv'):
         geoid_toolkit.spatial.to_ascii(output, attrib, output_file,
-            delimiter=',', columns=['lat','lon','geoid_h'])
+            delimiter=',', columns=['y','x','geoid_h'])
     elif (FORMAT == 'netCDF4'):
         geoid_toolkit.spatial.to_netCDF4(output, attrib, output_file)
     elif (FORMAT == 'HDF5'):
         geoid_toolkit.spatial.to_HDF5(output, attrib, output_file)
     elif (FORMAT == 'geotiff'):
+        #-- copy global geotiff attributes for projection and grid parameters
+        attrib['wkt'] = crs1.to_wkt()
+        attrib['spacing'] = (dx, -dy)
+        attrib['extent'] = np.copy(BOUNDS)
         geoid_toolkit.spatial.to_geotiff(output, attrib, output_file,
             varname='geoid_h')
     #-- change the permissions level to MODE
     os.chmod(output_file, MODE)
 
-#-- Main program that calls compute_geoidal_undulation()
+#-- Main program that calls compute_geoid_grids()
 def main():
     #-- Read the system arguments listed after the program
     parser = argparse.ArgumentParser(
-        description="""Calculates geoidal undulations for an input file
+        description="""Computes geoid undulations from a gravity model
             """,
         fromfile_prefix_chars="@"
     )
     parser.convert_arg_line_to_args = convert_arg_line_to_args
     #-- command line options
-    #-- input and output file
-    parser.add_argument('infile',
-        type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='?',
-        help='Input file')
     parser.add_argument('outfile',
-        type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='?',
+        type=lambda p: os.path.abspath(os.path.expanduser(p)),
         help='Output file')
     #-- set gravity model file to use
     parser.add_argument('--gravity','-G',
@@ -261,31 +235,25 @@ def main():
     parser.add_argument('--radius','-R',
         type=float, default=0,
         help='Gaussian smoothing radius (km)')
-    #-- input and output data format
+    #-- Output data format
     parser.add_argument('--format','-F',
         type=str, default='csv', choices=('csv','netCDF4','HDF5','geotiff'),
-        help='Input and output data format')
-    #-- variable names (for csv names of columns)
-    parser.add_argument('--variables','-v',
-        type=str, nargs='+', default=['time','lat','lon','data'],
-        help='Variable names of data in input file')
-    #-- number of header lines for csv files
-    parser.add_argument('--header','-H',
-        type=int, default=0,
-        help='Number of header lines for csv files')
-    #-- input data type
-    #-- drift: drift buoys or satellite/airborne altimetry (time per data point)
-    #-- grid: spatial grids or images (single time for all data points)
-    parser.add_argument('--type','-t',
-        type=str, default='drift',
-        choices=('drift','grid'),
-        help='Input data type')
+        help='Output data format')
+    #-- output grid spacing
+    parser.add_argument('--spacing','-S',
+        type=float, default=1.0, nargs='+',
+        help='Output grid spacing')
+    #-- bounds of output mosaic
+    parser.add_argument('--bounds','-B', type=float,
+        nargs=4, default=[-180.0,180.0,-90.0,90.0],
+        metavar=('xmin','xmax','ymin','ymax'),
+        help='Output grid extents')
     #-- spatial projection (EPSG code or PROJ4 string)
     parser.add_argument('--projection','-P',
         type=str, default='4326',
         help='Spatial projection as EPSG code or PROJ4 string')
     #-- verbose output of processing run
-    #-- print information about each input and output file
+    #-- print information about each output file
     parser.add_argument('--verbose','-V',
         default=False, action='store_true',
         help='Verbose output of run')
@@ -293,24 +261,16 @@ def main():
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
         help='Permission mode of output file')
-    args = parser.parse_args()
+    args,_ = parser.parse_known_args()
 
-    #-- set output file from input filename if not entered
-    if not args.outfile:
-        model,_ = os.path.splitext(os.path.basename(args.gravity))
-        fileBasename,fileExtension = os.path.splitext(args.infile)
-        vars = (fileBasename,model,fileExtension)
-        args.outfile = '{0}_{1}{2}'.format(*vars)
-
-    #-- run geoid undulation program for input file
-    compute_geoidal_undulation(args.gravity, args.infile, args.outfile,
+    #-- run geoid grid program
+    compute_geoid_grids(args.gravity, args.outfile,
         LMAX=args.lmax,
         TIDE=args.tide,
         GAUSS=args.radius,
         FORMAT=args.format,
-        VARIABLES=args.variables,
-        HEADER=args.header,
-        TYPE=args.type,
+        BOUNDS=args.bounds,
+        SPACING=args.spacing,
         PROJECTION=args.projection,
         VERBOSE=args.verbose,
         MODE=args.mode)

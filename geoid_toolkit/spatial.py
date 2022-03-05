@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (11/2021)
+Written by Tyler Sutterley (03/2022)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -19,6 +19,9 @@ PYTHON DEPENDENCIES:
         https://github.com/yaml/pyyaml
 
 UPDATE HISTORY:
+    Updated 03/2022: add option to specify output GDAL driver
+    Updated 01/2022: use iteration breaks in convert ellipsoid function
+        remove fill_value attribute after creating netCDF4 and HDF5 variables
     Updated 11/2021: added empty cases to netCDF4 and HDF5 output for crs
         try to get grid mapping attributes from netCDF4 and HDF5
     Updated 10/2021: using python logging for handling verbose output
@@ -183,7 +186,6 @@ def from_netCDF4(filename, **kwargs):
     kwargs.setdefault('timename','time')
     kwargs.setdefault('xname','lon')
     kwargs.setdefault('yname','lat')
-    kwargs.setdefault('yname','lat')
     kwargs.setdefault('varname','data')
     #-- read data from netCDF4 file
     #-- Open the NetCDF4 file for reading
@@ -238,7 +240,7 @@ def from_netCDF4(filename, **kwargs):
         grid_mapping = dinput['attributes']['data']['grid_mapping']
         for att_name in fileID[grid_mapping].ncattrs():
             dinput['attributes']['crs'][att_name] = \
-                fileID.variables[nc].getncattr(ncattr)
+                fileID.variables[grid_mapping].getncattr(att_name)
         #-- get the spatial projection reference information from wkt
         #-- and overwrite the file-level projection attribute (if existing)
         srs = osgeo.osr.SpatialReference()
@@ -266,7 +268,6 @@ def from_HDF5(filename, **kwargs):
     kwargs.setdefault('compression',None)
     kwargs.setdefault('timename','time')
     kwargs.setdefault('xname','lon')
-    kwargs.setdefault('yname','lat')
     kwargs.setdefault('yname','lat')
     kwargs.setdefault('varname','data')
     #-- read data from HDF5 file
@@ -486,9 +487,9 @@ def to_netCDF4(output, attributes, filename, **kwargs):
         if '_FillValue' in attributes[key].keys():
             nc[key] = fileID.createVariable(key, val.dtype, ('time',),
                 fill_value=attributes[key]['_FillValue'], zlib=True)
+            attributes[key].pop('_FillValue')
         elif val.shape:
             nc[key] = fileID.createVariable(key, val.dtype, ('time',))
-
         else:
             nc[key] = fileID.createVariable(key, val.dtype, ())
         #-- filling NetCDF variables
@@ -526,6 +527,7 @@ def to_HDF5(output, attributes, filename, **kwargs):
             h5[key] = fileID.create_dataset(key, val.shape, data=val,
                 dtype=val.dtype, fillvalue=attributes[key]['_FillValue'],
                 compression='gzip')
+            attributes[key].pop('_FillValue')
         elif val.shape:
             h5[key] = fileID.create_dataset(key, val.shape, data=val,
                 dtype=val.dtype, compression='gzip')
@@ -557,11 +559,13 @@ def to_geotiff(output, attributes, filename, **kwargs):
         full path of output geotiff file
     Options:
         output variable name
+        GDAL driver
         GDAL data type
         GDAL driver creation options
     """
     #-- set default keyword arguments
     kwargs.setdefault('varname','data')
+    kwargs.setdefault('driver',"GTiff")
     kwargs.setdefault('dtype',osgeo.gdal.GDT_Float64)
     kwargs.setdefault('options',['COMPRESS=LZW'])
     varname = copy.copy(kwargs['varname'])
@@ -569,8 +573,8 @@ def to_geotiff(output, attributes, filename, **kwargs):
     output = expand_dims(output, varname=varname)
     #-- grid shape
     ny,nx,nband = np.shape(output[varname])
-    #-- output as geotiff
-    driver = osgeo.gdal.GetDriverByName("GTiff")
+    #-- output as geotiff or specified driver
+    driver = osgeo.gdal.GetDriverByName(kwargs['driver'])
     #-- set up the dataset with creation options
     ds = driver.Create(filename, nx, ny, nband,
         kwargs['dtype'], kwargs['options'])
@@ -694,12 +698,12 @@ def convert_ellipsoid(phi1, h1, a1, f1, a2, f2, eps=1e-12, itmax=10):
                 fu2 = k0 * np.sin(u2) + k1 * np.tan(u2) - k2
                 fu2p = k0 * cosu2 + k1 / (cosu2 * cosu2)
                 if (np.abs(fu2p) < eps):
-                    i = np.copy(itmax)
+                    break
                 else:
                     delta = fu2 / fu2p
                     u2 -= delta
                     if (np.abs(delta) < eps):
-                        i = np.copy(itmax)
+                        break
             #-- convert latitude to degrees and verify values between +/- 90
             phi2r = np.arctan(a2 / b2 * np.tan(u2))
             phi2[N] = phi2r*180.0/np.pi
@@ -733,12 +737,12 @@ def convert_ellipsoid(phi1, h1, a1, f1, a2, f2, eps=1e-12, itmax=10):
                 fu2 = k0 * np.cos(u2) + k1 / np.tan(u2) - k2
                 fu2p =  -1 * (k0 * sinu2 + k1 / (sinu2 * sinu2))
                 if (np.abs(fu2p) < eps):
-                    i = np.copy(itmax)
+                    break
                 else:
                     delta = fu2 / fu2p
                     u2 -= delta
                     if (np.abs(delta) < eps):
-                        i = np.copy(itmax)
+                        break
             #-- convert latitude to degrees and verify values between +/- 90
             phi2r = np.arctan(a2 / b2 * np.tan(u2))
             phi2[N] = phi2r*180.0/np.pi
@@ -813,10 +817,7 @@ def to_cartesian(lon,lat,h=0.0,a_axis=6378137.0,flat=1.0/298.257223563):
     lon = np.atleast_1d(lon)
     lat = np.atleast_1d(lat)
     #-- fix coordinates to be 0:360
-    count = np.count_nonzero(lon < 0)
-    if (count != 0):
-        lt0, = np.nonzero(lon < 0)
-        lon[lt0] += 360.0
+    lon[lon < 0] += 360.0
     #-- Linear eccentricity and first numerical eccentricity
     lin_ecc = np.sqrt((2.0*flat - flat**2)*a_axis**2)
     ecc1 = lin_ecc/a_axis
@@ -849,12 +850,12 @@ def to_sphere(x,y,z):
     th = np.arccos(z/rad)
     #-- convert to degrees and fix to 0:360
     lon = 180.0*phi/np.pi
-    count = np.count_nonzero(lon < 0)
-    if (count != 0):
+    if np.any(lon < 0):
         lt0 = np.nonzero(lon < 0)
-        lon[lt0] = lon[lt0]+360.0
+        lon[lt0] += 360.0
     #-- convert to degrees and fix to -90:90
     lat = 90.0 - (180.0*th/np.pi)
+    np.clip(lat, -90, 90, out=lat)
     #-- return latitude, longitude and radius
     return (lon,lat,rad)
 

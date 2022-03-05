@@ -24,7 +24,7 @@ Arguments
 
     * ``'tide_free'``: no permanent direct and indirect tidal potentials
     * ``'mean_tide'``: permanent tidal potentials (direct and indirect)
-    * ``'zero_tide'``: permanent direct tidal potential
+    * ``'zero_tide'``: permanent direct tidal potential removed
 2. ``R``: average radius used in gravity model
 3. ``GM``: geocentric gravitational constant used in gravity model
 4. ``refell``: reference ellipsoid name
@@ -50,7 +50,7 @@ Keyword arguments
 - ``REFERENCE``: original tidal system
 
     * ``'tide_free'``: no permanent direct and indirect tidal potentials
-    * ``'zero_tide'``: permanent direct tidal potential
+    * ``'zero_tide'``: permanent direct tidal potential removed
     * ``'mean_tide'``: permanent tidal potentials (direct and indirect)
 
 Returns

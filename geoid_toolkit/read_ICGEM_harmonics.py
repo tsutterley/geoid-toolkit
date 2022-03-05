@@ -31,7 +31,7 @@ OPTIONS:
         http://mitgcm.org/~mlosch/geoidcookbook/node9.html
         tide_free: no permanent direct and indirect tidal potentials
         mean_tide: permanent tidal potentials (direct and indirect)
-        zero_tide: permanent direct tidal potential
+        zero_tide: permanent direct tidal potential removed
     FLAG: string denoting data lines
     ZIP: input gravity field file is compressed in an archive file
 
@@ -106,7 +106,7 @@ def read_ICGEM_harmonics(model_file, **kwargs):
     TIDE: tide system of output gravity fields
         tide_free: no permanent direct and indirect tidal potentials
         mean_tide: permanent tidal potentials (direct and indirect)
-        zero_tide: permanent direct tidal potential
+        zero_tide: permanent direct tidal potential removed
     FLAG: string denoting data lines
     ZIP: input gravity field file is compressed in an archive file
 

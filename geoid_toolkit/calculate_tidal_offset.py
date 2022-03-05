@@ -11,7 +11,7 @@ INPUT:
     TIDE: output tidal system
         tide_free: no permanent direct and indirect tidal potentials
         mean_tide: permanent tidal potentials (direct and indirect)
-        zero_tide: permanent direct tidal potential
+        zero_tide: permanent direct tidal potential removed
     R: average radius used in gravity model
     GM: geocentric gravitational constant used in gravity model
     refell: reference ellipsoid name
@@ -34,7 +34,7 @@ OPTIONS:
     REFERENCE: original tidal system
         tide_free: no permanent direct and indirect tidal potentials
         mean_tide: permanent tidal potentials (direct and indirect)
-        zero_tide: permanent direct tidal potential
+        zero_tide: permanent direct tidal potential removed
 
 OUTPUT:
     delta: offset for changing to tide system
@@ -73,7 +73,7 @@ def calculate_tidal_offset(TIDE, GM, R, refell, LOVE=0.3,
     TIDE: output tidal system
         tide_free: no permanent direct and indirect tidal potentials
         mean_tide: permanent tidal potentials (direct and indirect)
-        zero_tide: permanent direct tidal potential
+        zero_tide: permanent direct tidal potential removed
     R: average radius used in gravity model
     GM: geocentric gravitational constant used in gravity model
     refell: reference ellipsoid name
@@ -84,7 +84,7 @@ def calculate_tidal_offset(TIDE, GM, R, refell, LOVE=0.3,
     REFERENCE: original tidal system
         tide_free: no permanent direct and indirect tidal potentials
         mean_tide: permanent tidal potentials (direct and indirect)
-        zero_tide: permanent direct tidal potential
+        zero_tide: permanent direct tidal potential removed
 
     Returns
     -------
