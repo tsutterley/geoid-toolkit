@@ -44,5 +44,6 @@ and calculating geoid heights
     :hidden:
     :caption: Use Cases
 
+    user_guide/compute_geoid_grids.rst
     user_guide/compute_geoidal_undulation.rst
     user_guide/read_ICGEM_geoid_grids.rst
