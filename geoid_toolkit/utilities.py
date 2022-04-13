@@ -1,20 +1,22 @@
 #!/usr/bin/env python
 u"""
 utilities.py
-Written by Tyler Sutterley (03/2021)
+Written by Tyler Sutterley (04/2022)
 Download and management utilities for syncing time and auxiliary files
 
 PYTHON DEPENDENCIES:
-    lxml: processing XML and HTML in Python (https://pypi.python.org/pypi/lxml)
+    lxml: processing XML and HTML in Python
+        https://pypi.python.org/pypi/lxml
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Updated 10/2021: using python logging for handling verbose output
     Updated 03/2021: added sha1 option for retrieving file hashes
     Updated 11/2020: added list function for finding files on the GFZ ICGEM
     Updated 09/2020: copy from http and https to bytesIO object in chunks
     Written 08/2020
 """
-from __future__ import print_function
+from __future__ import print_function, division
 
 import sys
 import os
@@ -39,13 +41,15 @@ else:
     from http.cookiejar import CookieJar
     import urllib.request as urllib2
 
+#-- PURPOSE: get absolute path within a package from a relative path
 def get_data_path(relpath):
     """
     Get the absolute path within a package from a relative path
 
-    Arguments
-    ---------
-    relpath: relative path
+    Parameters
+    ----------
+    relpath: str,
+        relative path
     """
     #-- current file path
     filename = inspect.getframeinfo(inspect.currentframe()).filename
@@ -61,15 +65,15 @@ def get_hash(local, algorithm='MD5'):
     """
     Get the hash value from a local file or BytesIO object
 
-    Arguments
-    ---------
-    local: BytesIO object or path to file
+    Parameters
+    ----------
+    local: obj or str
+        BytesIO object or path to file
+    algorithm: str, default 'MD5'
+        hashing algorithm for checksum validation
 
-    Keyword Arguments
-    -----------------
-    algorithm: hashing algorithm for checksum validation
-        MD5: Message Digest
-        sha1: Secure Hash Algorithm
+            - ``'MD5'``: Message Digest
+            - ``'sha1'``: Secure Hash Algorithm
     """
     #-- check if open file object or if local file exists
     if isinstance(local, io.IOBase):
@@ -94,12 +98,13 @@ def url_split(s):
     """
     Recursively split a url path into a list
 
-    Arguments
-    ---------
-    s: url string
+    Parameters
+    ----------
+    s: str
+        url string
     """
     head, tail = posixpath.split(s)
-    if head in ('http:','https:'):
+    if head in ('http:','https:','ftp:','s3:'):
         return s,
     elif head in ('', posixpath.sep):
         return tail,
@@ -110,11 +115,12 @@ def convert_arg_line_to_args(arg_line):
     """
     Convert file lines to arguments
 
-    Arguments
-    ---------
-    arg_line: line string containing a single argument and/or comments
+    Parameters
+    ----------
+    arg_line: str
+        line string containing a single argument and/or comments
     """
-    # remove commented lines and after argument comments
+    #-- remove commented lines and after argument comments
     for arg in re.sub(r'\#(.*?)$',r'',arg_line).split():
         if not arg.strip():
             continue
@@ -125,18 +131,17 @@ def get_unix_time(time_string, format='%Y-%m-%d %H:%M:%S'):
     """
     Get the Unix timestamp value for a formatted date string
 
-    Arguments
-    ---------
-    time_string: formatted time string to parse
-
-    Keyword arguments
-    -----------------
-    format: format for input time string
+    Parameters
+    ----------
+    time_string: str
+        formatted time string to parse
+    format: str, default '%Y-%m-%d %H:%M:%S'
+        format for input time string
     """
     try:
         parsed_time = time.strptime(time_string.rstrip(), format)
     except (TypeError, ValueError):
-        return None
+        pass
     else:
         return calendar.timegm(parsed_time)
 
@@ -145,32 +150,41 @@ def even(value):
     """
     Rounds a number to an even number less than or equal to original
 
-    Arguments
-    ---------
-    value: number to be rounded
+    Parameters
+    ----------
+    value: float
+        number to be rounded
     """
     return 2*int(value//2)
 
+#-- PURPOSE: rounds a number upward to its nearest integer
+def ceil(value):
+    """
+    Rounds a number upward to its nearest integer
+
+    Parameters
+    ----------
+    value: float
+        number to be rounded upward
+    """
+    return -int(-value//1)
+
 #-- PURPOSE: make a copy of a file with all system information
-def copy(source, destination, verbose=False, move=False):
+def copy(source, destination, move=False, **kwargs):
     """
     Copy or move a file with all system information
 
-    Arguments
-    ---------
-    source: source file
-    destination: copied destination file
-
-    Keyword arguments
-    -----------------
-    verbose: print file transfer information
-    move: remove the source file
+    Parameters
+    ----------
+    source: str
+        source file
+    destination: str
+        copied destination file
+    move: bool, default False
+        remove the source file
     """
     source = os.path.abspath(os.path.expanduser(source))
     destination = os.path.abspath(os.path.expanduser(destination))
-    #-- create logger
-    loglevel = logging.INFO if verbose else logging.CRITICAL
-    logging.basicConfig(loglevel)
     #-- log source and destination
     logging.info('{0} -->\n\t{1}'.format(source,destination))
     shutil.copyfile(source, destination)
@@ -179,18 +193,18 @@ def copy(source, destination, verbose=False, move=False):
         os.remove(source)
 
 #-- PURPOSE: check ftp connection
-def check_ftp_connection(HOST,username=None,password=None):
+def check_ftp_connection(HOST, username=None, password=None):
     """
     Check internet connection with ftp host
 
-    Arguments
-    ---------
-    HOST: remote ftp host
-
-    Keyword arguments
-    -----------------
-    username: ftp username
-    password: ftp password
+    Parameters
+    ----------
+    HOST: str
+        remote ftp host
+    username: str or NoneType
+        ftp username
+    password: str or NoneType
+        ftp password
     """
     #-- attempt to connect to ftp host
     try:
@@ -205,29 +219,38 @@ def check_ftp_connection(HOST,username=None,password=None):
         return True
 
 #-- PURPOSE: list a directory on a ftp host
-def ftp_list(HOST,username=None,password=None,timeout=None,
-    basename=False,pattern=None,sort=False):
+def ftp_list(HOST, username=None, password=None, timeout=None,
+    basename=False, pattern=None, sort=False):
     """
     List a directory on a ftp host
 
-    Arguments
-    ---------
-    HOST: remote ftp host path split as list
-
-    Keyword arguments
-    -----------------
-    username: ftp username
-    password: ftp password
-    timeout: timeout in seconds for blocking operations
-    basename: return the file or directory basename instead of the full path
-    pattern: regular expression pattern for reducing list
-    sort: sort output list
+    Parameters
+    ----------
+    HOST: str or list
+        remote ftp host path split as list
+    username: str or NoneType
+        ftp username
+    password: str or NoneType
+        ftp password
+    timeout: int or NoneType, default None
+        timeout in seconds for blocking operations
+    basename: bool, default False
+        return the file or directory basename instead of the full path
+    pattern: str or NoneType, default None
+        regular expression pattern for reducing list
+    sort: bool, default False
+        sort output list
 
     Returns
     -------
-    output: list of items in a directory
-    mtimes: list of last modification times for items in the directory
+    output: list
+        items in a directory
+    mtimes: list
+        last modification times for items in the directory
     """
+    #-- verify inputs for remote ftp host
+    if isinstance(HOST, str):
+        HOST = url_split(HOST)
     #-- try to connect to ftp host
     try:
         ftp = ftplib.FTP(HOST[0],timeout=timeout)
@@ -271,34 +294,46 @@ def ftp_list(HOST,username=None,password=None,timeout=None,
         return (output,mtimes)
 
 #-- PURPOSE: download a file from a ftp host
-def from_ftp(HOST,username=None,password=None,timeout=None,local=None,
-    hash='',chunk=8192,verbose=False,fid=sys.stdout,mode=0o775):
+def from_ftp(HOST, username=None, password=None, timeout=None,
+    local=None, hash='', chunk=8192, verbose=False, fid=sys.stdout,
+    mode=0o775):
     """
     Download a file from a ftp host
 
-    Arguments
-    ---------
-    HOST: remote ftp host path split as list
-
-    Keyword arguments
-    -----------------
-    username: ftp username
-    password: ftp password
-    timeout: timeout in seconds for blocking operations
-    local: path to local file
-    hash: MD5 hash of local file
-    chunk: chunk size for transfer encoding
-    verbose: print file transfer information
-    fid: open file object to print if verbose
-    mode: permissions mode of output local file
+    Parameters
+    ----------
+    HOST: str or list
+        remote ftp host path
+    username: str or NoneType
+        ftp username
+    password: str or NoneType
+        ftp password
+    timeout: int or NoneType, default None
+        timeout in seconds for blocking operations
+    local: str or NoneType, default None
+        path to local file
+    hash: str, default ''
+        MD5 hash of local file
+    chunk: int, default 8192
+        chunk size for transfer encoding
+    verbose: bool, default False
+        print file transfer information
+    fid: obj, default sys.stdout
+        open file object to print if verbose
+    mode: oct, default 0o775
+        permissions mode of output local file
 
     Returns
     -------
-    remote_buffer: BytesIO representation of file
+    remote_buffer: obj
+        BytesIO representation of file
     """
     #-- create logger
     loglevel = logging.INFO if verbose else logging.CRITICAL
     logging.basicConfig(stream=fid, level=loglevel)
+    #-- verify inputs for remote ftp host
+    if isinstance(HOST, str):
+        HOST = url_split(HOST)
     #-- try downloading from ftp
     try:
         #-- try to connect to ftp host
@@ -350,9 +385,10 @@ def check_connection(HOST):
     """
     Check internet connection with http host
 
-    Arguments
-    ---------
-    HOST: remote http host
+    Parameters
+    ----------
+    HOST: str
+        remote http host
     """
     #-- attempt to connect to http host
     try:
@@ -363,33 +399,46 @@ def check_connection(HOST):
         return True
 
 #-- PURPOSE: download a file from a http host
-def from_http(HOST,timeout=None,context=ssl.SSLContext(),local=None,hash='',
-    chunk=16384,verbose=False,fid=sys.stdout,mode=0o775):
+def from_http(HOST, timeout=None, context=ssl.SSLContext(),
+    local=None, hash='', chunk=16384, verbose=False, fid=sys.stdout,
+    mode=0o775):
     """
     Download a file from a http host
 
-    Arguments
-    ---------
-    HOST: remote http host path split as list
-
-    Keyword arguments
-    -----------------
-    timeout: timeout in seconds for blocking operations
-    context: SSL context for url opener object
-    local: path to local file
-    hash: MD5 hash of local file
-    chunk: chunk size for transfer encoding
-    verbose: print file transfer information
-    fid: open file object to print if verbose
-    mode: permissions mode of output local file
+    Parameters
+    ----------
+    HOST: str or list
+        remote http host path split as list
+    timeout: int or NoneType, default None
+        timeout in seconds for blocking operations
+    context: obj, default ssl.SSLContext()
+        SSL context for url opener object
+    timeout: int or NoneType, default None
+        timeout in seconds for blocking operations
+    local: str or NoneType, default None
+        path to local file
+    hash: str, default ''
+        MD5 hash of local file
+    chunk: int, default 16384
+        chunk size for transfer encoding
+    verbose: bool, default False
+        print file transfer information
+    fid: obj, default sys.stdout
+        open file object to print if verbose
+    mode: oct, default 0o775
+        permissions mode of output local file
 
     Returns
     -------
-    remote_buffer: BytesIO representation of file
+    remote_buffer: obj
+        BytesIO representation of file
     """
     #-- create logger
     loglevel = logging.INFO if verbose else logging.CRITICAL
     logging.basicConfig(stream=fid, level=loglevel)
+    #-- verify inputs for remote http host
+    if isinstance(HOST, str):
+        HOST = url_split(HOST)
     #-- try downloading from http
     try:
         #-- Create and submit request.
@@ -432,17 +481,22 @@ def icgem_list(host='http://icgem.gfz-potsdam.de/tom_longtime',timeout=None,
     parser=lxml.etree.HTMLParser()):
     """
     Parse the table of static gravity field models on the GFZ
-    International Centre for Global Earth Models (ICGEM) server
+    `International Centre for Global Earth Models (ICGEM) <http://icgem.gfz-potsdam.de/>`_
+    server
 
-    Keyword arguments
-    -----------------
-    host: url for the GFZ ICGEM gravity field table
-    timeout: timeout in seconds for blocking operations
-    parser: HTML parser for lxml
+    Parameters
+    ----------
+    host: str
+        url for the GFZ ICGEM gravity field table
+    timeout: int or NoneType
+        timeout in seconds for blocking operations
+    parser: obj, default lxml.etree.HTMLParser()
+        HTML parser for lxml
 
     Returns
     -------
-    colfiles: dictionary of static file urls mapped by field name
+    colfiles: dict
+        Static gravity field file urls mapped by field name
     """
     #-- try listing from https
     try:

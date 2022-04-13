@@ -15,14 +15,10 @@ with open("README.rst", "r") as fh:
     long_description = fh.read()
 long_description_content_type = "text/x-rst"
 
-# install requirements and dependencies
-on_rtd = os.environ.get('READTHEDOCS') == 'True'
-if on_rtd:
-    install_requires = []
-else:
-    # get install requirements
-    with open('requirements.txt') as fh:
-        install_requires = [line.split().pop(0) for line in fh.read().splitlines()]
+
+# get install requirements
+with open('requirements.txt') as fh:
+    install_requires = [line.split().pop(0) for line in fh.read().splitlines()]
 
 # get version
 with open('version.txt') as fh:
@@ -40,7 +36,7 @@ gdal_output = [None] * 4
 try:
     for i, flag in enumerate(("--cflags", "--libs", "--datadir", "--version")):
         gdal_output[i] = check_output(['gdal-config', flag]).strip()
-except:
+except Exception as e:
     log.warning('Failed to get options via gdal-config')
 else:
     log.info("GDAL version from via gdal-config: {0}".format(gdal_output[3]))
@@ -53,6 +49,22 @@ elif any(install_requires):
     # gdal version not found
     gdal_index = install_requires.index('gdal')
     install_requires.pop(gdal_index)
+
+# check if HDF5 is installed
+hdf5_output = [None] * 2
+try:
+    for i, cmd in enumerate((["h5cc","-showconfig"], ["h5dump","--version"])):
+        hdf5_output[i] = check_output(cmd).strip()
+    # parse HDF5 version from h5dump
+    hdf5_version = hdf5_output[1].split().pop(2)
+except Exception as e:
+    log.warning('Failed to get HDF5 options')
+else:
+    log.info("HDF5 version from via h5dump: {0}".format(hdf5_version))
+# if the HDF5 version not found
+if not any(hdf5_output):
+    hdf5_index = install_requires.index('h5py')
+    install_requires.pop(hdf5_index)
 
 setup(
     name='geoid-toolkit',

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 ref_ellipsoid.py
-Written by Tyler Sutterley (11/2020)
+Written by Tyler Sutterley (04/2022)
 
 Computes parameters for a reference ellipsoid
 
@@ -16,8 +16,8 @@ INPUT:
         WGS72 = World Geodetic System 1972
         WGS84 = World Geodetic System 1984
         ATS77 = Quasi-earth centred ellipsoid for ATS77
-        NAD27 = North American Datum 1927 (=CLK66)
-        NAD83 = North American Datum 1983 (=GRS80)
+        NAD27 = North American Datum 1927
+        NAD83 = North American Datum 1983
         INTER = International
         KRASS = Krassovsky (USSR)
         MAIRY = Modified Airy (Ireland 1965/1975)
@@ -57,6 +57,7 @@ REFERENCE:
     Hofmann-Wellenhof and Moritz (2006)
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Updated 11/2020: added function docstrings
     Updated 09/2017: added parameters for Hughes (1980) ellipsoid
     Updated 07/2017: output J2 harmonic (in addition to C20)
@@ -73,15 +74,71 @@ def ref_ellipsoid(refell, UNITS='MKS'):
     """
     Computes parameters for a reference ellipsoid
 
-    Arguments
-    ---------
-    refell: reference ellipsoid name
+    Parameters
+    ----------
+    refell: str
+        Reference ellipsoid name
 
-    Keyword arguments
-    -----------------
-    UNITS: output units
-        MKS: meters, kilograms, seconds
-        CGS: centimeters, grams, seconds
+            - ``'CLK66'``: Clarke 1866
+            - ``'GRS67'``: Geodetic Reference System 1967
+            - ``'GRS80'``: Geodetic Reference System 1980
+            - ``'HGH80'``: Hughes 1980 Ellipsoid
+            - ``'WGS72'``: World Geodetic System 1972
+            - ``'WGS84'``: World Geodetic System 1984
+            - ``'ATS77'``: Quasi-earth centred ellipsoid for ATS77
+            - ``'NAD27'``: North American Datum 1927
+            - ``'NAD83'``: North American Datum 1983
+            - ``'INTER'``: International
+            - ``'KRASS'``: Krassovsky (USSR)
+            - ``'MAIRY'``: Modified Airy (Ireland 1965/1975)
+            - ``'TOPEX'``: TOPEX/POSEIDON ellipsoid
+            - ``'EGM96'``: EGM 1996 gravity model
+    UNITS: str, default 'MKS'
+        Output units
+
+            - ``'MKS'``: meters, kilograms, seconds
+            - ``'CGS'``: centimeters, grams, seconds
+
+    Returns
+    -------
+    a: float
+        semimajor semi-axis (m)
+    b: float
+        semiminor semi-axis (m)
+    f: float
+        flattening
+    c: float
+        Polar radius of curvature
+    rad_e: float
+        Mean radius of ellipsoid having the same volume
+    rad_p: float
+        Polar radius of curvature
+    C20: float
+        Normalized C20 harmonic
+    norm_a: float
+        Normal gravity at the equator
+    norm_b: float
+        Normal gravity at the pole
+    U0: float
+        Normal potential at the ellipsoid
+    dk: float
+        ratio between gravity at pole versus gravity at equator
+    m: float
+        m parameter (m)
+    lin_ecc: float
+        Linear eccentricity
+    ecc1: float
+        First eccentricity
+    ecc2: float
+        Second eccentricity
+    area: float
+        Area of the ellipsoid
+
+    References
+    ----------
+    .. [HofmannWellenhof2006] B. Hofmann-Wellenhof and H. Moritz,
+        *Physical Geodesy*, 2nd Edition, 403 pp., (2006).
+        `doi: 10.1007/978-3-211-33545-1 <https://doi.org/10.1007/978-3-211-33545-1>`_
     """
 
     if refell.upper() in ('CLK66','NAD27'):
