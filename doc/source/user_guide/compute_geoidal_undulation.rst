@@ -4,7 +4,8 @@ compute_geoidal_undulation.py
 
 - Computes geoid undulations from a gravity model for an input file (ascii, netCDF4, HDF5, geotiff)
 
-#### Calling Sequence
+Calling Sequence
+################
 
 .. code-block:: python
 
@@ -44,9 +45,11 @@ Command Line Options
     * for HDF5 and netCDF4 files: time, y, x and data variable names
 - ``-H X``, ``--header X``: number of header lines for csv files
 - ``-t X``, ``--type X``: input data type
+
     * ``'drift'``: drift buoys or satellite/airborne altimetry (time per data point)
     * ``'grid'``: spatial grids or images (single time for all data points)
 - ``--projection X``: spatial projection as EPSG code or PROJ4 string
+
     * ``4326``: latitude and longitude coordinates on WGS84 reference ellipsoid
 - ``-V``, ``--verbose``: Verbose output of processing run
 - ``-M X``, ``--mode X``: Permission mode of output file

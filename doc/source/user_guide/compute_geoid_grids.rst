@@ -4,7 +4,8 @@ compute_geoid_grids.py
 
 - Computes geoid undulations from a gravity model
 
-#### Calling Sequence
+Calling Sequence
+################
 
 .. code-block:: python
 
@@ -40,6 +41,7 @@ Command Line Options
 - ``-S X``, ``--spacing X``: Output grid spacing
 - ``-B X``, ``--bounds X``: output grid extents [xmin,xmax,ymin,ymax]
 - ``--projection X``: spatial projection as EPSG code or PROJ4 string
+
     * ``4326``: latitude and longitude coordinates on WGS84 reference ellipsoid
 - ``-V``, ``--verbose``: Verbose output of processing run
 - ``-M X``, ``--mode X``: Permission mode of output file

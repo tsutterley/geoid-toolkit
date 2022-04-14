@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 u"""
 topographic_potential.py
-Written by Tyler Sutterley (07/2017)
+Written by Tyler Sutterley (04/2022)
 Calculates the potential at a given latitude and height using
     coefficients from a topographic model
 
 CALLING SEQUENCE:
-    T = topographic_potential(lat, lon, R, clm, slm, lmax, density)
+    T = topographic_potential(lat, lon, clm, slm, lmax, R, density)
 
 INPUT:
     latitude: latitude in degrees
     longitude: longitude in degrees
-    R: mean radius of the Earth using parameters for a gravity model
     clm: cosine spherical harmonics for a topographic model
     slm: sin spherical harmonics for a topographic model
     lmax: maximum spherical harmonic degree
+    R: mean radius of the Earth using parameters for a gravity model
     density: density of the topography in the model
 
 OUTPUT:
@@ -50,13 +50,66 @@ REFERENCE:
         Bollettino di Geodesia e Scienze (1982)
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Written 07/2017
 """
 import numpy as np
 from geoid_toolkit.gauss_weights import gauss_weights
 from geoid_toolkit.ref_ellipsoid import ref_ellipsoid
 
-def topographic_potential(lat, lon, refell, R, clm, slm, lmax, density, GAUSS=0):
+def topographic_potential(lat, lon, refell, clm, slm, lmax, R, density, GAUSS=0):
+    """
+    Calculates the potential at a given latitude and height using
+    coefficients from a topographic model following [Barthelmes2013]_
+
+    Parameters
+    ----------
+    lat: float
+        latitude in degrees
+    lon: float
+        longitude in degrees
+    refell: str
+        Reference ellipsoid name
+
+            - ``'CLK66'``: Clarke 1866
+            - ``'GRS67'``: Geodetic Reference System 1967
+            - ``'GRS80'``: Geodetic Reference System 1980
+            - ``'HGH80'``: Hughes 1980 Ellipsoid
+            - ``'WGS72'``: World Geodetic System 1972
+            - ``'WGS84'``: World Geodetic System 1984
+            - ``'ATS77'``: Quasi-earth centred ellipsoid for ATS77
+            - ``'NAD27'``: North American Datum 1927
+            - ``'NAD83'``: North American Datum 1983
+            - ``'INTER'``: International
+            - ``'KRASS'``: Krassovsky (USSR)
+            - ``'MAIRY'``: Modified Airy (Ireland 1965/1975)
+            - ``'TOPEX'``: TOPEX/POSEIDON ellipsoid
+            - ``'EGM96'``: EGM 1996 gravity model
+    clm: float
+        cosine spherical harmonics for a topographic model
+    slm: float
+        sine spherical harmonics for a topographic model
+    lmax: int
+        maximum spherical harmonic degree
+    R: float
+        average radius used in gravity model
+    density: float
+        density of the topography in the model
+    GAUSS: float, default 0
+        Gaussian Smoothing Radius in km
+
+    Returns
+    -------
+    T: float
+        potential from topography model
+
+    References
+    ----------
+    .. [Barthelmes2013] F. Barthelmes, "Definition of Functionals of the
+        Geopotential and Their Calculation from Spherical Harmonic Models",
+        *GeoForschungsZentrum Scientific Technical Report*, STR09/02, (2013).
+        `doi: 10.2312/GFZ.b103-0902-26 <https://doi.org/10.2312/GFZ.b103-0902-26>`_
+    """
     #-- get ellipsoid parameters for refell
     ellip = ref_ellipsoid(refell)
     a = ellip['a']
@@ -94,13 +147,13 @@ def topographic_potential(lat, lon, refell, R, clm, slm, lmax, density, GAUSS=0)
     #-- calculate cos phi
     cos_phi_2 = 2.0*np.cos(longitude_rad)
     #-- matrix of cos/sin m*phi (longitude_rad) summation
-    cos_m_phi = np.zeros((nlat,lmax+2),dtype=np.float128)
-    sin_m_phi = np.zeros((nlat,lmax+2),dtype=np.float128)
+    cos_m_phi = np.zeros((nlat,lmax+2),dtype=np.longdouble)
+    sin_m_phi = np.zeros((nlat,lmax+2),dtype=np.longdouble)
     #-- initialize matrix with values at lmax+1 and lmax
-    cos_m_phi[:,lmax+1] = np.cos(np.float128(lmax + 1)*longitude_rad)
-    sin_m_phi[:,lmax+1] = np.sin(np.float128(lmax + 1)*longitude_rad)
-    cos_m_phi[:,lmax] = np.cos(np.float128(lmax)*longitude_rad)
-    sin_m_phi[:,lmax] = np.sin(np.float128(lmax)*longitude_rad)
+    cos_m_phi[:,lmax+1] = np.cos(np.longdouble(lmax + 1)*longitude_rad)
+    sin_m_phi[:,lmax+1] = np.sin(np.longdouble(lmax + 1)*longitude_rad)
+    cos_m_phi[:,lmax] = np.cos(np.longdouble(lmax)*longitude_rad)
+    sin_m_phi[:,lmax] = np.sin(np.longdouble(lmax)*longitude_rad)
     #-- calculate summation
     s_m = s_m_c[:,2*lmax]*cos_m_phi[:,lmax] + s_m_c[:,2*lmax+1]*sin_m_phi[:,lmax]
     #-- iterate to calculate complete summation
@@ -121,14 +174,14 @@ def topographic_potential(lat, lon, refell, R, clm, slm, lmax, density, GAUSS=0)
 def clenshaw_s_m(t, m, clm1, slm1, lmax):
     #-- allocate for output matrix
     N = len(t)
-    s_m = np.zeros((N,2),dtype=np.float128)
+    s_m = np.zeros((N,2),dtype=np.longdouble)
     #-- scaling factor to prevent overflow
     scalef = 1.0e-280
-    clm = scalef*clm1.astype(np.float128)
-    slm = scalef*slm1.astype(np.float128)
+    clm = scalef*clm1.astype(np.longdouble)
+    slm = scalef*slm1.astype(np.longdouble)
     #-- convert lmax and m to float
-    lm = np.float128(lmax)
-    mm = np.float128(m)
+    lm = np.longdouble(lmax)
+    mm = np.longdouble(m)
     if (m == lmax):
         s_m[:,0] = np.copy(clm[lmax,lmax])
         s_m[:,1] = np.copy(slm[lmax,lmax])
@@ -143,7 +196,7 @@ def clenshaw_s_m(t, m, clm1, slm1, lmax):
         s_mm_c_pre_1 = a_lm*s_mm_c_pre_2 + clm[lmax-1,m]
         s_mm_s_pre_1 = a_lm*s_mm_s_pre_2 + slm[lmax-1,m]
         for l in range(lmax-2, m-1, -1):
-            ll = np.float128(l)
+            ll = np.longdouble(l)
             a_lm=np.sqrt(((2.0*ll+1.0)*(2.0*ll+3.0))/((ll+1.0-mm)*(ll+1.0+mm)))*t
             b_lm=np.sqrt(((2.*ll+5.)*(ll+mm+1.)*(ll-mm+1.))/((ll+2.-mm)*(ll+2.+mm)*(2.*ll+1.)))
             s_mm_c = a_lm * s_mm_c_pre_1 - b_lm * s_mm_c_pre_2 + clm[l,m]
@@ -159,7 +212,7 @@ def clenshaw_s_m(t, m, clm1, slm1, lmax):
         a_lm = np.sqrt(((2.0*lm-1.0)*(2.0*lm+1.0))/(lm*lm))*t
         s_mm_c_pre_1 = a_lm * s_mm_c_pre_2 + clm[lmax-1,0]
         for l in range(lmax-2, m-1, -1):
-            ll = np.float128(l)
+            ll = np.longdouble(l)
             a_lm=np.sqrt(((2.0*ll+1.0)*(2.0*ll+3.0))/((ll+1)*(ll+1)))*t
             b_lm=np.sqrt(((2.*ll+5.)*(ll+1.)*(ll+1.))/((ll+2)*(ll+2)*(2.*ll+1.)))
             s_mm_c = a_lm * s_mm_c_pre_1 - b_lm * s_mm_c_pre_2 + clm[l,0]

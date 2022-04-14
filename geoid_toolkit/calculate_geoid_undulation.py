@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 calculate_geoid_undulation.py
-Written by Tyler Sutterley (10/2021)
+Written by Tyler Sutterley (04/2022)
 Wrapper function for computing geoid undulations from a gravity model
 
 INPUTS:
@@ -17,8 +17,8 @@ OPTIONS:
         WGS72 = World Geodetic System 1972
         WGS84 = World Geodetic System 1984
         ATS77 = Quasi-earth centred ellipsoid for ATS77
-        NAD27 = North American Datum 1927 (=CLK66)
-        NAD83 = North American Datum 1983 (=GRS80)
+        NAD27 = North American Datum 1927
+        NAD83 = North American Datum 1983
         INTER = International
         KRASS = Krassovsky (USSR)
         MAIRY = Modified Airy (Ireland 1965/1975)
@@ -52,6 +52,7 @@ PROGRAM DEPENDENCIES:
     gauss_weights.py: Computes Gaussian weights as a function of degree
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Updated 10/2021: add more keyword options to match read ICGEM options
     Updated 09/2021: define int/float precision to prevent deprecation warning
     Updated 11/2020: added function docstrings
@@ -67,24 +68,50 @@ def calculate_geoid_undulation(lon, lat, gravity_model_file, **kwargs):
     """
     Wrapper function for computing geoid undulations from a gravity model
 
-    Arguments
-    ---------
-    lon: longitudinal points to calculate geoid height
-    lat: latitudinal points to calculate geoid height
-    gravity_model_file: full path to static gravity model file
+    Parameters
+    ----------
+    lon: float
+        longitudinal points to calculate geoid height
+    lat: float
+        latitudinal points to calculate geoid height
+    gravity_model_file: str
+        full path to static gravity model file
+    LMAX: int or NoneType, default None
+        maximum spherical harmonic degree
+    ELLIPSOID: str, default 'WGS84'
+        Reference ellipsoid name
 
-    Keyword arguments
-    -----------------
-    ELLIPSOID: reference ellipsoid name
-    LMAX: maximum spherical harmonic degree (level of truncation)
-    TIDE: tide system of output geoid
-    GAUSS: Gaussian Smoothing Radius in km (default is no filtering)
-    EPS: level of precision for calculating geoid height
-    ZIP: input gravity field file is compressed in an archive file
+            - ``'CLK66'``: Clarke 1866
+            - ``'GRS67'``: Geodetic Reference System 1967
+            - ``'GRS80'``: Geodetic Reference System 1980
+            - ``'HGH80'``: Hughes 1980 Ellipsoid
+            - ``'WGS72'``: World Geodetic System 1972
+            - ``'WGS84'``: World Geodetic System 1984
+            - ``'ATS77'``: Quasi-earth centred ellipsoid for ATS77
+            - ``'NAD27'``: North American Datum 1927
+            - ``'NAD83'``: North American Datum 1983
+            - ``'INTER'``: International
+            - ``'KRASS'``: Krassovsky (USSR)
+            - ``'MAIRY'``: Modified Airy (Ireland 1965/1975)
+            - ``'TOPEX'``: TOPEX/POSEIDON ellipsoid
+            - ``'EGM96'``: EGM 1996 gravity model
+    TIDE: str, default 'tide_free'
+        Permanent tide system of output geoid
+
+            - ``'tide_free'``: no permanent direct and indirect tidal potentials
+            - ``'mean_tide'``: permanent tidal potentials (direct and indirect)
+            - ``'zero_tide'``: permanent direct tidal potential removed
+    GAUSS: int, default 0
+        Gaussian Smoothing Radius in km
+    EPS: float, default 1e-8
+        level of precision for calculating geoid height
+    ZIP: bool, default False
+        Gravity field file is compressed in an archive file
 
     Returns
     -------
-    N: geoidal undulation for a given ellipsoid in meters
+    N: float
+        geoidal undulation for a given ellipsoid in meters
     """
     #-- set default keyword arguments
     kwargs.setdefault('LMAX',None)

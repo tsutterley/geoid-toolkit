@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 read_topography_harmonics.py
-Written by Tyler Sutterley (07/2017)
+Written by Tyler Sutterley (04/2022)
 Reads the coefficients for a given topographic model file
 http://ddfe.curtin.edu.au/gravitymodels/Earth2014/potential_model/
 
@@ -24,6 +24,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Written 07/2017
 """
 import numpy as np
@@ -31,6 +32,39 @@ import numpy as np
 #-- PURPOSE: read Earth 2014 topography harmonics
 #-- http://ddfe.curtin.edu.au/gravitymodels/Earth2014/potential_model/
 def read_topography_harmonics(model_file):
+    """
+    Reads `Earth 2014
+    <https://ddfe.curtin.edu.au/gravitymodels/Earth2014/potential_model/readme_earth2014_potential_models.txt>`_
+    topography harmonics from [Rexer2016]_
+
+    Parameters
+    ----------
+    model_file: str
+        full path to file with spherical harmonic coefficients
+
+    Returns
+    -------
+    l: int
+        spherical harmonic degree of model
+    m: int
+        spherical harmonic order to maximum degree of model
+    clm: float
+        cosine spherical harmonics of topographic data
+    slm: float
+        sine spherical harmonics of topographic data
+    modelname: str
+        name of the topography model
+    density: float
+        density of the Earth for the topography model
+
+    References
+    ----------
+    .. [Rexer2016] M. Rexer, C. Hirt, S. Claessens, and R. Tenzer,
+        "Layer-based modelling of the Earth's gravitational potential
+        up to 10km scale in spherical harmonics in spherical and
+        ellipsoidal approximation", *Surveys in Geophysics*, (2016).
+        `doi:10.1007/s10712-016-9382-2 <https://doi.org/10.1007/s10712-016-9382-2>`_
+    """
     dinput = np.fromfile(model_file, dtype=np.dtype('<f8'))
     #-- extract minimum and maximum spherical harmonic degree
     header = 2

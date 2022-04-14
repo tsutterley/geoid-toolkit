@@ -16,19 +16,4 @@ Calling Sequence
 
 .. __: https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/read_topography_harmonics.py
 
-Arguments
-#########
-
-1. ``model_file``: full path to file with spherical harmonic coefficients
-
-Returns
-#######
-
-- ``l``: spherical harmonic degree to maximum degree of model
-- ``m``: spherical harmonic order to maximum degree of model
-- ``clm``: cosine spherical harmonics of input data
-- ``slm``: sine spherical harmonics of input data
-- ``eclm``: cosine spherical harmonic standard deviations of type errors
-- ``eslm``: sine spherical harmonic standard deviations of type errors
-- ``modelname``: name of the topography model
-- ``density``: density of the Earth for the topography model
+.. autofunction:: geoid_toolkit.read_topography_harmonics

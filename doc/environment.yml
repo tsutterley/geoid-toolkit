@@ -1,0 +1,29 @@
+name: geoid-docs
+channels:
+  - conda-forge
+dependencies:
+  - docutils<0.18
+  - fontconfig
+  - freetype
+  - future
+  - gdal
+  - graphviz
+  - h5py
+  - lxml
+  - markupsafe==2.0.1
+  - matplotlib
+  - netCDF4
+  - notebook
+  - numpy
+  - numpydoc
+  - pip
+  - pyproj
+  - python>=3.6
+  - pyyaml
+  - recommonmark
+  - sphinx
+  - sphinx-markdown-tables
+  - sphinx_rtd_theme
+  - texlive-core
+  - pip:
+     - ..
