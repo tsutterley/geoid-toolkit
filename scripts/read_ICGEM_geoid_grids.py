@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 read_ICGEM_geoid_grids.py
-Written by Tyler Sutterley (10/2021)
+Written by Tyler Sutterley (04/2022)
 Reads geoid height spatial grids from the GFZ Geoid Calculation Service
     http://icgem.gfz-potsdam.de/home
 Outputs spatial grids as netCDF4 files
@@ -23,6 +23,8 @@ PYTHON DEPENDENCIES:
         https://unidata.github.io/netcdf4-python/
 
 UPDATE HISTORY:
+    Updated 04/2022: include utf-8 encoding in reads to be windows compliant
+        check if gravity field data file is present in file-system
     Updated 10/2021: using python logging for handling verbose output
     Updated 09/2021: define int/float precision to prevent deprecation warning
     Updated 03/2021: updated comments and argparse help text
@@ -53,8 +55,11 @@ def read_ICGEM_geoid_grids(FILE, FILENAME=None, MARKER='', SPACING=None,
 
     #-- split filename into basename and extension
     fileBasename,_ = os.path.splitext(FILE)
+    #-- check that data file is present in file system
+    if not os.access(FILE, os.F_OK):
+        raise FileNotFoundError('{0} not found'.format(FILE))
     #-- open input file and read contents
-    with open(FILE, 'r') as f:
+    with open(FILE, mode='r', encoding='utf8') as f:
         file_contents = f.read().splitlines()
     #-- number of lines contained in the file
     file_lines = len(file_contents)
