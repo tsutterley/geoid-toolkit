@@ -60,6 +60,8 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 04/2022: updated docstrings to numpy documentation format
+        include utf-8 encoding in reads to be windows compliant
+        check if gravity field coefficients file is present in file-system
     Updated 10/2021: ellipsoid option for semi-major axis when changing tides
     Updated 09/2021: define int/float precision to prevent deprecation warning
         update tidal offset to be able to change to and from any reference
@@ -151,10 +153,15 @@ def read_ICGEM_harmonics(model_file, **kwargs):
     kwargs.setdefault('TIDE',None)
     kwargs.setdefault('FLAG','gfc')
     kwargs.setdefault('ZIP',False)
+    #-- tilde-expansion of input file
+    model_file = os.path.expanduser(model_file)
+    #-- check that data file is present in file system
+    if not os.access(model_file, os.F_OK):
+        raise FileNotFoundError('{0} not found'.format(model_file))
     #-- read data from compressed or gfc file
     if kwargs['ZIP']:
         #-- extract zip file with gfc file
-        with zipfile.ZipFile(os.path.expanduser(model_file)) as zs:
+        with zipfile.ZipFile(model_file) as zs:
             #-- find gfc file within zipfile
             gfc, = [io.BytesIO(zs.read(s)) for s in zs.namelist()
                 if s.endswith('gfc')]
@@ -162,7 +169,7 @@ def read_ICGEM_harmonics(model_file, **kwargs):
             file_contents = gfc.read().decode('ISO-8859-1').splitlines()
     else:
         #-- read input gfc data file
-        with open(os.path.expanduser(model_file), mode='r', encoding='utf8') as f:
+        with open(model_file, mode='r', encoding='utf8') as f:
             file_contents = f.read().splitlines()
     #-- python dictionary with model input and headers
     model_input = {}

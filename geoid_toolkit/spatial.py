@@ -21,6 +21,7 @@ PYTHON DEPENDENCIES:
 UPDATE HISTORY:
     Updated 04/2022: add option to reduce input GDAL raster datasets
         updated docstrings to numpy documentation format
+        include utf-8 encoding in reads to be windows compliant
     Updated 03/2022: add option to specify output GDAL driver
     Updated 01/2022: use iteration breaks in convert ellipsoid function
         remove fill_value attribute after creating netCDF4 and HDF5 variables
@@ -147,14 +148,16 @@ def from_ascii(filename, **kwargs):
     #-- open the ascii file and extract contents
     if (kwargs['compression'] == 'gzip'):
         #-- read input ascii data from gzip compressed file and split lines
-        with gzip.open(case_insensitive_filename(filename),'r') as f:
+        filename = case_insensitive_filename(filename)
+        with gzip.open(filename, mode='r', encoding='utf8') as f:
             file_contents = f.read().decode('ISO-8859-1').splitlines()
     elif (kwargs['compression'] == 'bytes'):
         #-- read input file object and split lines
         file_contents = filename.read().splitlines()
     else:
         #-- read input ascii file (.txt, .asc) and split lines
-        with open(case_insensitive_filename(filename),'r') as f:
+        filename = case_insensitive_filename(filename)
+        with open(filename, mode='r', encoding='utf8') as f:
             file_contents = f.read().splitlines()
     #-- number of lines in the file
     file_lines = len(file_contents)
