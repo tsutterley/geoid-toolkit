@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 read_ICGEM_geoid_grids.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (05/2022)
 Reads geoid height spatial grids from the GFZ Geoid Calculation Service
     http://icgem.gfz-potsdam.de/home
 Outputs spatial grids as netCDF4 files
@@ -23,6 +23,7 @@ PYTHON DEPENDENCIES:
         https://unidata.github.io/netcdf4-python/
 
 UPDATE HISTORY:
+    Updated 05/2022: use argparse descriptions within sphinx documentation
     Updated 04/2022: include utf-8 encoding in reads to be windows compliant
         check if gravity field data file is present in file-system
     Updated 10/2021: using python logging for handling verbose output
@@ -178,9 +179,8 @@ def ncdf_geoid_write(dinput, parameters, FILENAME=None):
     #-- Closing the NetCDF file
     fileID.close()
 
-#-- Main program that calls read_ICGEM_geoid_grids()
-def main():
-    #-- Read the system arguments listed after the program
+#-- PURPOSE: create argument parser
+def arguments():
     parser = argparse.ArgumentParser(
         description="""Reads geoid height spatial grids from the ICGEM
             Geoid Calculation Service
@@ -189,7 +189,7 @@ def main():
     #-- command line parameters
     parser.add_argument('files',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='+',
-        help='Geoid height spatial grid files (*.gdf)')
+        help='Geoid height spatial grid files')
     #-- output filename (will default to input file with netCDF4 suffix)
     parser.add_argument('--filename','-F',
         type=str, default=None,
@@ -210,7 +210,14 @@ def main():
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
         help='Permissions mode of output files')
-    args = parser.parse_args()
+    #-- return the parser
+    return parser
+
+#-- This is the main part of the program that calls the individual functions
+def main():
+    #-- Read the system arguments listed after the program
+    parser = arguments()
+    args,_ = parser.parse_known_args()
 
     #-- for each input grid file
     for f in args.files:

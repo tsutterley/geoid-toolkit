@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_geoid_grids.py
-Written by Tyler Sutterley (03/2022)
+Written by Tyler Sutterley (05/2022)
 Computes geoid undulations from a gravity model
 
 COMMAND LINE OPTIONS:
@@ -50,7 +50,8 @@ PROGRAM DEPENDENCIES:
     gauss_weights.py: Computes Gaussian weights as a function of degree
 
 UPDATE HISTORY:
-    Written 03/2012
+    Updated 05/2022: use argparse descriptions within sphinx documentation
+    Written 03/2022
 """
 from __future__ import print_function
 
@@ -202,9 +203,8 @@ def compute_geoid_grids(model_file, output_file,
     #-- change the permissions level to MODE
     os.chmod(output_file, MODE)
 
-#-- Main program that calls compute_geoid_grids()
-def main():
-    #-- Read the system arguments listed after the program
+#-- PURPOSE: create argument parser
+def arguments():
     parser = argparse.ArgumentParser(
         description="""Computes geoid undulations from a gravity model
             """,
@@ -261,6 +261,13 @@ def main():
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
         help='Permission mode of output file')
+    #-- return the parser
+    return parser
+
+#-- This is the main part of the program that calls the individual functions
+def main():
+    #-- Read the system arguments listed after the program
+    parser = arguments()
     args,_ = parser.parse_known_args()
 
     #-- run geoid grid program

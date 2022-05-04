@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_geoidal_undulation.py
-Written by Tyler Sutterley (11/2021)
+Written by Tyler Sutterley (05/2022)
 Computes geoid undulations from a gravity model for an input file
 
 INPUTS:
@@ -61,6 +61,7 @@ PROGRAM DEPENDENCIES:
     gauss_weights.py: Computes Gaussian weights as a function of degree
 
 UPDATE HISTORY:
+    Updated 05/2022: use argparse descriptions within sphinx documentation
     Updated 11/2021: add function for attempting to extract projection
     Updated 10/2021: using python logging for handling verbose output
     Updated 07/2021: can use prefix files to define command line arguments
@@ -224,9 +225,8 @@ def compute_geoidal_undulation(model_file, input_file, output_file,
     #-- change the permissions level to MODE
     os.chmod(output_file, MODE)
 
-#-- Main program that calls compute_geoidal_undulation()
-def main():
-    #-- Read the system arguments listed after the program
+#-- PURPOSE: create argument parser
+def arguments():
     parser = argparse.ArgumentParser(
         description="""Calculates geoidal undulations for an input file
             """,
@@ -293,7 +293,14 @@ def main():
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
         help='Permission mode of output file')
-    args = parser.parse_args()
+    #-- return the parser
+    return parser
+
+#-- This is the main part of the program that calls the individual functions
+def main():
+    #-- Read the system arguments listed after the program
+    parser = arguments()
+    args,_ = parser.parse_known_args()
 
     #-- set output file from input filename if not entered
     if not args.outfile:

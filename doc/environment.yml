@@ -20,9 +20,8 @@ dependencies:
   - pyproj
   - python>=3.6
   - pyyaml
-  - recommonmark
   - sphinx
-  - sphinx-markdown-tables
+  - sphinx-argparse
   - sphinx_rtd_theme
   - texlive-core
   - pip:
