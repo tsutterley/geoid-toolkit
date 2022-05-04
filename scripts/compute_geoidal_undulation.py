@@ -237,10 +237,10 @@ def arguments():
     #-- input and output file
     parser.add_argument('infile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='?',
-        help='Input file')
+        help='Input file to run')
     parser.add_argument('outfile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='?',
-        help='Output file')
+        help='Computed output file')
     #-- set gravity model file to use
     parser.add_argument('--gravity','-G',
         type=lambda p: os.path.abspath(os.path.expanduser(p)),
