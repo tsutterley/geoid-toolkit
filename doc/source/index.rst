@@ -46,4 +46,5 @@ and calculating geoid heights
 
     user_guide/compute_geoid_grids.rst
     user_guide/compute_geoidal_undulation.rst
+    user_guide/read_EGM2008_geoid_grids.rst
     user_guide/read_ICGEM_geoid_grids.rst
