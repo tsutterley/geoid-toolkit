@@ -15,6 +15,9 @@ geoid-toolkit
 .. |License| image:: https://img.shields.io/github/license/tsutterley/geoid-toolkit
    :target: https://github.com/tsutterley/geoid-toolkit/blob/main/LICENSE
 
+.. |PyPI Version| image:: https://img.shields.io/pypi/v/geoid-toolkit.svg
+   :target: https://pypi.python.org/pypi/geoid-toolkit/
+
 .. |Documentation Status| image:: https://readthedocs.org/projects/geoid-toolkit/badge/?version=latest
    :target: https://read-grace-harmonics.readthedocs.io/projects/geoid-toolkit/en/latest/?badge=latest
 

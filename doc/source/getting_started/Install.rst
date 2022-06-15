@@ -2,7 +2,8 @@
 Installation
 ============
 
-Presently ``geoid-toolkit`` is only available for use as a `GitHub repository <https://github.com/tsutterley/geoid-toolkit>`_.
+``geoid-toolkit`` is available for download from the `GitHub repository <https://github.com/tsutterley/geoid-toolkit>`_,
+and the `Python Package Index (pypi) <https://pypi.org/project/geoid-toolkit/>`_,
 The contents of the repository can be download as a `zipped file <https://github.com/tsutterley/geoid-toolkit/archive/main.zip>`_  or cloned.
 
 To use this repository, please fork into your own account and then clone onto your system:
@@ -29,6 +30,11 @@ Alternatively can install the ``geoid_toolkit`` utilities directly from GitHub w
 
     python3 -m pip install --user git+https://github.com/tsutterley/geoid-toolkit.git
 
-Executable versions of this repository can also be tested using
-`Binder <https://mybinder.org/v2/gh/tsutterley/geoid-toolkit/main>`_ or
-`Pangeo <https://binder.pangeo.io/v2/gh/tsutterley/geoid-toolkit/main>`_.
+| This repository can be also tested using `BinderHub <https://github.com/jupyterhub/binderhub>`_ platforms:
+| |Binder| |Pangeo|
+
+.. |Binder| image:: https://mybinder.org/badge_logo.svg
+   :target: https://mybinder.org/v2/gh/tsutterley/geoid-toolkit/main
+
+.. |Pangeo| image:: https://img.shields.io/static/v1.svg?logo=Jupyter&label=PangeoBinderAWS&message=us-west-2&color=orange
+   :target: https://aws-uswest2-binder.pangeo.io/v2/gh/tsutterley/geoid-toolkit/main?urlpath=lab
