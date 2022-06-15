@@ -15,14 +15,17 @@ geoid-toolkit
 .. |License| image:: https://img.shields.io/github/license/tsutterley/geoid-toolkit
    :target: https://github.com/tsutterley/geoid-toolkit/blob/main/LICENSE
 
+.. |PyPI Version| image:: https://img.shields.io/pypi/v/geoid-toolkit.svg
+   :target: https://pypi.python.org/pypi/geoid-toolkit/
+
 .. |Documentation Status| image:: https://readthedocs.org/projects/geoid-toolkit/badge/?version=latest
    :target: https://read-grace-harmonics.readthedocs.io/projects/geoid-toolkit/en/latest/?badge=latest
 
 .. |Binder| image:: https://mybinder.org/badge_logo.svg
    :target: https://mybinder.org/v2/gh/tsutterley/geoid-toolkit/main
 
-.. |Pangeo| image:: https://binder.pangeo.io/badge.svg
-   :target: https://binder.pangeo.io/v2/gh/tsutterley/geoid-toolkit/main
+.. |Pangeo| image:: https://img.shields.io/static/v1.svg?logo=Jupyter&label=PangeoBinderAWS&message=us-west-2&color=orange
+   :target: https://aws-uswest2-binder.pangeo.io/v2/gh/tsutterley/geoid-toolkit/main?urlpath=lab
 
 .. |zenodo| image:: https://zenodo.org/badge/199943310.svg
    :target: https://zenodo.org/badge/latestdoi/199943310
