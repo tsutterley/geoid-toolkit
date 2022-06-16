@@ -36,6 +36,8 @@ General Methods
 
 .. autofunction:: geoid_toolkit.spatial.data_type
 
+.. autofunction:: geoid_toolkit.spatial.from_file
+
 .. autofunction:: geoid_toolkit.spatial.from_ascii
 
 .. autofunction:: geoid_toolkit.spatial.from_netCDF4
