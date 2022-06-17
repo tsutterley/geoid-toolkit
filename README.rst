@@ -4,12 +4,13 @@ geoid-toolkit
 
 |Language|
 |License|
+|PyPI Version|
 |Documentation Status|
 |Binder|
 |Pangeo|
 |zenodo|
 
-.. |Language| image:: https://img.shields.io/badge/python-v3.8-green.svg
+.. |Language| image:: https://img.shields.io/pypi/pyversions/geoid-toolkit?color=green
    :target: https://www.python.org/
 
 .. |License| image:: https://img.shields.io/github/license/tsutterley/geoid-toolkit
