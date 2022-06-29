@@ -72,7 +72,7 @@ def read_EGM2008_geoid_grids(FILE, FILENAME=None, LOVE=0.3,
         'respect to WGS84')
     attributes['geoid_h']['units'] = 'meters'
     attributes['geoid_h']['fill_value'] = -9999.0
-    attributes['geoid_h']['tide_system'] = 'mean_tide'
+    attributes['geoid_h']['tide_system'] = 'tide_free'
     attributes['geoid_h']['source'] = 'EGM2008'
     # geoid_free2mean
     attributes['geoid_free2mean']['long_name'] = 'Free-to-Mean conversion'
@@ -80,7 +80,7 @@ def read_EGM2008_geoid_grids(FILE, FILENAME=None, LOVE=0.3,
         'convert geoid heights from the tide-free system to the mean-tide system')
     attributes['geoid_free2mean']['units'] = 'meters'
     attributes['geoid_free2mean']['fill_value'] = -9999.0
-    attributes['geoid_free2mean']['tide_system'] = 'mean_tide'
+    attributes['geoid_free2mean']['tide_system'] = 'tide_free'
 
     # output variables
     dinput = {}
