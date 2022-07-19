@@ -6,9 +6,7 @@ dependencies:
   - fontconfig
   - freetype
   - future
-  - gdal
   - graphviz
-  - h5py
   - lxml
   - markupsafe==2.0.1
   - matplotlib
