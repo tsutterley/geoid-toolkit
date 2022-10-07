@@ -47,6 +47,7 @@ Dependencies
 - `netCDF4: Python interface to the netCDF C library <https://unidata.github.io/netcdf4-python/>`_
 - `numpy: Scientific Computing Tools For Python <https://www.numpy.org>`_
 - `pyproj: Python interface to PROJ library <https://pypi.org/project/pyproj/>`_
+- `python-dateutil: powerful extensions to datetime <https://dateutil.readthedocs.io/en/stable/>`_
 
 References
 ##########
@@ -64,9 +65,9 @@ References
     `doi:10.1007/s00190-002-0216-2 <https://doi.org/10.1007/s00190-002-0216-2>`_
 
     Ince, Barthelmes, Rei\ |szlig|\ land, Elger, F\ |ouml|\ rste, Flechtner, and Schuh,
-    "ICGEM – 15 years of successful collection and distribution of global
+    "ICGEM -- 15 years of successful collection and distribution of global
     gravitational models, associated services, and future plans"
-    Earth System Science Data, 11, 647–674 (2019).
+    Earth System Science Data, 11, 647--674 (2019).
     `doi:10.5194/essd-11-647-2019 <https://doi.org/10.5194/essd-11-647-2019>`_
 
     Jekeli, "Alternative Methods to Smooth the Earth's Gravity Field", (1981).

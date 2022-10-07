@@ -44,6 +44,7 @@ This software is also dependent on other commonly used Python packages:
 - `netCDF4: Python interface to the netCDF C library <https://unidata.github.io/netcdf4-python/>`_
 - `numpy: Scientific Computing Tools For Python <https://www.numpy.org>`_
 - `pyproj: Python interface to PROJ library <https://pypi.org/project/pyproj/>`_
+- `python-dateutil: powerful extensions to datetime <https://dateutil.readthedocs.io/en/stable/>`_
 
 Disclaimer
 ##########
