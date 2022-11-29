@@ -66,26 +66,26 @@ from geoid_toolkit.read_ICGEM_harmonics import read_ICGEM_harmonics
 from geoid_toolkit.geoid_undulation import geoid_undulation
 from geoid_toolkit.utilities import convert_arg_line_to_args
 
-#-- PURPOSE: try to get the projection information
+# PURPOSE: try to get the projection information
 def get_projection(PROJECTION):
-    #-- EPSG projection code
+    # EPSG projection code
     try:
         crs = pyproj.CRS.from_epsg(int(PROJECTION))
     except (ValueError,pyproj.exceptions.CRSError):
         pass
     else:
         return crs
-    #-- coordinate reference system string
+    # coordinate reference system string
     try:
         crs = pyproj.CRS.from_string(PROJECTION)
     except (ValueError,pyproj.exceptions.CRSError):
         pass
     else:
         return crs
-    #-- no projection can be made
+    # no projection can be made
     raise pyproj.exceptions.CRSError
 
-#-- PURPOSE: compute geoid undulation for a grid
+# PURPOSE: compute geoid undulation for a grid
 def compute_geoid_grids(model_file, output_file,
     LMAX=None,
     TIDE=None,
@@ -97,44 +97,44 @@ def compute_geoid_grids(model_file, output_file,
     VERBOSE=False,
     MODE=0o775):
 
-    #-- create logger for verbosity level
+    # create logger for verbosity level
     loglevel = logging.INFO if VERBOSE else logging.CRITICAL
     logging.basicConfig(level=loglevel)
 
-    #-- read gravity model Ylms and change tide if specified
+    # read gravity model Ylms and change tide if specified
     Ylms = read_ICGEM_harmonics(model_file, LMAX=LMAX, TIDE=TIDE)
     R = np.float64(Ylms['radius'])
     GM = np.float64(Ylms['earth_gravity_constant'])
     LMAX = np.int64(Ylms['max_degree'])
-    #-- reference to WGS84 ellipsoid
+    # reference to WGS84 ellipsoid
     REFERENCE = 'WGS84'
-    #-- invalid value
+    # invalid value
     fill_value = -9999.0
 
-    #-- converting x,y from projection to latitude/longitude
+    # converting x,y from projection to latitude/longitude
     crs1 = get_projection(PROJECTION)
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
-    #-- dictionary of coordinate reference system variables
+    # dictionary of coordinate reference system variables
     crs_to_dict = crs1.to_dict()
-    #-- Climate and Forecast (CF) Metadata Conventions
+    # Climate and Forecast (CF) Metadata Conventions
     if (crs1.to_epsg() == 4326):
         y_cf,x_cf = crs1.cs_to_cf()
     else:
         x_cf,y_cf = crs1.cs_to_cf()
 
-    #-- output netCDF4 and HDF5 file attributes
-    #-- will be added to YAML header in csv files
+    # output netCDF4 and HDF5 file attributes
+    # will be added to YAML header in csv files
     output,attrib = ({},{})
-    #-- file level attributes
+    # file level attributes
     attrib['ROOT'] = {}
     attrib['ROOT']['model'] = Ylms['modelname']
     attrib['ROOT']['ellipsoid'] = REFERENCE
     attrib['ROOT']['earth_gravity_constant'] = GM
     attrib['ROOT']['radius'] = R
-    #-- projection attributes
+    # projection attributes
     attrib['crs'] = {}
-    #-- add projection attributes
+    # add projection attributes
     attrib['crs']['standard_name'] = crs1.to_cf()['grid_mapping_name'].title()
     attrib['crs']['spatial_epsg'] = crs1.to_epsg()
     attrib['crs']['spatial_ref'] = crs1.to_wkt()
@@ -144,25 +144,25 @@ def compute_geoid_grids(model_file, output_file,
     if ('lat_0' in crs_to_dict.keys() and (crs1.to_epsg() != 4326)):
         attrib['crs']['latitude_of_projection_origin'] = \
             crs_to_dict['lat_0']
-    #-- x and y
+    # x and y
     attrib['x'],attrib['y'] = ({},{})
     for att_name in ['long_name','standard_name','units']:
         attrib['x'][att_name] = x_cf[att_name]
         attrib['y'][att_name] = y_cf[att_name]
-    #-- geoid undulation
+    # geoid undulation
     attrib['geoid_h'] = {}
     attrib['geoid_h']['units'] = 'm'
     attrib['geoid_h']['long_name'] = 'Geoidal_Undulation'
-    args = (Ylms['modelname'],Ylms['max_degree'])
+    args = (Ylms['modelname'], Ylms['max_degree'])
     attrib['geoid_h']['description'] = ('{0}_geoidal_undulation_'
         'computed_from_degree_{1}_gravity_model.').format(*args)
     attrib['geoid_h']['tide_system'] = Ylms['tide_system']
     attrib['geoid_h']['degree_of_truncation'] = LMAX
     attrib['geoid_h']['_FillValue'] = fill_value
 
-    #-- projection variable
+    # projection variable
     output['crs'] = np.array((),dtype=np.byte)
-    #-- spacing and bounds of output grid
+    # spacing and bounds of output grid
     dx,dy = np.broadcast_to(np.atleast_1d(SPACING),(2,))
     xmin,xmax,ymin,ymax = np.copy(BOUNDS)
     # create x and y from spacing and bounds
@@ -174,18 +174,18 @@ def compute_geoid_grids(model_file, output_file,
     ny,nx = (len(output['y']),len(output['x']))
     gridx,gridy = np.meshgrid(output['x'],output['y'])
     lon,lat = transformer.transform(gridx,gridy)
-    #-- calculate geoid at coordinates and reshape to output
+    # calculate geoid at coordinates and reshape to output
     N = geoid_undulation(lat.flatten(), lon.flatten(),
         REFERENCE, Ylms['clm'], Ylms['slm'],
         LMAX, R, GM, GAUSS=GAUSS).reshape(ny,nx)
 
-    #-- replace fill values with fill value
+    # replace fill values with fill value
     output['geoid_h'] = np.ma.asarray(N,dtype=np.float64)
     output['geoid_h'].mask = np.logical_not(np.isfinite(N))
     output['geoid_h'].fill_value = np.copy(fill_value)
     output['geoid_h'].data[output['geoid_h'].mask] = fill_value
 
-    #-- output to file
+    # output to file
     if (FORMAT == 'csv'):
         geoid_toolkit.spatial.to_ascii(output, attrib, output_file,
             delimiter=',', columns=['y','x','geoid_h'])
@@ -194,16 +194,16 @@ def compute_geoid_grids(model_file, output_file,
     elif (FORMAT == 'HDF5'):
         geoid_toolkit.spatial.to_HDF5(output, attrib, output_file)
     elif (FORMAT == 'geotiff'):
-        #-- copy global geotiff attributes for projection and grid parameters
+        # copy global geotiff attributes for projection and grid parameters
         attrib['wkt'] = crs1.to_wkt()
         attrib['spacing'] = (dx, -dy)
         attrib['extent'] = np.copy(BOUNDS)
         geoid_toolkit.spatial.to_geotiff(output, attrib, output_file,
             varname='geoid_h')
-    #-- change the permissions level to MODE
+    # change the permissions level to MODE
     os.chmod(output_file, MODE)
 
-#-- PURPOSE: create argument parser
+# PURPOSE: create argument parser
 def arguments():
     parser = argparse.ArgumentParser(
         description="""Computes geoid undulations from a gravity model
@@ -211,66 +211,66 @@ def arguments():
         fromfile_prefix_chars="@"
     )
     parser.convert_arg_line_to_args = convert_arg_line_to_args
-    #-- command line options
+    # command line options
     parser.add_argument('outfile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)),
         help='Output file')
-    #-- set gravity model file to use
+    # set gravity model file to use
     parser.add_argument('--gravity','-G',
         type=lambda p: os.path.abspath(os.path.expanduser(p)),
         default=os.getcwd(),
         help='Gravity model file to use')
-    #-- maximum spherical harmonic degree (level of truncation)
+    # maximum spherical harmonic degree (level of truncation)
     parser.add_argument('--lmax','-l',
         type=int, help='Maximum spherical harmonic degree')
-    #-- tide system of output geoid
-    #-- tide_free: no permanent direct and indirect tidal potentials
-    #-- mean_tide: permanent tidal potentials (direct and indirect)
-    #-- zero_tide: permanent direct tidal potential removed
+    # tide system of output geoid
+    # tide_free: no permanent direct and indirect tidal potentials
+    # mean_tide: permanent tidal potentials (direct and indirect)
+    # zero_tide: permanent direct tidal potential removed
     parser.add_argument('--tide','-T',
         type=str, default='tide_free',
         choices=['tide_free','mean_tide','zero_tide'],
         help='Tide system of output geoid')
-    #-- Gaussian smoothing radius (km)
+    # Gaussian smoothing radius (km)
     parser.add_argument('--radius','-R',
         type=float, default=0,
         help='Gaussian smoothing radius (km)')
-    #-- Output data format
+    # Output data format
     parser.add_argument('--format','-F',
         type=str, default='csv', choices=('csv','netCDF4','HDF5','geotiff'),
         help='Output data format')
-    #-- output grid spacing
+    # output grid spacing
     parser.add_argument('--spacing','-S',
         type=float, default=1.0, nargs='+',
         help='Output grid spacing')
-    #-- bounds of output mosaic
+    # bounds of output mosaic
     parser.add_argument('--bounds','-B', type=float,
         nargs=4, default=[-180.0,180.0,-90.0,90.0],
         metavar=('xmin','xmax','ymin','ymax'),
         help='Output grid extents')
-    #-- spatial projection (EPSG code or PROJ4 string)
+    # spatial projection (EPSG code or PROJ4 string)
     parser.add_argument('--projection','-P',
         type=str, default='4326',
         help='Spatial projection as EPSG code or PROJ4 string')
-    #-- verbose output of processing run
-    #-- print information about each output file
+    # verbose output of processing run
+    # print information about each output file
     parser.add_argument('--verbose','-V',
         default=False, action='store_true',
         help='Verbose output of run')
-    #-- permissions mode of the local files (number in octal)
+    # permissions mode of the local files (number in octal)
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
         help='Permission mode of output file')
-    #-- return the parser
+    # return the parser
     return parser
 
-#-- This is the main part of the program that calls the individual functions
+# This is the main part of the program that calls the individual functions
 def main():
-    #-- Read the system arguments listed after the program
+    # Read the system arguments listed after the program
     parser = arguments()
     args,_ = parser.parse_known_args()
 
-    #-- run geoid grid program
+    # run geoid grid program
     compute_geoid_grids(args.gravity, args.outfile,
         LMAX=args.lmax,
         TIDE=args.tide,
@@ -282,6 +282,6 @@ def main():
         VERBOSE=args.verbose,
         MODE=args.mode)
 
-#-- run main program
+# run main program
 if __name__ == '__main__':
     main()

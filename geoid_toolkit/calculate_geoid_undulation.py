@@ -63,7 +63,7 @@ import numpy as np
 from geoid_toolkit.geoid_undulation import geoid_undulation
 from geoid_toolkit.read_ICGEM_harmonics import read_ICGEM_harmonics
 
-#-- PURPOSE: calculate geoid heights at a set of latitudes and longitudes
+# PURPOSE: calculate geoid heights at a set of latitudes and longitudes
 def calculate_geoid_undulation(lon, lat, gravity_model_file, **kwargs):
     """
     Wrapper function for computing geoid undulations from a gravity model
@@ -113,21 +113,21 @@ def calculate_geoid_undulation(lon, lat, gravity_model_file, **kwargs):
     N: float
         geoidal undulation for a given ellipsoid in meters
     """
-    #-- set default keyword arguments
+    # set default keyword arguments
     kwargs.setdefault('LMAX',None)
     kwargs.setdefault('ELLIPSOID','WGS84')
     kwargs.setdefault('TIDE','tide_free')
     kwargs.setdefault('GAUSS',0)
     kwargs.setdefault('EPS',1e-8)
     kwargs.setdefault('ZIP',False)
-    #-- read gravity model Ylms and change tide if specified
+    # read gravity model Ylms and change tide if specified
     Ylms = read_ICGEM_harmonics(gravity_model_file,**kwargs)
     R = np.float64(Ylms['radius'])
     GM = np.float64(Ylms['earth_gravity_constant'])
     LMAX = np.int64(Ylms['max_degree'])
-    #-- calculate geoid at coordinates
+    # calculate geoid at coordinates
     N = geoid_undulation(lat, lon, kwargs['ELLIPSOID'],
         Ylms['clm'], Ylms['slm'], LMAX, R, GM,
         GAUSS=kwargs['GAUSS'], EPS=kwargs['EPS'])
-    #-- return the geoid undulation
+    # return the geoid undulation
     return N

@@ -110,76 +110,76 @@ def topographic_potential(lat, lon, refell, clm, slm, lmax, R, density, GAUSS=0)
         *GeoForschungsZentrum Scientific Technical Report*, STR09/02, (2013).
         `doi: 10.2312/GFZ.b103-0902-26 <https://doi.org/10.2312/GFZ.b103-0902-26>`_
     """
-    #-- get ellipsoid parameters for refell
+    # get ellipsoid parameters for refell
     ellip = ref_ellipsoid(refell)
     a = ellip['a']
     ecc1 = ellip['ecc1']
-    #-- universal gravitational constant
+    # universal gravitational constant
     G = 6.67408e-11
 
-    #-- convert from geodetic latitude to geocentric latitude
+    # convert from geodetic latitude to geocentric latitude
     latitude_geodetic_rad = np.pi*lat/180.0
     longitude_rad = np.pi*lon/180.0
-    #-- prime vertical radius of curvature
+    # prime vertical radius of curvature
     N = a/np.sqrt(1.0 - ecc1**2.0*np.sin(latitude_geodetic_rad)**2.0)
     X = N * np.cos(latitude_geodetic_rad) * np.cos(longitude_rad)
     Y = N * np.cos(latitude_geodetic_rad) * np.sin(longitude_rad)
     Z = (N * (1.0 - ecc1**2.0)) * np.sin(latitude_geodetic_rad)
-    #-- number of observations
+    # number of observations
     nlat = len(lat)
-    #-- sin and cos of latitude
+    # sin and cos of latitude
     latitude_geocentric_rad = np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))
     t = np.sin(latitude_geocentric_rad)
     u = np.cos(latitude_geocentric_rad)
 
-    #-- smooth the global gravity field with a Gaussian function
+    # smooth the global gravity field with a Gaussian function
     if (GAUSS != 0):
         wt = 2.0*np.pi*gauss_weights(GAUSS,lmax)
         for l in range(0,lmax+1):
             clm[l,:] = clm[l,:]*wt[l]
             slm[l,:] = slm[l,:]*wt[l]
 
-    #-- calculate clenshaw summations
+    # calculate clenshaw summations
     s_m_c = np.zeros((nlat,lmax*2+2))
     for m in range(lmax, -1, -1):
         s_m_c[:,2*m:2*m+2] = clenshaw_s_m(t,m,clm,slm,lmax)
 
-    #-- calculate cos phi
+    # calculate cos phi
     cos_phi_2 = 2.0*np.cos(longitude_rad)
-    #-- matrix of cos/sin m*phi (longitude_rad) summation
+    # matrix of cos/sin m*phi (longitude_rad) summation
     cos_m_phi = np.zeros((nlat,lmax+2),dtype=np.longdouble)
     sin_m_phi = np.zeros((nlat,lmax+2),dtype=np.longdouble)
-    #-- initialize matrix with values at lmax+1 and lmax
+    # initialize matrix with values at lmax+1 and lmax
     cos_m_phi[:,lmax+1] = np.cos(np.longdouble(lmax + 1)*longitude_rad)
     sin_m_phi[:,lmax+1] = np.sin(np.longdouble(lmax + 1)*longitude_rad)
     cos_m_phi[:,lmax] = np.cos(np.longdouble(lmax)*longitude_rad)
     sin_m_phi[:,lmax] = np.sin(np.longdouble(lmax)*longitude_rad)
-    #-- calculate summation
+    # calculate summation
     s_m = s_m_c[:,2*lmax]*cos_m_phi[:,lmax] + s_m_c[:,2*lmax+1]*sin_m_phi[:,lmax]
-    #-- iterate to calculate complete summation
+    # iterate to calculate complete summation
     for m in range(lmax-1, 0, -1):
         cos_m_phi[:,m] = cos_phi_2*cos_m_phi[:,m+1] - cos_m_phi[:,m+2]
         sin_m_phi[:,m] = cos_phi_2*sin_m_phi[:,m+1] - sin_m_phi[:,m+2]
         a_m = np.sqrt((2.0*m+3.0)/(2.0*m+2.0))
         s_m = a_m*u*s_m + s_m_c[:,2*m]*cos_m_phi[:,m] + s_m_c[:,2*m+1]*sin_m_phi[:,m]
 
-    #-- compute the topographic potential
+    # compute the topographic potential
     s_m = np.sqrt(3.0)*u*s_m + s_m_c[:,0]
     T = 2.0 * np.pi * G * density * (R * s_m)**2
-    #-- return the topographic potential
+    # return the topographic potential
     return T
 
-#-- PURPOSE: compute Clenshaw summation of the fully normalized associated
-#-- Legendre's function for constant order m
+# PURPOSE: compute Clenshaw summation of the fully normalized associated
+# Legendre's function for constant order m
 def clenshaw_s_m(t, m, clm1, slm1, lmax):
-    #-- allocate for output matrix
+    # allocate for output matrix
     N = len(t)
     s_m = np.zeros((N,2),dtype=np.longdouble)
-    #-- scaling factor to prevent overflow
+    # scaling factor to prevent overflow
     scalef = 1.0e-280
     clm = scalef*clm1.astype(np.longdouble)
     slm = scalef*slm1.astype(np.longdouble)
-    #-- convert lmax and m to float
+    # convert lmax and m to float
     lm = np.longdouble(lmax)
     mm = np.longdouble(m)
     if (m == lmax):
@@ -219,5 +219,5 @@ def clenshaw_s_m(t, m, clm1, slm1, lmax):
             s_mm_c_pre_2 = np.copy(s_mm_c_pre_1)
             s_mm_c_pre_1 = np.copy(s_mm_c)
         s_m[:,0] = np.copy(s_mm_c)
-    #-- return s_m rescaled with scalef
+    # return s_m rescaled with scalef
     return s_m/scalef

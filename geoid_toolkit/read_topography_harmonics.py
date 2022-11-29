@@ -29,8 +29,8 @@ UPDATE HISTORY:
 """
 import numpy as np
 
-#-- PURPOSE: read Earth 2014 topography harmonics
-#-- http://ddfe.curtin.edu.au/gravitymodels/Earth2014/potential_model/
+# PURPOSE: read Earth 2014 topography harmonics
+# http://ddfe.curtin.edu.au/gravitymodels/Earth2014/potential_model/
 def read_topography_harmonics(model_file):
     """
     Reads `Earth 2014
@@ -66,20 +66,20 @@ def read_topography_harmonics(model_file):
         `doi:10.1007/s10712-016-9382-2 <https://doi.org/10.1007/s10712-016-9382-2>`_
     """
     dinput = np.fromfile(model_file, dtype=np.dtype('<f8'))
-    #-- extract minimum and maximum spherical harmonic degree
+    # extract minimum and maximum spherical harmonic degree
     header = 2
     input_lmin,input_lmax = dinput[:header].astype(np.int)
-    #-- number of spherical harmonic records for Clm and Slm
+    # number of spherical harmonic records for Clm and Slm
     n_down = ((input_lmin-1)**2 + 3*(input_lmin-1))/2 + 1
     n_up = (input_lmax**2 + 3*input_lmax)/2 + 1
     n_harm = n_up - n_down
-    #-- dictionary of model parameters and output Ylms
+    # dictionary of model parameters and output Ylms
     model_input = {}
     model_input['modelname'] = 'EARTH2014'
     model_input['density'] = 2670.0
-    #-- extract cosine and sine harmonics
+    # extract cosine and sine harmonics
     ii,jj = np.tril_indices(input_lmax+1)
-    #-- output dimensions
+    # output dimensions
     model_input['l'] = np.arange(input_lmax+1)
     model_input['m'] = np.arange(input_lmax+1)
     model_input['clm'] = np.zeros((input_lmax+1,input_lmax+1))

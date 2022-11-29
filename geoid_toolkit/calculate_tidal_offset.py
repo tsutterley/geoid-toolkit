@@ -123,25 +123,25 @@ def calculate_tidal_offset(TIDE, GM, R, refell, LOVE=0.3,
         Coefficients for Satellite Altimetry Applications", (2003).
         `eprint ID: 11802 <http://mitgcm.org/~mlosch/geoidcookbook.pdf>`_
     """
-    #-- get ellipsoid parameters for refell
+    # get ellipsoid parameters for refell
     ellip = ref_ellipsoid(refell)
-    #-- standard gravitational acceleration
+    # standard gravitational acceleration
     gamma = 9.80665
     trans = (-0.198*gamma*R**3)/(np.sqrt(5.0)*GM*ellip['a']**2)
-    #-- conversion to switch to tide free
+    # conversion to switch to tide free
     if (REFERENCE == 'tide_free'):
         tide_free_conv = 0.0
     elif (REFERENCE == 'mean_tide'):
         tide_free_conv = -(1.0 + LOVE)
     elif (REFERENCE == 'zero_tide'):
         tide_free_conv = -LOVE
-    #-- conversion for each tidal system
+    # conversion for each tidal system
     if (TIDE == 'mean_tide'):
         conv = (1.0 + LOVE) + tide_free_conv
     elif (TIDE == 'zero_tide'):
         conv = LOVE + tide_free_conv
     elif (TIDE == 'tide_free'):
         conv = 0.0 + tide_free_conv
-    #-- return the C20 offset to change tide systems
+    # return the C20 offset to change tide systems
     delta = conv*trans
     return delta

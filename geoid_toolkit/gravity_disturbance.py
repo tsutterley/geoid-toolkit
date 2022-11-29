@@ -131,7 +131,7 @@ def gravity_disturbance(lat,lon,h,refell,clm,slm,lmax,R,GM,GAUSS=0):
         *Earth Science Informatics*, 5, 123--136, (2012).
         `doi:10.1007/s12145-012-0102-2 <https://doi.org/10.1007/s12145-012-0102-2>`_
     """
-    #-- calculate the real and normal potentials at a given height
+    # calculate the real and normal potentials at a given height
     W,dWdr = real_potential(lat,lon,h,refell,clm,slm,lmax,R,GM,GAUSS=GAUSS)
     U,dUdr,dUdt = norm_potential(lat,lon,h,refell,lmax)
     delta_g_h = -(dWdr - dUdr)

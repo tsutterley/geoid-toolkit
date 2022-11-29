@@ -138,27 +138,27 @@ def height_anomaly(lat,lon,h,refell,clm,slm,lmax,R,GM,GAUSS=0,EPS=1e-8):
         *Earth Science Informatics*, 5, 123--136, (2012).
         `doi:10.1007/s12145-012-0102-2 <https://doi.org/10.1007/s12145-012-0102-2>`_
     """
-    #-- calculate the real and normal potentials for the first iteration
+    # calculate the real and normal potentials for the first iteration
     W,dWdr = real_potential(lat,lon,h,refell,clm,slm,lmax,R,GM,GAUSS=GAUSS)
     U,dUdr,dUdt = norm_potential(lat, lon, h, refell, lmax)
-    #-- normal gravity at latitude
+    # normal gravity at latitude
     gamma_h,dgamma_dh = norm_gravity(lat, h, refell)
-    #-- height anomaly for first iteration
+    # height anomaly for first iteration
     zeta_1 = (W - U) / gamma_h
-    #-- set zeta to the first iteration and set RMS as infinite
+    # set zeta to the first iteration and set RMS as infinite
     zeta = np.copy(zeta_1)
     RMS = np.inf
     while (RMS > EPS):
-        #-- calculate the real and normal potentials for the iteration
+        # calculate the real and normal potentials for the iteration
         W,dWdr = real_potential(lat,lon,h,refell,clm,slm,lmax,R,GM,GAUSS=GAUSS)
         U,dUdr,dUdt = norm_potential(lat,lon,h-zeta_1,refell,lmax)
-        #-- normal gravity at latitude
+        # normal gravity at latitude
         gamma_h,dgamma_dh = norm_gravity(lat,h-zeta_1,refell)
-        #-- add height anomaly for iteration
+        # add height anomaly for iteration
         zeta_1 += (W - U) / gamma_h
-        #-- calculate RMS between iterations
+        # calculate RMS between iterations
         RMS = np.sqrt(np.sum((zeta - zeta_1)**2)/len(lat))
-        #-- set zeta to the previous iteration
+        # set zeta to the previous iteration
         zeta = np.copy(zeta_1)
-    #-- return the height anomaly
+    # return the height anomaly
     return zeta

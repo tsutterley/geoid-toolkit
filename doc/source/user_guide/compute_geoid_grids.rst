@@ -12,7 +12,7 @@ Calling Sequence
 ################
 
 .. argparse::
-    :filename: ../../scripts/compute_geoid_grids.py
+    :filename: compute_geoid_grids.py
     :func: arguments
     :prog: compute_geoid_grids.py
     :nodescription:

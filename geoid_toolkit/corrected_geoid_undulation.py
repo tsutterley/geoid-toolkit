@@ -141,26 +141,26 @@ def corrected_geoid_undulation(lat, lon, refell, clm, slm, tclm, tslm, lmax,
         *Earth Science Informatics*, 5, 123--136, (2012).
         `doi:10.1007/s12145-012-0102-2 <https://doi.org/10.1007/s12145-012-0102-2>`_
     """
-    #-- calculate the real and normal potentials for the first iteration
+    # calculate the real and normal potentials for the first iteration
     W,dWdr=real_potential(lat,lon,0.0,refell,clm,slm,lmax,R,GM,GAUSS=GAUSS)
     U,dUdr,dUdt = norm_potential(lat,lon,0.0,refell,lmax)
-    #-- topographic potential correction
+    # topographic potential correction
     T = topographic_potential(lon,lat,refell,R,tclm,tslm,lmax,density,GAUSS=GAUSS)
-    #-- normal gravity at latitude
+    # normal gravity at latitude
     gamma_h,dgamma_dh = norm_gravity(lat, 0.0, refell)
-    #-- geoid height for first iteration
+    # geoid height for first iteration
     N_1 = (W - U - T) / gamma_h
-    #-- set geoid height to the first iteration and set RMS as infinite
+    # set geoid height to the first iteration and set RMS as infinite
     N = np.copy(N_1)
     RMS = np.inf
     while (RMS > EPS):
-        #-- calculate the real potentials for the iteration
+        # calculate the real potentials for the iteration
         W,dWdr = real_potential(lat,lon,N_1,refell,clm,slm,lmax,R,GM,GAUSS=GAUSS)
-        #-- add geoid height for iteration
+        # add geoid height for iteration
         N_1 += (W - U - T) / gamma_h
-        #-- calculate RMS between iterations
+        # calculate RMS between iterations
         RMS = np.sqrt(np.sum((N - N_1)**2)/len(lat))
-        #-- set N to the previous iteration
+        # set N to the previous iteration
         N = np.copy(N_1)
-    #-- return the geoid height
+    # return the geoid height
     return N

@@ -46,51 +46,51 @@ import netCDF4
 import argparse
 import numpy as np
 
-#-- PURPOSE: Reads .gdf grids from the GFZ calculation service
+# PURPOSE: Reads .gdf grids from the GFZ calculation service
 def read_ICGEM_geoid_grids(FILE, FILENAME=None, MARKER='', SPACING=None,
     VERBOSE=False, MODE=0o775):
 
-    #-- create logger
+    # create logger
     loglevel = logging.INFO if VERBOSE else logging.CRITICAL
     logging.basicConfig(level=loglevel)
 
-    #-- split filename into basename and extension
+    # split filename into basename and extension
     fileBasename,_ = os.path.splitext(FILE)
-    #-- check that data file is present in file system
+    # check that data file is present in file system
     if not os.access(FILE, os.F_OK):
-        raise FileNotFoundError('{0} not found'.format(FILE))
-    #-- open input file and read contents
+        raise FileNotFoundError(f'{FILE} not found')
+    # open input file and read contents
     with open(FILE, mode='r', encoding='utf8') as f:
         file_contents = f.read().splitlines()
-    #-- number of lines contained in the file
+    # number of lines contained in the file
     file_lines = len(file_contents)
 
-    #-- counts the number of lines in the header
+    # counts the number of lines in the header
     count = 0
-    #-- Reading over header text and extracting parameters
+    # Reading over header text and extracting parameters
     HEADER = False
     parameters = {}
     while HEADER is False:
-        #-- file line at count
+        # file line at count
         line = file_contents[count]
         if (len(line) > 1):
             col = line.split()
             parameters[col[0].strip()] = col[1].strip()
-        #-- find MARKER within line to set HEADER flag to True when found
+        # find MARKER within line to set HEADER flag to True when found
         HEADER = bool(re.match(MARKER,line))
-        #-- add 1 to counter
+        # add 1 to counter
         count += 1
 
-    #-- clean up dictionary of parameters
+    # clean up dictionary of parameters
     for key in ['[deg.]','longitude',MARKER]:
         parameters = removekey(parameters, key)
 
-    #-- extract necessary parameters
+    # extract necessary parameters
     latlimit_north = np.float64(parameters['latlimit_north'])
     latlimit_south = np.float64(parameters['latlimit_south'])
     longlimit_west = np.float64(parameters['longlimit_west'])
     longlimit_east = np.float64(parameters['longlimit_east'])
-    #-- change grid spacing by binning data
+    # change grid spacing by binning data
     if SPACING is None:
         nlat = np.int64(parameters['latitude_parallels'])
         nlon = np.int64(parameters['longitude_parallels'])
@@ -98,58 +98,58 @@ def read_ICGEM_geoid_grids(FILE, FILENAME=None, MARKER='', SPACING=None,
         dlat = np.float64(parameters['gridstep'])
     else:
         dlon,dlat = SPACING
-        parameters['gridstep'] = '{0:g},{1:g}'.format(dlon,dlat)
+        parameters['gridstep'] = f'{dlon:g},{dlat:g}'
         nlat = np.abs((latlimit_north-latlimit_south)/dlat).astype('i') + 1
         nlon = np.abs((longlimit_west-longlimit_east)/dlon).astype('i') + 1
-        parameters['latitude_parallels'] = '{0:d}'.format(nlat)
-        parameters['longitude_parallels'] = '{0:d}'.format(nlon)
+        parameters['latitude_parallels'] = f'{nlat:d}'
+        parameters['longitude_parallels'] = f'{nlon:d}'
 
-    #-- output dataset
+    # output dataset
     dinput = {}
     functional = parameters['functional']
     dinput[functional] = np.zeros((nlat,nlon))
     dinput['lon'] = longlimit_west + np.arange(nlon)*dlon
     dinput['lat'] = latlimit_north - np.arange(nlat)*dlat
 
-    #-- for each file line
+    # for each file line
     bin_count = np.zeros((nlat,nlon))
     for j in range(count, file_lines):
         col = np.array(file_contents[j].split(), dtype=np.float)
-        #-- calculating the lon/lat indice
+        # calculating the lon/lat indice
         ilon = int((longlimit_west + col[0])/dlon)
         ilat = int((latlimit_north - col[1])/dlat)
-        #-- if wanting data lat/lon
+        # if wanting data lat/lon
         dinput[functional][ilat,ilon] += np.float64(col[2])
         bin_count[ilat,ilon] += 1.0
 
-    #-- take the mean of the binned data (if not regridding will divide by 1)
+    # take the mean of the binned data (if not regridding will divide by 1)
     ii,jj = np.nonzero(bin_count > 0)
     dinput[functional][ii,jj] /= bin_count[ii,jj]
     ii,jj = np.nonzero(bin_count == 0)
     dinput[functional][ii,jj] = np.float64(parameters['gapvalue'])
 
-    #-- output data and parameters to netCDF4
-    FILENAME = '{0}.nc'.format(fileBasename) if (FILENAME is None) else FILENAME
+    # output data and parameters to netCDF4
+    FILENAME = f'{fileBasename}.nc' if (FILENAME is None) else FILENAME
     ncdf_geoid_write(dinput, parameters, FILENAME=FILENAME)
-    #-- change permissions mode to MODE
+    # change permissions mode to MODE
     os.chmod(FILENAME, MODE)
 
-#-- PURPOSE: remove keys from an input dictionary
+# PURPOSE: remove keys from an input dictionary
 def removekey(d, key):
     r = dict(d)
     del r[key]
     return r
 
-#-- PURPOSE: write output geoid height data to file
+# PURPOSE: write output geoid height data to file
 def ncdf_geoid_write(dinput, parameters, FILENAME=None):
-    #-- opening NetCDF file for writing
+    # opening NetCDF file for writing
     fileID = netCDF4.Dataset(FILENAME, 'w', format="NETCDF4")
 
-    #-- Defining the NetCDF dimensions
+    # Defining the NetCDF dimensions
     for key in ['lon','lat']:
         fileID.createDimension(key, len(dinput[key]))
 
-    #-- defining the NetCDF variables
+    # defining the NetCDF variables
     nc = {}
     functional = parameters['functional']
     gapvalue = np.float64(parameters['gapvalue'])
@@ -157,73 +157,73 @@ def ncdf_geoid_write(dinput, parameters, FILENAME=None):
     nc['lon'] = fileID.createVariable('lon', dinput['lon'].dtype, ('lon',))
     nc[functional] = fileID.createVariable(functional, dinput[functional].dtype,
         ('lat','lon',), fill_value=gapvalue, zlib=True)
-    #-- filling NetCDF variables
+    # filling NetCDF variables
     for key,val in dinput.items():
         nc[key][:] = val[:].copy()
 
-    #-- Defining attributes for longitude and latitude
+    # Defining attributes for longitude and latitude
     nc['lon'].long_name = 'longitude'
     nc['lon'].units = 'degrees_east'
     nc['lat'].long_name = 'latitude'
     nc['lat'].units = 'degrees_north'
-    #-- Defining attributes for functional
+    # Defining attributes for functional
     nc[functional].units = parameters['unit']
-    #-- global variables of NetCDF file
+    # global variables of NetCDF file
     for key in sorted(parameters.keys()):
         fileID.setncattr(key, parameters[key])
 
-    #-- Output NetCDF structure information
+    # Output NetCDF structure information
     logging.info(os.path.basename(FILENAME))
     logging.info(list(fileID.variables.keys()))
 
-    #-- Closing the NetCDF file
+    # Closing the NetCDF file
     fileID.close()
 
-#-- PURPOSE: create argument parser
+# PURPOSE: create argument parser
 def arguments():
     parser = argparse.ArgumentParser(
         description="""Reads geoid height spatial grids from the ICGEM
             Geoid Calculation Service
             """
     )
-    #-- command line parameters
+    # command line parameters
     parser.add_argument('files',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='+',
         help='Geoid height spatial grid files')
-    #-- output filename (will default to input file with netCDF4 suffix)
+    # output filename (will default to input file with netCDF4 suffix)
     parser.add_argument('--filename','-F',
         type=str, default=None,
         help='Output netCDF4 filename')
-    #-- marker denoting the end of the header text
+    # marker denoting the end of the header text
     parser.add_argument('--header','-H',
         type=str, default='end_of_head',
         help='Marker denoting the end of the header text')
-    #-- change the output grid spacing by binning
+    # change the output grid spacing by binning
     parser.add_argument('--spacing','-S',
         type=float, default=None, nargs=2,
         help='Change output grid spacing')
-    #-- verbose will output information about each output file
+    # verbose will output information about each output file
     parser.add_argument('--verbose','-V',
         default=False, action='store_true',
         help='Output information for each output file')
-    #-- permissions mode of the local directories and files (number in octal)
+    # permissions mode of the local directories and files (number in octal)
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
         help='Permissions mode of output files')
-    #-- return the parser
+    # return the parser
     return parser
 
-#-- This is the main part of the program that calls the individual functions
+# This is the main part of the program that calls the individual functions
 def main():
-    #-- Read the system arguments listed after the program
+    # Read the system arguments listed after the program
     parser = arguments()
     args,_ = parser.parse_known_args()
 
-    #-- for each input grid file
+    # for each input grid file
     for f in args.files:
         read_ICGEM_geoid_grids(f, FILENAME=args.filename, MARKER=args.header,
             SPACING=args.spacing, VERBOSE=args.verbose, MODE=args.mode)
 
-#-- run main program
+# run main program
 if __name__ == '__main__':
     main()

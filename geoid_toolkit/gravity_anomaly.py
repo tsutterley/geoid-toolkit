@@ -156,10 +156,10 @@ def gravity_anomaly(lat,lon,h,refell,clm,slm,lmax,R,GM,METHOD='first',GAUSS=0):
 
     .. |eacute|    unicode:: U+00E9 .. LATIN SMALL LETTER E WITH ACUTE
     """
-    #-- compute the gravity disturbance and the normal gravity
+    # compute the gravity disturbance and the normal gravity
     delta_g_h = gravity_disturbance(lat,lon,h,refell,clm,slm,lmax,R,GM,GAUSS=GAUSS)
     gamma_h,dgamma_dh = norm_gravity(lat, h, refell)
-    #-- compute the gravity anomaly for a given method
+    # compute the gravity anomaly for a given method
     if (METHOD.lower() == 'first'):
         N = geoid_undulation(lat,lon,refell,clm,slm,lmax,R,GM,GAUSS=GAUSS)
         ddelta_g = delta_g_h + N * dgamma_dh
