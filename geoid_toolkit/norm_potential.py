@@ -120,14 +120,14 @@ def norm_potential(lat, lon, h, refell, lmax):
         `doi:10.1007/s12145-012-0102-2 <https://doi.org/10.1007/s12145-012-0102-2>`_
     """
 
-    #-- get ellipsoid parameters for refell
+    # get ellipsoid parameters for refell
     ellip = ref_ellipsoid(refell)
     a = np.longdouble(ellip['a'])
     ecc1 = np.longdouble(ellip['ecc1'])
     GM = np.longdouble(ellip['GM'])
     J2 = np.longdouble(ellip['J2'])
 
-    #-- convert from geodetic latitude to geocentric latitude
+    # convert from geodetic latitude to geocentric latitude
     latitude_geodetic_rad = (np.pi*lat/180.0).astype(np.longdouble)
     longitude_rad = (np.pi*lon/180.0).astype(np.longdouble)
     N = a/np.sqrt(1.0 - ecc1**2.0*np.sin(latitude_geodetic_rad)**2.0)
@@ -137,28 +137,28 @@ def norm_potential(lat, lon, h, refell, lmax):
     rr = np.sqrt(X**2.0 + Y**2.0 + Z**2.0)
     latitude_geocentric = np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))
 
-    #-- calculate even zonal harmonics
+    # calculate even zonal harmonics
     n = np.arange(2, 12+2, 2, dtype=np.longdouble)
     J2n = cosine_even_zonals(J2, ecc1, n/2.0)
-    #-- normalized cosine harmonics: Cn = -Jn/np.sqrt(2.0*n+1.0)
-    #-- J2 = 0.108262982131e-2
+    # normalized cosine harmonics: Cn = -Jn/np.sqrt(2.0*n+1.0)
+    # J2 = 0.108262982131e-2
     C_2 = -J2n[0]/np.sqrt(5.0)
-    #-- J4 = -0.237091120053e-5
+    # J4 = -0.237091120053e-5
     C_4 = -J2n[1]/np.sqrt(9.0)
-    #-- J6 = 0.608346498882e-8
+    # J6 = 0.608346498882e-8
     C_6 = -J2n[2]/np.sqrt(13.0)
-    #-- J8 = -0.142681087920e-10
+    # J8 = -0.142681087920e-10
     C_8 = -J2n[3]/np.sqrt(17.0)
-    #-- J10 = 0.121439275882e-13
+    # J10 = 0.121439275882e-13
     C_10 = -J2n[4]/np.sqrt(21.0)
-    #-- J12 = 0.205395070709e-15
+    # J12 = 0.205395070709e-15
     C_12 = -J2n[5]/np.sqrt(25.0)
 
-    #-- calculate legendre polynomials at latitude and their first derivative
+    # calculate legendre polynomials at latitude and their first derivative
     Pl,dPl = legendre_polynomials(lmax, np.sin(latitude_geocentric),
         ASTYPE=np.longdouble)
 
-    #-- normal potentials and derivatives
+    # normal potentials and derivatives
     U = (GM/rr) * (1.0 + (a/rr)**2.*C_2*Pl[2,:] + (a/rr)**4.*C_4*Pl[4,:] + \
         (a/rr)**6.*C_6*Pl[6,:] + (a/rr)**8.*C_8*Pl[8,:] + \
         (a/rr)**10.*C_10*Pl[10,:] + (a/rr)**12.*C_12*Pl[12,:])
@@ -171,10 +171,10 @@ def norm_potential(lat, lon, h, refell, lmax):
         (a/rr)**8.0*C_8*dPl[8,:] + (a/rr)**10.0*C_10*dPl[10,:] + \
         (a/rr)**12.0*C_12*dPl[12,:])
 
-    #-- return the potentials
+    # return the potentials
     return (U, dU_dr, dU_dtheta)
 
-#-- PURPOSE: Calculate even zonal harmonics using J2 and first eccentricity
+# PURPOSE: Calculate even zonal harmonics using J2 and first eccentricity
 def cosine_even_zonals(J2,e,n):
     """
     Calculate even zonal harmonics using J2 and first eccentricity
@@ -193,7 +193,7 @@ def cosine_even_zonals(J2,e,n):
     J2n: float
         Even zonal harmonics
     """
-    #-- p. 76 Eqn.(2-170)
+    # p. 76 Eqn.(2-170)
     J2n = (-1.0)**(n+1.0)*((3.0*e**(2.0*n))/((2.0*n + 1.0)*(2.0*n + 3.0))) * \
         (1.0 - n + 5.0*n*J2/(e**2.0))
     return J2n

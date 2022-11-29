@@ -132,60 +132,60 @@ def real_potential(lat, lon, h, refell, clm, slm, lmax, R, GM, GAUSS=0):
         `doi:10.1007/s12145-012-0102-2 <https://doi.org/10.1007/s12145-012-0102-2>`_
     """
 
-    #-- get ellipsoid parameters for refell
+    # get ellipsoid parameters for refell
     ellip = ref_ellipsoid(refell)
     a = np.longdouble(ellip['a'])
     ecc1 = np.longdouble(ellip['ecc1'])
 
-    #-- convert from geodetic latitude to geocentric latitude
+    # convert from geodetic latitude to geocentric latitude
     latitude_geodetic_rad = (np.pi*lat/180.0).astype(np.longdouble)
     longitude_rad = (np.pi*lon/180.0).astype(np.longdouble)
-    #-- prime vertical radius of curvature
+    # prime vertical radius of curvature
     N = a/np.sqrt(1.0 - ecc1**2.0*np.sin(latitude_geodetic_rad)**2.0)
     X = (N + h) * np.cos(latitude_geodetic_rad) * np.cos(longitude_rad)
     Y = (N + h) * np.cos(latitude_geodetic_rad) * np.sin(longitude_rad)
     Z = (N * (1.0 - ecc1**2.0) + h) * np.sin(latitude_geodetic_rad)
-    #-- height of the observation point above the ellipsoid
+    # height of the observation point above the ellipsoid
     rr = np.sqrt(X**2.0 + Y**2.0 + Z**2.0)
     latitude_geocentric_rad = np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))
-    #-- number of observations
+    # number of observations
     nlat = len(lat)
-    #-- sin and cos of latitude
+    # sin and cos of latitude
     t = np.sin(latitude_geocentric_rad)
     u = np.cos(latitude_geocentric_rad)
-    #-- radius ratio
+    # radius ratio
     q = (R / rr).astype(np.longdouble)
 
-    #-- smooth the global gravity field with a Gaussian function
+    # smooth the global gravity field with a Gaussian function
     if (GAUSS != 0):
         wt = 2.0*np.pi*gauss_weights(GAUSS,lmax)
         for l in range(0,lmax+1):
             clm[l,:] = clm[l,:]*wt[l]
             slm[l,:] = slm[l,:]*wt[l]
 
-    #-- calculate clenshaw summations
+    # calculate clenshaw summations
     s_m_c = np.zeros((nlat,lmax*2+2),dtype=np.longdouble)
     ds_m_dr_c = np.zeros((nlat,lmax*2+2),dtype=np.longdouble)
     for m in range(lmax, -1, -1):
         s_m_c[:,2*m:2*m+2] = clenshaw_s_m(t,q,m,clm,slm,lmax)
         ds_m_dr_c[:,2*m:2*m+2] = clenshaw_ds_m_dr(t,q,m,clm,slm,lmax)
 
-    #-- calculate cos phi
+    # calculate cos phi
     cos_phi_2 = 2.0*np.cos(longitude_rad)
-    #-- matrix of cos/sin m*phi (longitude_rad) summation
+    # matrix of cos/sin m*phi (longitude_rad) summation
     cos_m_phi = np.zeros((nlat,lmax+2),dtype=np.longdouble)
     sin_m_phi = np.zeros((nlat,lmax+2),dtype=np.longdouble)
-    #-- initialize matrix with values at lmax+1 and lmax
+    # initialize matrix with values at lmax+1 and lmax
     cos_m_phi[:,lmax+1] = np.cos(np.longdouble(lmax + 1)*longitude_rad)
     sin_m_phi[:,lmax+1] = np.sin(np.longdouble(lmax + 1)*longitude_rad)
     cos_m_phi[:,lmax] = np.cos(np.longdouble(lmax)*longitude_rad)
     sin_m_phi[:,lmax] = np.sin(np.longdouble(lmax)*longitude_rad)
-    #-- calculate summation
+    # calculate summation
     s_m = s_m_c[:,2*lmax]*cos_m_phi[:,lmax] + s_m_c[:,2*lmax+1]*sin_m_phi[:,lmax]
     ds_m_dr = ds_m_dr_c[:,2*lmax]*cos_m_phi[:,lmax] + \
         ds_m_dr_c[:,2*lmax+1]*sin_m_phi[:,lmax]
 
-    #-- iterate to calculate complete summation
+    # iterate to calculate complete summation
     for m in range(lmax-1, 0, -1):
         cos_m_phi[:,m] = cos_phi_2*cos_m_phi[:,m+1] - cos_m_phi[:,m+2]
         sin_m_phi[:,m] = cos_phi_2*sin_m_phi[:,m+1] - sin_m_phi[:,m+2]
@@ -195,26 +195,26 @@ def real_potential(lat, lon, h, refell, clm, slm, lmax, R, GM, GAUSS=0):
         ds_m_dr = a_m*u*q*ds_m_dr + ds_m_dr_c[:,2*m]*cos_m_phi[:,m] + \
             ds_m_dr_c[:,2*m+1]*sin_m_phi[:,m]
 
-    #-- add the final terms
+    # add the final terms
     s_m = np.sqrt(3.0)*u*q*s_m + s_m_c[:,0]
     ds_m_dr = np.sqrt(3.0)*u*q*ds_m_dr + ds_m_dr_c[:,0]
-    #-- compute the real potential and derivatives
+    # compute the real potential and derivatives
     W = (GM/rr) * s_m
     dW_dr = (GM / (rr**2.0)) * ds_m_dr
-    #-- return the real potential and derivatives
+    # return the real potential and derivatives
     return (W,dW_dr)
 
-#-- PURPOSE: compute Clenshaw summation of the fully normalized associated
-#-- Legendre's function for constant order m
+# PURPOSE: compute Clenshaw summation of the fully normalized associated
+# Legendre's function for constant order m
 def clenshaw_s_m(t, q, m, clm1, slm1, lmax):
-    #-- allocate for output matrix
+    # allocate for output matrix
     N = len(t)
     s_m = np.zeros((N,2),dtype=np.longdouble)
-    #-- scaling factor to prevent overflow
+    # scaling factor to prevent overflow
     scalef = 1.0e-280
     clm = scalef*clm1.astype(np.longdouble)
     slm = scalef*slm1.astype(np.longdouble)
-    #-- convert lmax and m to float
+    # convert lmax and m to float
     lm = np.longdouble(lmax)
     mm = np.longdouble(m)
     if (m == lmax):
@@ -254,20 +254,20 @@ def clenshaw_s_m(t, q, m, clm1, slm1, lmax):
             s_mm_c_pre_2 = np.copy(s_mm_c_pre_1)
             s_mm_c_pre_1 = np.copy(s_mm_c)
         s_m[:,0] = np.copy(s_mm_c)
-    #-- return s_m rescaled with scalef
+    # return s_m rescaled with scalef
     return s_m/scalef
 
-#-- PURPOSE: compute Clenshaw summation of derivative with respect to latitude
-#-- of the fully normalized associated Legendre's function for constant order m
+# PURPOSE: compute Clenshaw summation of derivative with respect to latitude
+# of the fully normalized associated Legendre's function for constant order m
 def clenshaw_ds_m(t, u, q, m, clm1, slm1, lmax):
-    #-- allocate for output matrix
+    # allocate for output matrix
     N = len(t)
     s_m = np.zeros((N,2),dtype=np.longdouble)
-    #-- scaling factor to prevent overflow
+    # scaling factor to prevent overflow
     scalef = 1.0e-280
     clm = scalef*clm1.astype(np.longdouble)
     slm = scalef*slm1.astype(np.longdouble)
-    #-- convert lmax and m to float
+    # convert lmax and m to float
     lm = np.longdouble(lmax)
     mm = np.longdouble(m)
     if (m == lmax):
@@ -325,20 +325,20 @@ def clenshaw_ds_m(t, u, q, m, clm1, slm1, lmax):
             s_dot_mm_c_pre_2 = np.copy(s_dot_mm_c_pre_1)
             s_dot_mm_c_pre_1 = np.copy(s_dot_mm_c)
         s_m[:,0] = - u * s_dot_mm_c
-    #-- return s_m rescaled with scalef
+    # return s_m rescaled with scalef
     return s_m/scalef
 
-#-- PURPOSE: compute Clenshaw summation of derivative with respect to radius of
-#-- the fully normalized associated Legendre's function for constant order m
+# PURPOSE: compute Clenshaw summation of derivative with respect to radius of
+# the fully normalized associated Legendre's function for constant order m
 def clenshaw_ds_m_dr(t, q, m, clm1, slm1, lmax):
-    #-- allocate for output matrix
+    # allocate for output matrix
     N = len(t)
     s_m = np.zeros((N,2),dtype=np.longdouble)
-    #-- scaling factor to prevent overflow
+    # scaling factor to prevent overflow
     scalef = 1.0e-280
     clm = scalef*clm1.astype(np.longdouble)
     slm = scalef*slm1.astype(np.longdouble)
-    #-- convert lmax and m to float
+    # convert lmax and m to float
     lm = np.longdouble(lmax)
     mm = np.longdouble(m)
     if (m == lmax):
@@ -380,5 +380,5 @@ def clenshaw_ds_m_dr(t, q, m, clm1, slm1, lmax):
             ds_mm_dr_c_pre_2 = np.copy(ds_mm_dr_c_pre_1)
             ds_mm_dr_c_pre_1 = np.copy(ds_mm_dr_c)
         s_m[:,0] = np.copy(ds_mm_dr_c)
-    #-- return s_m rescaled with scalef
+    # return s_m rescaled with scalef
     return s_m/scalef

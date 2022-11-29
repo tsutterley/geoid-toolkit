@@ -12,7 +12,7 @@ Calling Sequence
 ################
 
 .. argparse::
-    :filename: ../../scripts/compute_geoidal_undulation.py
+    :filename: compute_geoidal_undulation.py
     :func: arguments
     :prog: compute_geoidal_undulation.py
     :nodescription:

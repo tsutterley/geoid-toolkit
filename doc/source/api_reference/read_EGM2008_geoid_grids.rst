@@ -13,7 +13,7 @@ Calling Sequence
 ################
 
 .. argparse::
-    :filename: ../../scripts/read_EGM2008_geoid_grids.py
+    :filename: read_EGM2008_geoid_grids.py
     :func: arguments
     :prog: read_EGM2008_geoid_grids.py
     :nodescription:

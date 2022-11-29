@@ -45,7 +45,7 @@ def read_EGM2008_geoid_grids(FILE, FILENAME=None, LOVE=0.3,
     fileBasename,_ = os.path.splitext(FILE)
     # check that data file is present in file system
     if not os.access(FILE, os.F_OK):
-        raise FileNotFoundError('{0} not found'.format(FILE))
+        raise FileNotFoundError(f'{FILE} not found')
     # open input file and read contents
     file_contents = np.fromfile(FILE, dtype='<f4')
 
@@ -102,7 +102,7 @@ def read_EGM2008_geoid_grids(FILE, FILENAME=None, LOVE=0.3,
     dinput['geoid_free2mean'][:,:] = -0.198*P2*(1.0 + LOVE)
 
     # output data and parameters to netCDF4
-    FILENAME = '{0}.nc'.format(fileBasename) if (FILENAME is None) else FILENAME
+    FILENAME = f'{fileBasename}.nc' if (FILENAME is None) else FILENAME
     ncdf_geoid_write(dinput, attributes, FILENAME=FILENAME)
     # change permissions mode to MODE
     os.chmod(FILENAME, MODE)

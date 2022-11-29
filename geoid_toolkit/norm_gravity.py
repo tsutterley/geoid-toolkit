@@ -103,34 +103,34 @@ def norm_gravity(lat, h, refell):
         `doi: 10.1007/978-3-211-33545-1 <https://doi.org/10.1007/978-3-211-33545-1>`_
     """
 
-    #-- convert latitude from degrees to radians
+    # convert latitude from degrees to radians
     phi = np.pi*lat/180.0
 
-    #-- get ellipsoid parameters for refell
+    # get ellipsoid parameters for refell
     ellip = ref_ellipsoid(refell)
     a = ellip['a']
     b = ellip['b']
-    #-- eccentricity
+    # eccentricity
     ecc2 = ellip['ecc2']
     GM = ellip['GM']
-    #-- m parameter [omega^2*a^2*b/(GM)]
+    # m parameter [omega^2*a^2*b/(GM)]
     m = ellip['mp']
-    #-- flattening components
+    # flattening components
     f = ellip['f']
     f_2 = -f + (5.0/2.0)*m + (1.0/2.0)*f**2.0 - (26.0/7.0)*f*m + (15.0/4.0)*m**2.0
     f_4 = -(1.0/2.0)*f**2.0 + (5.0/2.0)*f*m
 
-    #-- Normal gravity at the equator.
-    #-- p. 79, Eqn.(2-186)
+    # Normal gravity at the equator.
+    # p. 79, Eqn.(2-186)
     gamma_a = (GM/(a * b)) * (1.0 - (3.0 / 2.0)*m - (3.0 / 14.0)*ecc2**2.0*m)
-    #-- Normal gravity
-    #-- p. 80, Eqn.(2-199)
+    # Normal gravity
+    # p. 80, Eqn.(2-199)
     gamma_0 = gamma_a * (1.0 + f_2*np.sin(phi)**2.0 + f_4*np.sin(phi)**4.0)
-    #-- Normal gravity at height
-    #-- p. 82, Eqn.(2-215)
+    # Normal gravity at height
+    # p. 82, Eqn.(2-215)
     p_1 = (1.0 + f + m - 2.0*f*np.sin(phi)**2.0)
     gamma_h = gamma_0 * (1.0 - (2.0/a)*p_1*h + (3.0/(a**2.0))*h**2.0)
-    #-- approximate derivative of normal gravity with respect to height
+    # approximate derivative of normal gravity with respect to height
     dgamma_dh = ((-2.0 * gamma_0) / a) * p_1
-    #-- return the normal gravity and the derivative
+    # return the normal gravity and the derivative
     return (gamma_h, dgamma_dh)
