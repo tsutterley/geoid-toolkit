@@ -23,6 +23,10 @@ General Methods
 
 .. autofunction:: geoid_toolkit.utilities.get_hash
 
+.. autofunction:: geoid_toolkit.utilities.get_git_revision_hash
+
+.. autofunction:: geoid_toolkit.utilities.get_git_status
+
 .. autofunction:: geoid_toolkit.utilities.url_split
 
 .. autofunction:: geoid_toolkit.utilities.convert_arg_line_to_args
@@ -34,7 +38,6 @@ General Methods
 .. autofunction:: geoid_toolkit.utilities.ceil
 
 .. autofunction:: geoid_toolkit.utilities.copy
-
 
 .. autofunction:: geoid_toolkit.utilities.check_ftp_connection
 
