@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 read_EGM2008_geoid_grids.py
-Written by Tyler Sutterley (06/2022)
+Written by Tyler Sutterley (12/2022)
 Reads EGM2008 geoid height spatial grids from unformatted binary files
 provided by the National Geospatial-Intelligence Agency
 Outputs spatial grids as netCDF4 files
@@ -24,6 +24,7 @@ PYTHON DEPENDENCIES:
         https://unidata.github.io/netcdf4-python/
 
 UPDATE HISTORY:
+    Updated 12/2022: single implicit import of geoid toolkit
     Written 06/2022
 """
 from __future__ import print_function
@@ -32,7 +33,9 @@ import os
 import logging
 import netCDF4
 import argparse
+import datetime
 import numpy as np
+import geoid_toolkit as geoidtk
 
 def read_EGM2008_geoid_grids(FILE, FILENAME=None, LOVE=0.3,
     VERBOSE=False, MODE=0o775):
@@ -141,6 +144,13 @@ def ncdf_geoid_write(dinput, attributes, FILENAME=None):
     # Defining global attributes of NetCDF file
     for att_name,att_val in attributes['ROOT'].items():
         fileID.setncattr(key, att_val)
+
+    # add software information
+    fileID.software_reference = geoidtk.version.project_name
+    fileID.software_version = geoidtk.version.full_version
+    fileID.software_revision = geoidtk.utilities.get_git_revision_hash()
+    # add attribute for date created
+    fileID.date_created = datetime.datetime.now().isoformat()
 
     # Output NetCDF structure information
     logging.info(os.path.basename(FILENAME))

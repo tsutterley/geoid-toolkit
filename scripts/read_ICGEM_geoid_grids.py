@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 read_ICGEM_geoid_grids.py
-Written by Tyler Sutterley (05/2022)
+Written by Tyler Sutterley (12/2022)
 Reads geoid height spatial grids from the GFZ Geoid Calculation Service
     http://icgem.gfz-potsdam.de/home
 Outputs spatial grids as netCDF4 files
@@ -23,6 +23,7 @@ PYTHON DEPENDENCIES:
         https://unidata.github.io/netcdf4-python/
 
 UPDATE HISTORY:
+    Updated 12/2022: single implicit import of geoid toolkit
     Updated 05/2022: use argparse descriptions within sphinx documentation
     Updated 04/2022: include utf-8 encoding in reads to be windows compliant
         check if gravity field data file is present in file-system
@@ -44,7 +45,9 @@ import re
 import logging
 import netCDF4
 import argparse
+import datetime
 import numpy as np
+import geoid_toolkit as geoidtk
 
 # PURPOSE: Reads .gdf grids from the GFZ calculation service
 def read_ICGEM_geoid_grids(FILE, FILENAME=None, MARKER='', SPACING=None,
@@ -171,6 +174,13 @@ def ncdf_geoid_write(dinput, parameters, FILENAME=None):
     # global variables of NetCDF file
     for key in sorted(parameters.keys()):
         fileID.setncattr(key, parameters[key])
+
+    # add software information
+    fileID.software_reference = geoidtk.version.project_name
+    fileID.software_version = geoidtk.version.full_version
+    fileID.software_revision = geoidtk.utilities.get_git_revision_hash()
+    # add attribute for date created
+    fileID.date_created = datetime.datetime.now().isoformat()
 
     # Output NetCDF structure information
     logging.info(os.path.basename(FILENAME))

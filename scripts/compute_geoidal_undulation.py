@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_geoidal_undulation.py
-Written by Tyler Sutterley (05/2022)
+Written by Tyler Sutterley (12/2022)
 Computes geoid undulations from a gravity model for an input file
 
 INPUTS:
@@ -61,6 +61,7 @@ PROGRAM DEPENDENCIES:
     gauss_weights.py: Computes Gaussian weights as a function of degree
 
 UPDATE HISTORY:
+    Updated 12/2022: single implicit import of geoid toolkit
     Updated 05/2022: use argparse descriptions within sphinx documentation
     Updated 11/2021: add function for attempting to extract projection
     Updated 10/2021: using python logging for handling verbose output
@@ -79,10 +80,7 @@ import pyproj
 import logging
 import argparse
 import numpy as np
-import geoid_toolkit.spatial
-from geoid_toolkit.read_ICGEM_harmonics import read_ICGEM_harmonics
-from geoid_toolkit.geoid_undulation import geoid_undulation
-from geoid_toolkit.utilities import convert_arg_line_to_args
+import geoid_toolkit as geoidtk
 
 # PURPOSE: try to get the projection information for the input file
 def get_projection(attributes, PROJECTION):
@@ -128,7 +126,7 @@ def compute_geoidal_undulation(model_file, input_file, output_file,
     logging.basicConfig(level=loglevel)
 
     # read gravity model Ylms and change tide if specified
-    Ylms = read_ICGEM_harmonics(model_file, LMAX=LMAX, TIDE=TIDE)
+    Ylms = geoidtk.read_ICGEM_harmonics(model_file, LMAX=LMAX, TIDE=TIDE)
     R = np.float64(Ylms['radius'])
     GM = np.float64(Ylms['earth_gravity_constant'])
     LMAX = np.int64(Ylms['max_degree'])
@@ -165,23 +163,23 @@ def compute_geoidal_undulation(model_file, input_file, output_file,
 
     # read input file to extract time, spatial coordinates and data
     if (FORMAT == 'csv'):
-        dinput = geoid_toolkit.spatial.from_ascii(input_file,
+        dinput = geoidtk.spatial.from_ascii(input_file,
             columns=VARIABLES,
             header=HEADER)
     elif (FORMAT == 'netCDF4'):
-        dinput = geoid_toolkit.spatial.from_netCDF4(input_file,
+        dinput = geoidtk.spatial.from_netCDF4(input_file,
             timename=VARIABLES[0],
             xname=VARIABLES[2],
             yname=VARIABLES[1],
             varname=VARIABLES[3])
     elif (FORMAT == 'HDF5'):
-        dinput = geoid_toolkit.spatial.from_HDF5(input_file,
+        dinput = geoidtk.spatial.from_HDF5(input_file,
             timename=VARIABLES[0],
             xname=VARIABLES[2],
             yname=VARIABLES[1],
             varname=VARIABLES[3])
     elif (FORMAT == 'geotiff'):
-        dinput = geoid_toolkit.spatial.from_geotiff(input_file)
+        dinput = geoidtk.spatial.from_geotiff(input_file)
         # copy global geotiff attributes for projection and grid parameters
         for att_name in ['projection','wkt','spacing','extent']:
             attrib[att_name] = dinput['attributes'][att_name]
@@ -195,13 +193,13 @@ def compute_geoidal_undulation(model_file, input_file, output_file,
         gridx,gridy = np.meshgrid(dinput['x'],dinput['y'])
         lon,lat = transformer.transform(gridx,gridy)
         # calculate geoid at coordinates and reshape to output
-        N = geoid_undulation(lat.flatten(), lon.flatten(),
+        N = geoidtk.geoid_undulation(lat.flatten(), lon.flatten(),
             REFERENCE, Ylms['clm'], Ylms['slm'],
             LMAX, R, GM, GAUSS=GAUSS).reshape(ny,nx)
     elif (TYPE == 'drift'):
         lon,lat = transformer.transform(dinput['x'],dinput['y'])
         # calculate geoid at coordinates
-        N = geoid_undulation(lat, lon,
+        N = geoidtk.geoid_undulation(lat, lon,
             REFERENCE, Ylms['clm'], Ylms['slm'],
             LMAX, R, GM, GAUSS=GAUSS)
     # replace fill values with fill value
@@ -213,14 +211,14 @@ def compute_geoidal_undulation(model_file, input_file, output_file,
     # output to file
     output = {'lon':lon,'lat':lat,'geoid_h':N}
     if (FORMAT == 'csv'):
-        geoid_toolkit.spatial.to_ascii(output, attrib, output_file,
+        geoidtk.spatial.to_ascii(output, attrib, output_file,
             delimiter=',', columns=['lat','lon','geoid_h'])
     elif (FORMAT == 'netCDF4'):
-        geoid_toolkit.spatial.to_netCDF4(output, attrib, output_file)
+        geoidtk.spatial.to_netCDF4(output, attrib, output_file)
     elif (FORMAT == 'HDF5'):
-        geoid_toolkit.spatial.to_HDF5(output, attrib, output_file)
+        geoidtk.spatial.to_HDF5(output, attrib, output_file)
     elif (FORMAT == 'geotiff'):
-        geoid_toolkit.spatial.to_geotiff(output, attrib, output_file,
+        geoidtk.spatial.to_geotiff(output, attrib, output_file,
             varname='geoid_h')
     # change the permissions level to MODE
     os.chmod(output_file, MODE)
@@ -232,7 +230,7 @@ def arguments():
             """,
         fromfile_prefix_chars="@"
     )
-    parser.convert_arg_line_to_args = convert_arg_line_to_args
+    parser.convert_arg_line_to_args = geoidtk.utilities.convert_arg_line_to_args
     # command line options
     # input and output file
     parser.add_argument('infile',

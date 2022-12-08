@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://github.com/yaml/pyyaml
 
 UPDATE HISTORY:
+    Updated 12/2022: add software information to output HDF5 and netCDF4
     Updated 10/2022: added datetime parser for ascii time columns
     Updated 06/2022: added field_mapping options to netCDF4 and HDF5 reads
         added from_file wrapper function to read from particular formats
@@ -57,6 +58,8 @@ import datetime
 import warnings
 import numpy as np
 import dateutil.parser
+import geoid_toolkit.version
+from geoid_toolkit.utilities import get_git_revision_hash
 # attempt imports
 try:
     import osgeo.gdal, osgeo.osr, osgeo.gdalconst
@@ -676,6 +679,10 @@ def to_netCDF4(output, attributes, filename, **kwargs):
             nc[key].setncattr(att_name,att_val)
     # add attribute for date created
     fileID.date_created = datetime.datetime.now().isoformat()
+    # add software information
+    fileID.software_reference = geoid_toolkit.version.project_name
+    fileID.software_version = geoid_toolkit.version.full_version
+    fileID.software_revision = get_git_revision_hash()
     # add file-level attributes if applicable
     if 'ROOT' in attributes.keys():
         # Defining attributes for file
@@ -721,6 +728,10 @@ def to_HDF5(output, attributes, filename, **kwargs):
             h5[key].attrs[att_name] = att_val
     # add attribute for date created
     fileID.attrs['date_created'] = datetime.datetime.now().isoformat()
+    # add software information
+    fileID.attrs['software_reference'] = geoid_toolkit.version.project_name
+    fileID.attrs['software_version'] = geoid_toolkit.version.full_version
+    fileID.attrs['software_revision'] = get_git_revision_hash()
     # add file-level attributes if applicable
     if 'ROOT' in attributes.keys():
         # Defining attributes for file

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 utilities.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (12/2022)
 Download and management utilities for syncing time and auxiliary files
 
 PYTHON DEPENDENCIES:
@@ -9,6 +9,7 @@ PYTHON DEPENDENCIES:
         https://pypi.python.org/pypi/lxml
 
 UPDATE HISTORY:
+    Updated 12/2022: functions for managing and maintaining git repositories
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 10/2021: using python logging for handling verbose output
     Updated 03/2021: added sha1 option for retrieving file hashes
@@ -29,8 +30,10 @@ import socket
 import inspect
 import hashlib
 import logging
+import warnings
 import posixpath
 import lxml.etree
+import subprocess
 import calendar,time
 if sys.version_info[0] == 2:
     from urllib import quote_plus
@@ -92,6 +95,43 @@ def get_hash(local, algorithm='MD5'):
                 return hashlib.sha1(local_buffer.read()).hexdigest()
     else:
         return ''
+
+# PURPOSE: get the git hash value
+def get_git_revision_hash(refname='HEAD', short=False):
+    """
+    Get the git hash value for a particular reference
+
+    Parameters
+    ----------
+    refname: str, default HEAD
+        Symbolic reference name
+    short: bool, default False
+        Return the shorted hash value
+    """
+    # get path to .git directory from current file path
+    filename = inspect.getframeinfo(inspect.currentframe()).filename
+    basepath = os.path.dirname(os.path.dirname(os.path.abspath(filename)))
+    gitpath = os.path.join(basepath,'.git')
+    # build command
+    cmd = ['git', f'--git-dir={gitpath}', 'rev-parse']
+    cmd.append('--short') if short else None
+    cmd.append(refname)
+    # get output
+    with warnings.catch_warnings():
+        return str(subprocess.check_output(cmd), encoding='utf8').strip()
+
+# PURPOSE: get the current git status
+def get_git_status():
+    """Get the status of a git repository as a boolean value
+    """
+    # get path to .git directory from current file path
+    filename = inspect.getframeinfo(inspect.currentframe()).filename
+    basepath = os.path.dirname(os.path.dirname(os.path.abspath(filename)))
+    gitpath = os.path.join(basepath,'.git')
+    # build command
+    cmd = ['git', f'--git-dir={gitpath}', 'status', '--porcelain']
+    with warnings.catch_warnings():
+        return bool(subprocess.check_output(cmd))
 
 # PURPOSE: recursively split a url path
 def url_split(s):

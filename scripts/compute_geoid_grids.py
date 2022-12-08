@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_geoid_grids.py
-Written by Tyler Sutterley (05/2022)
+Written by Tyler Sutterley (12/2022)
 Computes geoid undulations from a gravity model
 
 COMMAND LINE OPTIONS:
@@ -50,6 +50,7 @@ PROGRAM DEPENDENCIES:
     gauss_weights.py: Computes Gaussian weights as a function of degree
 
 UPDATE HISTORY:
+    Updated 12/2022: single implicit import of geoid toolkit
     Updated 05/2022: use argparse descriptions within sphinx documentation
     Written 03/2022
 """
@@ -61,10 +62,7 @@ import pyproj
 import logging
 import argparse
 import numpy as np
-import geoid_toolkit.spatial
-from geoid_toolkit.read_ICGEM_harmonics import read_ICGEM_harmonics
-from geoid_toolkit.geoid_undulation import geoid_undulation
-from geoid_toolkit.utilities import convert_arg_line_to_args
+import geoid_toolkit as geoidtk
 
 # PURPOSE: try to get the projection information
 def get_projection(PROJECTION):
@@ -102,7 +100,7 @@ def compute_geoid_grids(model_file, output_file,
     logging.basicConfig(level=loglevel)
 
     # read gravity model Ylms and change tide if specified
-    Ylms = read_ICGEM_harmonics(model_file, LMAX=LMAX, TIDE=TIDE)
+    Ylms = geoidtk.read_ICGEM_harmonics(model_file, LMAX=LMAX, TIDE=TIDE)
     R = np.float64(Ylms['radius'])
     GM = np.float64(Ylms['earth_gravity_constant'])
     LMAX = np.int64(Ylms['max_degree'])
@@ -175,7 +173,7 @@ def compute_geoid_grids(model_file, output_file,
     gridx,gridy = np.meshgrid(output['x'],output['y'])
     lon,lat = transformer.transform(gridx,gridy)
     # calculate geoid at coordinates and reshape to output
-    N = geoid_undulation(lat.flatten(), lon.flatten(),
+    N = geoidtk.geoid_undulation(lat.flatten(), lon.flatten(),
         REFERENCE, Ylms['clm'], Ylms['slm'],
         LMAX, R, GM, GAUSS=GAUSS).reshape(ny,nx)
 
@@ -187,18 +185,18 @@ def compute_geoid_grids(model_file, output_file,
 
     # output to file
     if (FORMAT == 'csv'):
-        geoid_toolkit.spatial.to_ascii(output, attrib, output_file,
+        geoidtk.spatial.to_ascii(output, attrib, output_file,
             delimiter=',', columns=['y','x','geoid_h'])
     elif (FORMAT == 'netCDF4'):
-        geoid_toolkit.spatial.to_netCDF4(output, attrib, output_file)
+        geoidtk.spatial.to_netCDF4(output, attrib, output_file)
     elif (FORMAT == 'HDF5'):
-        geoid_toolkit.spatial.to_HDF5(output, attrib, output_file)
+        geoidtk.spatial.to_HDF5(output, attrib, output_file)
     elif (FORMAT == 'geotiff'):
         # copy global geotiff attributes for projection and grid parameters
         attrib['wkt'] = crs1.to_wkt()
         attrib['spacing'] = (dx, -dy)
         attrib['extent'] = np.copy(BOUNDS)
-        geoid_toolkit.spatial.to_geotiff(output, attrib, output_file,
+        geoidtk.spatial.to_geotiff(output, attrib, output_file,
             varname='geoid_h')
     # change the permissions level to MODE
     os.chmod(output_file, MODE)
@@ -210,7 +208,7 @@ def arguments():
             """,
         fromfile_prefix_chars="@"
     )
-    parser.convert_arg_line_to_args = convert_arg_line_to_args
+    parser.convert_arg_line_to_args = geoidtk.utilities.convert_arg_line_to_args
     # command line options
     parser.add_argument('outfile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)),
