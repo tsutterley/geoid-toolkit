@@ -24,6 +24,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 12/2022: single implicit import of geoid toolkit
+        place netCDF4 import within try/except statements
     Updated 05/2022: use argparse descriptions within sphinx documentation
     Updated 04/2022: include utf-8 encoding in reads to be windows compliant
         check if gravity field data file is present in file-system
@@ -43,11 +44,21 @@ import sys
 import os
 import re
 import logging
-import netCDF4
 import argparse
 import datetime
+import warnings
 import numpy as np
 import geoid_toolkit as geoidtk
+
+# attempt imports
+try:
+    import netCDF4
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("netCDF4 not available")
+    warnings.warn("Some functions will throw an exception if called")
+# ignore warnings
+warnings.filterwarnings("ignore")
 
 # PURPOSE: Reads .gdf grids from the GFZ calculation service
 def read_ICGEM_geoid_grids(FILE, FILENAME=None, MARKER='', SPACING=None,

@@ -25,17 +25,28 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 12/2022: single implicit import of geoid toolkit
+        place netCDF4 import within try/except statements
     Written 06/2022
 """
 from __future__ import print_function
 
 import os
 import logging
-import netCDF4
 import argparse
 import datetime
+import warnings
 import numpy as np
 import geoid_toolkit as geoidtk
+
+# attempt imports
+try:
+    import netCDF4
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("netCDF4 not available")
+    warnings.warn("Some functions will throw an exception if called")
+# ignore warnings
+warnings.filterwarnings("ignore")
 
 def read_EGM2008_geoid_grids(FILE, FILENAME=None, LOVE=0.3,
     VERBOSE=False, MODE=0o775):
