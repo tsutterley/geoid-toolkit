@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (10/2022)
+Written by Tyler Sutterley (12/2022)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -20,6 +20,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 12/2022: add software information to output HDF5 and netCDF4
+        place netCDF4 import within try/except statements
     Updated 10/2022: added datetime parser for ascii time columns
     Updated 06/2022: added field_mapping options to netCDF4 and HDF5 reads
         added from_file wrapper function to read from particular formats
@@ -53,7 +54,6 @@ import gzip
 import uuid
 import yaml
 import logging
-import netCDF4
 import datetime
 import warnings
 import numpy as np
@@ -62,16 +62,22 @@ import geoid_toolkit.version
 from geoid_toolkit.utilities import get_git_revision_hash
 # attempt imports
 try:
+    import h5py
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("h5py not available")
+    warnings.warn("Some functions will throw an exception if called")
+try:
     import osgeo.gdal, osgeo.osr, osgeo.gdalconst
 except (ImportError, ModuleNotFoundError) as e:
     warnings.filterwarnings("always")
     warnings.warn("GDAL not available")
     warnings.warn("Some functions will throw an exception if called")
 try:
-    import h5py
+    import netCDF4
 except (ImportError, ModuleNotFoundError) as e:
     warnings.filterwarnings("always")
-    warnings.warn("h5py not available")
+    warnings.warn("netCDF4 not available")
     warnings.warn("Some functions will throw an exception if called")
 # ignore warnings
 warnings.filterwarnings("ignore")

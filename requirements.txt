@@ -1,8 +1,5 @@
-gdal
-h5py
 lxml
 matplotlib
-netCDF4
 numpy
 pyproj
 python-dateutil
