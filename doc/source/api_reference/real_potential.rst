@@ -1,6 +1,6 @@
-=================
-real_potential.py
-=================
+==============
+real_potential
+==============
 
 - Calculates the real potential at a given latitude and height using coefficients from a gravity model
 

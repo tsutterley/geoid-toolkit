@@ -1,6 +1,6 @@
-=========================
-calculate_tidal_offset.py
-=========================
+======================
+calculate_tidal_offset
+======================
 
 - Calculates the spherical harmonic offset to change tide systems
 

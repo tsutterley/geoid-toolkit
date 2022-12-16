@@ -1,6 +1,6 @@
-===============
-norm_gravity.py
-===============
+============
+norm_gravity
+============
 
 - Calculates the normal gravity of an ellipsoid at a given latitude and height and calculates the derivative with respect to height
 
