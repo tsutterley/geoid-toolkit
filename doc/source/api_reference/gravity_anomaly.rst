@@ -1,6 +1,6 @@
-==================
-gravity_anomaly.py
-==================
+===============
+gravity_anomaly
+===============
 
 - Calculates the gravity anomaly at a given latitude and longitude using different methods
 

@@ -1,6 +1,6 @@
-===================
-geoid_undulation.py
-===================
+================
+geoid_undulation
+================
 
 - Calculates the geoidal undulation at a given latitude and longitude using an iterative approach
 

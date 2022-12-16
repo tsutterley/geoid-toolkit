@@ -1,6 +1,6 @@
-========================
-topographic_potential.py
-========================
+=====================
+topographic_potential
+=====================
 
 - Calculates the potential at a given latitude and height using coefficients from a topographic model
 

@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 u"""
 ref_ellipsoid.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (12/2022)
 
 Computes parameters for a reference ellipsoid
 
 CALLING SEQUENCE
-    wgs84 = ref_ellipsoid('WGS84',UNITS='MKS')
+    wgs84 = ref_ellipsoid('WGS84', UNITS='MKS')
 
 INPUT:
     refell - reference ellipsoid name
@@ -34,10 +34,10 @@ OUTPUTS:
     a: semimajor semi-axis (m)
     b: semiminor semi-axis (m)
     f: flattening
-    c: Polar radius of curvature
     rad_e: mean radius of ellipsoid having the same volume
     rad_p: Polar radius of curvature
     C20: Normalized C20 harmonic
+    J2: Oblateness coefficient
     norm_a: Normal gravity at the equator
     norm_b: Normal gravity at the pole
     U0: Normal potential at the ellipsoid
@@ -47,6 +47,8 @@ OUTPUTS:
     ecc1: First eccentricity
     ecc2: Second eccentricity
     area: Area of the ellipsoid
+    volume: Volume of the ellipsoid
+    rho_e: Average density
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
@@ -57,6 +59,7 @@ REFERENCE:
     Hofmann-Wellenhof and Moritz (2006)
 
 UPDATE HISTORY:
+    Updated 12/2022: output average Earth's density
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 11/2020: added function docstrings
     Updated 09/2017: added parameters for Hughes (1980) ellipsoid
@@ -107,14 +110,14 @@ def ref_ellipsoid(refell, UNITS='MKS'):
         semiminor semi-axis (m)
     f: float
         flattening
-    c: float
-        Polar radius of curvature
     rad_e: float
         Mean radius of ellipsoid having the same volume
     rad_p: float
         Polar radius of curvature
     C20: float
         Normalized C20 harmonic
+    J2: float
+        Oblateness coefficient
     norm_a: float
         Normal gravity at the equator
     norm_b: float
@@ -133,6 +136,10 @@ def ref_ellipsoid(refell, UNITS='MKS'):
         Second eccentricity
     area: float
         Area of the ellipsoid
+    volume: float
+        Volume of the ellipsoid
+    rho_e: float
+        Average density
 
     References
     ----------
@@ -140,7 +147,10 @@ def ref_ellipsoid(refell, UNITS='MKS'):
         *Physical Geodesy*, 2nd Edition, 403 pp., (2006).
         `doi: 10.1007/978-3-211-33545-1 <https://doi.org/10.1007/978-3-211-33545-1>`_
     """
+    # validate units
+    assert UNITS in ('MKS', 'CGS')
 
+    # set parameters for ellipsoid
     if refell.upper() in ('CLK66','NAD27'):
         # Clarke 1866
         a_axis = 6378206.4# [m] semimajor axis of the ellipsoid
@@ -219,15 +229,19 @@ def ref_ellipsoid(refell, UNITS='MKS'):
         # for ellipsoids not listing the angular velocity of the Earth
         omega = 7292115e-11# [rad/s]
 
+    # universal gravitational constant [N*m^2/kg^2]
+    G = 6.67430e-11
+
     # convert units to CGS
     if (UNITS == 'CGS'):
         a_axis *= 100.0
-        GM *= 10e6
+        GM *= 1e6
+        G *= 1000.0 # [dyn*cm^2/g^2]
 
     # DERIVED PARAMETERS:
     # mean radius of the Earth having the same volume
-    # (4pi/3)R^3 = (4pi/3)(a^2)b = (4pi/3)(a^3)(1D -f)
-    rad_e = a_axis*(1.0 -flat)**(1.0/3.0)
+    # (4pi/3)R^3 = (4pi/3)(a^2)b = (4pi/3)(a^3)(1 - f)
+    rad_e = a_axis*(1.0 - flat)**(1.0/3.0)
 
     # semiminor axis of the ellipsoid
     b_axis = (1.0 -flat)*a_axis# [m]
@@ -277,8 +291,11 @@ def ref_ellipsoid(refell, UNITS='MKS'):
     area = np.pi*a_axis**2.*(2.+((1.-ecc1**2)/ecc1)*np.log((1.+ecc1)/(1.-ecc1)))
     # Volume of the reference ellipsoid [m^3]
     vol = (4.0*np.pi/3.0)*(a_axis**3.0)*(1.0-ecc1**2.0)**0.5
+    # Average density [kg/m^3]
+    rho_e = GM/(G*vol)
 
     return {'a':a_axis, 'b':b_axis, 'f':flat, 'rad_p':pol_rad, 'rad_e':rad_e,
             'ratio':ratio, 'GM':GM, 'omega':omega, 'C20':C20, 'J2':j_2, 'U0':U0,
             'dk':dk, 'norm_a':ga, 'norm_b':gb, 'mp':mp, 'q':q, 'q0':q_0,
-            'ecc':lin_ecc, 'ecc1':ecc1,'ecc2':ecc2, 'area':area, 'volume':vol}
+            'ecc':lin_ecc, 'ecc1':ecc1,'ecc2':ecc2, 'area':area, 'volume':vol,
+            'rho_e':rho_e}

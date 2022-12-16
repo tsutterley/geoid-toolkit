@@ -1,6 +1,6 @@
-=============================
-corrected_geoid_undulation.py
-=============================
+==========================
+corrected_geoid_undulation
+==========================
 
 - Calculates the topographically corrected geoidal undulation at a given latitude and longitude using an iterative approach
 
