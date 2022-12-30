@@ -189,7 +189,6 @@ def ncdf_geoid_write(dinput, parameters, FILENAME=None):
     # add software information
     fileID.software_reference = geoidtk.version.project_name
     fileID.software_version = geoidtk.version.full_version
-    fileID.software_revision = geoidtk.utilities.get_git_revision_hash()
     # add attribute for date created
     fileID.date_created = datetime.datetime.now().isoformat()
 

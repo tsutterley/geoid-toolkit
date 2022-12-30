@@ -59,7 +59,6 @@ import warnings
 import numpy as np
 import dateutil.parser
 import geoid_toolkit.version
-from geoid_toolkit.utilities import get_git_revision_hash
 # attempt imports
 try:
     import h5py
@@ -688,7 +687,6 @@ def to_netCDF4(output, attributes, filename, **kwargs):
     # add software information
     fileID.software_reference = geoid_toolkit.version.project_name
     fileID.software_version = geoid_toolkit.version.full_version
-    fileID.software_revision = get_git_revision_hash()
     # add file-level attributes if applicable
     if 'ROOT' in attributes.keys():
         # Defining attributes for file
@@ -737,7 +735,6 @@ def to_HDF5(output, attributes, filename, **kwargs):
     # add software information
     fileID.attrs['software_reference'] = geoid_toolkit.version.project_name
     fileID.attrs['software_version'] = geoid_toolkit.version.full_version
-    fileID.attrs['software_revision'] = get_git_revision_hash()
     # add file-level attributes if applicable
     if 'ROOT' in attributes.keys():
         # Defining attributes for file
