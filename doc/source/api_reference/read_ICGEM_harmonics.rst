@@ -1,6 +1,6 @@
-=======================
-read_ICGEM_harmonics.py
-=======================
+====================
+read_ICGEM_harmonics
+====================
 
 - Reads gravity model files and extracts spherical harmonic data from the `GFZ International Centre for Global Earth Models (ICGEM) <http://icgem.gfz-potsdam.de/>`_
 

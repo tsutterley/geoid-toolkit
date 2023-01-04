@@ -20,7 +20,7 @@ geoid-toolkit
    :target: https://pypi.python.org/pypi/geoid-toolkit/
 
 .. |Documentation Status| image:: https://readthedocs.org/projects/geoid-toolkit/badge/?version=latest
-   :target: https://read-grace-harmonics.readthedocs.io/projects/geoid-toolkit/en/latest/?badge=latest
+   :target: https://gravity-toolkit.readthedocs.io/projects/geoid-toolkit/en/latest/?badge=latest
 
 .. |Binder| image:: https://mybinder.org/badge_logo.svg
    :target: https://mybinder.org/v2/gh/tsutterley/geoid-toolkit/main
