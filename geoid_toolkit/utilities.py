@@ -66,7 +66,7 @@ def get_data_path(relpath):
 # PURPOSE: get the hash value of a file
 def get_hash(local, algorithm='MD5'):
     """
-    Get the hash value from a local file or BytesIO object
+    Get the hash value from a local file or ``BytesIO`` object
 
     Parameters
     ----------
@@ -99,7 +99,7 @@ def get_hash(local, algorithm='MD5'):
 # PURPOSE: get the git hash value
 def get_git_revision_hash(refname='HEAD', short=False):
     """
-    Get the git hash value for a particular reference
+    Get the ``git`` hash value for a particular reference
 
     Parameters
     ----------
@@ -122,7 +122,7 @@ def get_git_revision_hash(refname='HEAD', short=False):
 
 # PURPOSE: get the current git status
 def get_git_status():
-    """Get the status of a git repository as a boolean value
+    """Get the status of a ``git`` repository as a boolean value
     """
     # get path to .git directory from current file path
     filename = inspect.getframeinfo(inspect.currentframe()).filename
@@ -452,7 +452,7 @@ def from_http(HOST, timeout=None, context=ssl.SSLContext(),
     timeout: int or NoneType, default None
         timeout in seconds for blocking operations
     context: obj, default ssl.SSLContext()
-        SSL context for url opener object
+        SSL context for ``urllib`` opener object
     timeout: int or NoneType, default None
         timeout in seconds for blocking operations
     local: str or NoneType, default None
@@ -531,7 +531,7 @@ def icgem_list(host='http://icgem.gfz-potsdam.de/tom_longtime',timeout=None,
     timeout: int or NoneType
         timeout in seconds for blocking operations
     parser: obj, default lxml.etree.HTMLParser()
-        HTML parser for lxml
+        HTML parser for ``lxml``
 
     Returns
     -------
