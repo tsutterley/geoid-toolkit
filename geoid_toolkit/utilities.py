@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 utilities.py
-Written by Tyler Sutterley (12/2022)
+Written by Tyler Sutterley (01/2023)
 Download and management utilities for syncing time and auxiliary files
 
 PYTHON DEPENDENCIES:
@@ -9,6 +9,7 @@ PYTHON DEPENDENCIES:
         https://pypi.python.org/pypi/lxml
 
 UPDATE HISTORY:
+    Updated 01/2023: add default ssl context attribute with protocol
     Updated 12/2022: functions for managing and maintaining git repositories
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 10/2021: using python logging for handling verbose output
@@ -66,7 +67,7 @@ def get_data_path(relpath):
 # PURPOSE: get the hash value of a file
 def get_hash(local, algorithm='MD5'):
     """
-    Get the hash value from a local file or BytesIO object
+    Get the hash value from a local file or ``BytesIO`` object
 
     Parameters
     ----------
@@ -99,7 +100,7 @@ def get_hash(local, algorithm='MD5'):
 # PURPOSE: get the git hash value
 def get_git_revision_hash(refname='HEAD', short=False):
     """
-    Get the git hash value for a particular reference
+    Get the ``git`` hash value for a particular reference
 
     Parameters
     ----------
@@ -122,7 +123,7 @@ def get_git_revision_hash(refname='HEAD', short=False):
 
 # PURPOSE: get the current git status
 def get_git_status():
-    """Get the status of a git repository as a boolean value
+    """Get the status of a ``git`` repository as a boolean value
     """
     # get path to .git directory from current file path
     filename = inspect.getframeinfo(inspect.currentframe()).filename
@@ -420,8 +421,11 @@ def from_ftp(HOST, username=None, password=None, timeout=None,
         remote_buffer.seek(0)
         return remote_buffer
 
+# default ssl context
+_default_ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+
 # PURPOSE: check internet connection
-def check_connection(HOST):
+def check_connection(HOST, context=_default_ssl_context):
     """
     Check internet connection with http host
 
@@ -429,17 +433,19 @@ def check_connection(HOST):
     ----------
     HOST: str
         remote http host
+    context: obj, default ssl.SSLContext(ssl.PROTOCOL_TLS)
+        SSL context for ``urllib`` opener object
     """
     # attempt to connect to http host
     try:
-        urllib2.urlopen(HOST,timeout=20,context=ssl.SSLContext())
-    except urllib2.URLError:
-        raise RuntimeError('Check internet connection')
+        urllib2.urlopen(HOST, timeout=20, context=context)
+    except urllib2.URLError as exc:
+        raise RuntimeError('Check internet connection') from exc
     else:
         return True
 
 # PURPOSE: download a file from a http host
-def from_http(HOST, timeout=None, context=ssl.SSLContext(),
+def from_http(HOST, timeout=None, context=_default_ssl_context,
     local=None, hash='', chunk=16384, verbose=False, fid=sys.stdout,
     mode=0o775):
     """
@@ -451,8 +457,8 @@ def from_http(HOST, timeout=None, context=ssl.SSLContext(),
         remote http host path split as list
     timeout: int or NoneType, default None
         timeout in seconds for blocking operations
-    context: obj, default ssl.SSLContext()
-        SSL context for url opener object
+    context: obj, default ssl.SSLContext(ssl.PROTOCOL_TLS)
+        SSL context for ``urllib`` opener object
     timeout: int or NoneType, default None
         timeout in seconds for blocking operations
     local: str or NoneType, default None
@@ -517,12 +523,12 @@ def from_http(HOST, timeout=None, context=ssl.SSLContext(),
 
 # PURPOSE: list a directory on the GFZ ICGEM https server
 # http://icgem.gfz-potsdam.de
-def icgem_list(host='http://icgem.gfz-potsdam.de/tom_longtime',timeout=None,
-    parser=lxml.etree.HTMLParser()):
+def icgem_list(host='http://icgem.gfz-potsdam.de/tom_longtime',
+    timeout=None, parser=lxml.etree.HTMLParser()):
     """
     Parse the table of static gravity field models on the GFZ
-    `International Centre for Global Earth Models (ICGEM) <http://icgem.gfz-potsdam.de/>`_
-    server
+    `International Centre for Global Earth Models (ICGEM)
+    <http://icgem.gfz-potsdam.de/>`_ server
 
     Parameters
     ----------
@@ -531,7 +537,7 @@ def icgem_list(host='http://icgem.gfz-potsdam.de/tom_longtime',timeout=None,
     timeout: int or NoneType
         timeout in seconds for blocking operations
     parser: obj, default lxml.etree.HTMLParser()
-        HTML parser for lxml
+        HTML parser for ``lxml``
 
     Returns
     -------
@@ -542,7 +548,8 @@ def icgem_list(host='http://icgem.gfz-potsdam.de/tom_longtime',timeout=None,
     try:
         # Create and submit request.
         request = urllib2.Request(host)
-        tree = lxml.etree.parse(urllib2.urlopen(request,timeout=timeout),parser)
+        response = urllib2.urlopen(request,timeout=timeout)
+        tree = lxml.etree.parse(response, parser)
     except:
         raise Exception(f'List error from {host}')
     else:
@@ -550,5 +557,5 @@ def icgem_list(host='http://icgem.gfz-potsdam.de/tom_longtime',timeout=None,
         colfiles = tree.xpath('//td[@class="tom-cell-modelfile"]//a/@href')
         # reduce list of files to find gfc files
         # return the dict of model files mapped by name
-        return {re.findall('(.*?).gfc',posixpath.basename(f)).pop():url_split(f)
-            for i,f in enumerate(colfiles) if re.search('gfc$',f)}
+        return {re.findall(r'(.*?).gfc',posixpath.basename(f)).pop():url_split(f)
+            for i,f in enumerate(colfiles) if re.search(r'gfc$', f)}
