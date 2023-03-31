@@ -41,7 +41,7 @@ import geoid_toolkit as geoidtk
 # attempt imports
 try:
     import netCDF4
-except (ImportError, ModuleNotFoundError) as e:
+except (ImportError, ModuleNotFoundError) as exc:
     warnings.filterwarnings("module")
     warnings.warn("netCDF4 not available", ImportWarning)
 # ignore warnings
@@ -162,7 +162,7 @@ def ncdf_geoid_write(dinput, attributes, FILENAME=None):
     fileID.date_created = datetime.datetime.now().isoformat()
 
     # Output NetCDF structure information
-    logging.info(os.path.basename(FILENAME))
+    logging.info(FILENAME)
     logging.info(list(fileID.variables.keys()))
 
     # Closing the NetCDF file

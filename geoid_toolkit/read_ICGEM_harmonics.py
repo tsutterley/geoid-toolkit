@@ -212,7 +212,7 @@ def read_ICGEM_harmonics(model_file, **kwargs):
             try:
                 model_input['eclm'][l1,m1] = np.float64(line_contents[5])
                 model_input['eslm'][l1,m1] = np.float64(line_contents[6])
-            except Exception as e:
+            except Exception as exc:
                 pass
     # calculate the tidal offset if changing the tide system
     if kwargs['TIDE'] in ('mean_tide','zero_tide','tide_free'):
