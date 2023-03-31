@@ -34,7 +34,8 @@ import numpy as np
 def read_topography_harmonics(model_file):
     """
     Reads `Earth 2014
-    <https://ddfe.curtin.edu.au/gravitymodels/Earth2014/potential_model/readme_earth2014_potential_models.txt>`_
+    <https://ddfe.curtin.edu.au/gravitymodels/Earth2014/
+    potential_model/readme_earth2014_potential_models.txt>`_
     topography harmonics from [Rexer2016]_
 
     Parameters
@@ -68,7 +69,7 @@ def read_topography_harmonics(model_file):
     dinput = np.fromfile(model_file, dtype=np.dtype('<f8'))
     # extract minimum and maximum spherical harmonic degree
     header = 2
-    input_lmin,input_lmax = dinput[:header].astype(np.int)
+    input_lmin,input_lmax = dinput[:header].astype(np.int64)
     # number of spherical harmonic records for Clm and Slm
     n_down = ((input_lmin-1)**2 + 3*(input_lmin-1))/2 + 1
     n_up = (input_lmax**2 + 3*input_lmax)/2 + 1
