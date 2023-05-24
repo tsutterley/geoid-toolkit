@@ -310,14 +310,14 @@ def main():
     args,_ = parser.parse_known_args()
 
     # verify input and output files
-    model_file = pathlib.Path(model_file).expanduser().absolute()
-    input_file = pathlib.Path(input_file).expanduser().absolute()
+    args.gravity = pathlib.Path(args.gravity).expanduser().absolute()
+    args.infile = pathlib.Path(args.infile).expanduser().absolute()
     # set output file from input filename if not entered
     if not args.outfile:
         vars = (args.infile.stem,args.gravity.stem,args.infile.suffix)
         args.outfile = args.infile.with_name('{0}_{1}{2}'.format(*vars))
     else:
-        output_file = pathlib.Path(output_file).expanduser().absolute()
+        args.outfile = pathlib.Path(args.outfile).expanduser().absolute()
 
     # run geoid undulation program for input file
     compute_geoidal_undulation(args.gravity, args.infile, args.outfile,

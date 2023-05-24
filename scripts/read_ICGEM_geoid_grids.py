@@ -211,7 +211,7 @@ def arguments():
         help='Geoid height spatial grid file')
     # output filename (will default to input file with netCDF4 suffix)
     parser.add_argument('--filename','-F',
-        type=str, default=None,
+        type=pathlib.Path,
         help='Output netCDF4 filename')
     # marker denoting the end of the header text
     parser.add_argument('--header','-H',
@@ -239,16 +239,17 @@ def main():
     args,_ = parser.parse_known_args()
 
     # verify input and output files
-    infile = pathlib.Path(args.gravity).expanduser().absolute()
+    args.gravity = pathlib.Path(args.gravity).expanduser().absolute()
     # set output file from input filename if not entered
     if not args.filename:
-        outfile = args.infile.with_name(f'{args.infile.stem}.nc')
+        args.filename = args.gravity.with_name(f'{args.gravity.stem}.nc')
     else:
-        outfile = pathlib.Path(args.filename).expanduser().absolute()
+        args.filename = pathlib.Path(args.filename).expanduser().absolute()
 
     # run program
-    read_ICGEM_geoid_grids(infile, FILENAME=outfile, MARKER=args.header,
-        SPACING=args.spacing, VERBOSE=args.verbose, MODE=args.mode)
+    read_ICGEM_geoid_grids(args.gravity, FILENAME=args.filename,
+        MARKER=args.header, SPACING=args.spacing,
+        VERBOSE=args.verbose, MODE=args.mode)
 
 # run main program
 if __name__ == '__main__':
