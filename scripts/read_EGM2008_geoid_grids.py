@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 read_EGM2008_geoid_grids.py
-Written by Tyler Sutterley (12/2022)
+Written by Tyler Sutterley (05/2023)
 Reads EGM2008 geoid height spatial grids from unformatted binary files
 provided by the National Geospatial-Intelligence Agency
 Outputs spatial grids as netCDF4 files
@@ -24,14 +24,15 @@ PYTHON DEPENDENCIES:
         https://unidata.github.io/netcdf4-python/
 
 UPDATE HISTORY:
+    Updated 05/2023: use pathlib to define and operate on paths
     Updated 12/2022: single implicit import of geoid toolkit
         place netCDF4 import within try/except statements
     Written 06/2022
 """
 from __future__ import print_function
 
-import os
 import logging
+import pathlib
 import argparse
 import datetime
 import warnings
@@ -54,11 +55,10 @@ def read_EGM2008_geoid_grids(FILE, FILENAME=None, LOVE=0.3,
     loglevel = logging.INFO if VERBOSE else logging.CRITICAL
     logging.basicConfig(level=loglevel)
 
-    # split filename into basename and extension
-    fileBasename,_ = os.path.splitext(FILE)
     # check that data file is present in file system
-    if not os.access(FILE, os.F_OK):
-        raise FileNotFoundError(f'{FILE} not found')
+    FILE = pathlib.Path(FILE).expanduser().absolute()
+    if not FILE.exists():
+        raise FileNotFoundError(f'{str(FILE)} not found')
     # open input file and read contents
     file_contents = np.fromfile(FILE, dtype='<f4')
 
@@ -115,10 +115,10 @@ def read_EGM2008_geoid_grids(FILE, FILENAME=None, LOVE=0.3,
     dinput['geoid_free2mean'][:,:] = -0.198*P2*(1.0 + LOVE)
 
     # output data and parameters to netCDF4
-    FILENAME = f'{fileBasename}.nc' if (FILENAME is None) else FILENAME
+    FILENAME = pathlib.Path(FILENAME).expanduser().absolute()
     ncdf_geoid_write(dinput, attributes, FILENAME=FILENAME)
     # change permissions mode to MODE
-    os.chmod(FILENAME, MODE)
+    FILENAME.chmod(mode=MODE)
 
 # PURPOSE: write output geoid height data to file
 def ncdf_geoid_write(dinput, attributes, FILENAME=None):
@@ -177,12 +177,12 @@ def arguments():
             """
     )
     # command line parameters
-    parser.add_argument('files',
-        type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='+',
-        help='Geoid height spatial grid files')
+    parser.add_argument('gravity',
+        type=pathlib.Path,
+        help='Geoid height spatial grid file')
     # output filename (will default to input file with netCDF4 suffix)
     parser.add_argument('--filename','-F',
-        type=str, default=None,
+        type=pathlib.Path,
         help='Output netCDF4 filename')
     # load love number of degree 2 (default EGM2008 value)
     parser.add_argument('--love','-n',
@@ -205,10 +205,17 @@ def main():
     parser = arguments()
     args,_ = parser.parse_known_args()
 
-    # for each input grid file
-    for f in args.files:
-        read_EGM2008_geoid_grids(f, FILENAME=args.filename,
-            LOVE=args.love, VERBOSE=args.verbose, MODE=args.mode)
+    # verify input and output files
+    infile = pathlib.Path(args.gravity).expanduser().absolute()
+    # set output file from input filename if not entered
+    if not args.filename:
+        outfile = args.infile.with_name(f'{args.infile.stem}.nc')
+    else:
+        outfile = pathlib.Path(args.filename).expanduser().absolute()
+
+    # run program
+    read_EGM2008_geoid_grids(infile, FILENAME=outfile,
+        LOVE=args.love, VERBOSE=args.verbose, MODE=args.mode)
 
 # run main program
 if __name__ == '__main__':

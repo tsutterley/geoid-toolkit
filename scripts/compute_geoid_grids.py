@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_geoid_grids.py
-Written by Tyler Sutterley (12/2022)
+Written by Tyler Sutterley (05/2023)
 Computes geoid undulations from a gravity model
 
 COMMAND LINE OPTIONS:
@@ -50,6 +50,7 @@ PROGRAM DEPENDENCIES:
     gauss_weights.py: Computes Gaussian weights as a function of degree
 
 UPDATE HISTORY:
+    Updated 05/2023: use pathlib to define and operate on paths
     Updated 12/2022: single implicit import of geoid toolkit
     Updated 05/2022: use argparse descriptions within sphinx documentation
     Written 03/2022
@@ -57,12 +58,21 @@ UPDATE HISTORY:
 from __future__ import print_function
 
 import sys
-import os
-import pyproj
 import logging
+import pathlib
 import argparse
+import warnings
 import numpy as np
 import geoid_toolkit as geoidtk
+
+# attempt imports
+try:
+    import pyproj
+except (ImportError, ModuleNotFoundError) as exc:
+    warnings.filterwarnings("module")
+    warnings.warn("pyproj not available", ImportWarning)
+# ignore warnings
+warnings.filterwarnings("ignore")
 
 # PURPOSE: try to get the projection information
 def get_projection(PROJECTION):
@@ -100,6 +110,7 @@ def compute_geoid_grids(model_file, output_file,
     logging.basicConfig(level=loglevel)
 
     # read gravity model Ylms and change tide if specified
+    model_file = pathlib.Path(model_file).expanduser().absolute()
     Ylms = geoidtk.read_ICGEM_harmonics(model_file, LMAX=LMAX, TIDE=TIDE)
     R = np.float64(Ylms['radius'])
     GM = np.float64(Ylms['earth_gravity_constant'])
@@ -184,6 +195,7 @@ def compute_geoid_grids(model_file, output_file,
     output['geoid_h'].data[output['geoid_h'].mask] = fill_value
 
     # output to file
+    output_file = pathlib.Path(output_file).expanduser().absolute()
     if (FORMAT == 'csv'):
         geoidtk.spatial.to_ascii(output, attrib, output_file,
             delimiter=',', columns=['y','x','geoid_h'])
@@ -199,7 +211,7 @@ def compute_geoid_grids(model_file, output_file,
         geoidtk.spatial.to_geotiff(output, attrib, output_file,
             varname='geoid_h')
     # change the permissions level to MODE
-    os.chmod(output_file, MODE)
+    output_file.chmod(mode=MODE)
 
 # PURPOSE: create argument parser
 def arguments():
@@ -211,12 +223,11 @@ def arguments():
     parser.convert_arg_line_to_args = geoidtk.utilities.convert_arg_line_to_args
     # command line options
     parser.add_argument('outfile',
-        type=lambda p: os.path.abspath(os.path.expanduser(p)),
+        type=pathlib.Path,
         help='Output file')
     # set gravity model file to use
     parser.add_argument('--gravity','-G',
-        type=lambda p: os.path.abspath(os.path.expanduser(p)),
-        default=os.getcwd(),
+        type=pathlib.Path,
         help='Gravity model file to use')
     # maximum spherical harmonic degree (level of truncation)
     parser.add_argument('--lmax','-l',

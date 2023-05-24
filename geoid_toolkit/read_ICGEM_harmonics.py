@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 read_ICGEM_harmonics.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (05/2023)
 Reads the coefficients for a given gravity model file
 
 GFZ International Centre for Global Earth Models (ICGEM)
@@ -59,6 +59,7 @@ PROGRAM DEPENDENCIES:
     calculate_tidal_offset.py: calculates the C20 offset for a tidal system
 
 UPDATE HISTORY:
+    Updated 05/2023: use pathlib to define and operate on paths
     Updated 04/2022: updated docstrings to numpy documentation format
         include utf-8 encoding in reads to be windows compliant
         check if gravity field coefficients file is present in file-system
@@ -72,9 +73,9 @@ UPDATE HISTORY:
     Updated 07/2017: include parameters to change the tide system
     Written 12/2015
 """
-import os
 import re
 import io
+import pathlib
 import zipfile
 import numpy as np
 from geoid_toolkit.calculate_tidal_offset import calculate_tidal_offset
@@ -154,10 +155,12 @@ def read_ICGEM_harmonics(model_file, **kwargs):
     kwargs.setdefault('FLAG','gfc')
     kwargs.setdefault('ZIP',False)
     # tilde-expansion of input file
-    model_file = os.path.expanduser(model_file)
-    # check that data file is present in file system
-    if not os.access(model_file, os.F_OK):
-        raise FileNotFoundError(f'{model_file} not found')
+    if not isinstance(model_file, io.IOBase):
+        model_file = pathlib.Path(model_file).expanduser().absolute
+        # check that data file is present in file system
+        if not model_file.exists():
+            raise FileNotFoundError(f'{str(model_file)} not found')
+
     # read data from compressed or gfc file
     if kwargs['ZIP']:
         # extract zip file with gfc file
@@ -171,6 +174,7 @@ def read_ICGEM_harmonics(model_file, **kwargs):
         # read input gfc data file
         with open(model_file, mode='r', encoding='utf8') as f:
             file_contents = f.read().splitlines()
+
     # python dictionary with model input and headers
     model_input = {}
     # extract parameters from header
@@ -191,10 +195,10 @@ def read_ICGEM_harmonics(model_file, **kwargs):
     model_input['l'] = np.arange(LMAX+1)
     model_input['m'] = np.arange(LMAX+1)
     # allocate for each coefficient
-    model_input['clm'] = np.zeros((LMAX+1,LMAX+1))
-    model_input['slm'] = np.zeros((LMAX+1,LMAX+1))
-    model_input['eclm'] = np.zeros((LMAX+1,LMAX+1))
-    model_input['eslm'] = np.zeros((LMAX+1,LMAX+1))
+    model_input['clm'] = np.zeros((LMAX+1, LMAX+1))
+    model_input['slm'] = np.zeros((LMAX+1, LMAX+1))
+    model_input['eclm'] = np.zeros((LMAX+1, LMAX+1))
+    model_input['eslm'] = np.zeros((LMAX+1, LMAX+1))
     # reduce file_contents to input data using data marker flag
     input_data = [l for l in file_contents if re.match(kwargs['FLAG'],l)]
     # for each line of data in the gravity file

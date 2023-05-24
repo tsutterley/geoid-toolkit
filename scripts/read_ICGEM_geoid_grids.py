@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 read_ICGEM_geoid_grids.py
-Written by Tyler Sutterley (12/2022)
+Written by Tyler Sutterley (05/2023)
 Reads geoid height spatial grids from the GFZ Geoid Calculation Service
     http://icgem.gfz-potsdam.de/home
 Outputs spatial grids as netCDF4 files
@@ -23,6 +23,7 @@ PYTHON DEPENDENCIES:
         https://unidata.github.io/netcdf4-python/
 
 UPDATE HISTORY:
+    Updated 05/2023: use pathlib to define and operate on paths
     Updated 12/2022: single implicit import of geoid toolkit
         place netCDF4 import within try/except statements
     Updated 05/2022: use argparse descriptions within sphinx documentation
@@ -41,9 +42,9 @@ UPDATE HISTORY:
 from __future__ import print_function
 
 import sys
-import os
 import re
 import logging
+import pathlib
 import argparse
 import datetime
 import warnings
@@ -68,12 +69,11 @@ def read_ICGEM_geoid_grids(FILE, FILENAME=None, MARKER='', SPACING=None,
     logging.basicConfig(level=loglevel)
 
     # split filename into basename and extension
-    fileBasename,_ = os.path.splitext(FILE)
-    # check that data file is present in file system
-    if not os.access(FILE, os.F_OK):
-        raise FileNotFoundError(f'{FILE} not found')
+    FILE = pathlib.Path(FILE).expanduser().absolute()
+    if not FILE.exists():
+        raise FileNotFoundError(f'{str(FILE)} not found')
     # open input file and read contents
-    with open(FILE, mode='r', encoding='utf8') as f:
+    with FILE.open(mode='r', encoding='utf8') as f:
         file_contents = f.read().splitlines()
     # number of lines contained in the file
     file_lines = len(file_contents)
@@ -142,10 +142,10 @@ def read_ICGEM_geoid_grids(FILE, FILENAME=None, MARKER='', SPACING=None,
     dinput[functional][ii,jj] = np.float64(parameters['gapvalue'])
 
     # output data and parameters to netCDF4
-    FILENAME = f'{fileBasename}.nc' if (FILENAME is None) else FILENAME
+    FILENAME = pathlib.Path(FILENAME).expanduser().absolute()
     ncdf_geoid_write(dinput, parameters, FILENAME=FILENAME)
     # change permissions mode to MODE
-    os.chmod(FILENAME, MODE)
+    FILENAME.chmod(mode=MODE)
 
 # PURPOSE: remove keys from an input dictionary
 def removekey(d, key):
@@ -206,9 +206,9 @@ def arguments():
             """
     )
     # command line parameters
-    parser.add_argument('files',
-        type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='+',
-        help='Geoid height spatial grid files')
+    parser.add_argument('gravity',
+        type=pathlib.Path,
+        help='Geoid height spatial grid file')
     # output filename (will default to input file with netCDF4 suffix)
     parser.add_argument('--filename','-F',
         type=str, default=None,
@@ -238,10 +238,17 @@ def main():
     parser = arguments()
     args,_ = parser.parse_known_args()
 
-    # for each input grid file
-    for f in args.files:
-        read_ICGEM_geoid_grids(f, FILENAME=args.filename, MARKER=args.header,
-            SPACING=args.spacing, VERBOSE=args.verbose, MODE=args.mode)
+    # verify input and output files
+    infile = pathlib.Path(args.gravity).expanduser().absolute()
+    # set output file from input filename if not entered
+    if not args.filename:
+        outfile = args.infile.with_name(f'{args.infile.stem}.nc')
+    else:
+        outfile = pathlib.Path(args.filename).expanduser().absolute()
+
+    # run program
+    read_ICGEM_geoid_grids(infile, FILENAME=outfile, MARKER=args.header,
+        SPACING=args.spacing, VERBOSE=args.verbose, MODE=args.mode)
 
 # run main program
 if __name__ == '__main__':
