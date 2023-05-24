@@ -13,6 +13,7 @@ dependencies:
   - numpydoc
   - pip
   - python>=3.6
+  - python-dateutil
   - pyyaml
   - sphinx
   - sphinx_rtd_theme
