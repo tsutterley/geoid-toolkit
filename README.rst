@@ -6,8 +6,6 @@ geoid-toolkit
 |License|
 |PyPI Version|
 |Documentation Status|
-|Binder|
-|Pangeo|
 |zenodo|
 
 .. |Language| image:: https://img.shields.io/pypi/pyversions/geoid-toolkit?color=green
@@ -21,12 +19,6 @@ geoid-toolkit
 
 .. |Documentation Status| image:: https://readthedocs.org/projects/geoid-toolkit/badge/?version=latest
    :target: https://gravity-toolkit.readthedocs.io/projects/geoid-toolkit/en/latest/?badge=latest
-
-.. |Binder| image:: https://mybinder.org/badge_logo.svg
-   :target: https://mybinder.org/v2/gh/tsutterley/geoid-toolkit/main
-
-.. |Pangeo| image:: https://img.shields.io/static/v1.svg?logo=Jupyter&label=PangeoBinderAWS&message=us-west-2&color=orange
-   :target: https://aws-uswest2-binder.pangeo.io/v2/gh/tsutterley/geoid-toolkit/main?urlpath=lab
 
 .. |zenodo| image:: https://zenodo.org/badge/199943310.svg
    :target: https://zenodo.org/badge/latestdoi/199943310
@@ -54,28 +46,28 @@ References
 
     Drewes, Kuglitsch, Ad\ |aacute|\ m and R\ |oacute|\ zsa "The Geodesist's Handbook 2016",
     Journal of Geodesy, 90, 907-1205 (2016).
-    `doi:10.1007/s00190-016-0948-z <https://doi.org/10.1007/s00190-016-0948-z>`_
+    `doi: 10.1007/s00190-016-0948-z <https://doi.org/10.1007/s00190-016-0948-z>`_
 
     Hofmann-Wellenhof and Moritz, "Physical Geodesy" (2005).
-    `doi:10.1007/978-3-211-33545-1 <https://doi.org/10.1007/978-3-211-33545-1>`_
+    `doi: 10.1007/978-3-211-33545-1 <https://doi.org/10.1007/978-3-211-33545-1>`_
 
     Holmes and Featherstone, "A Unified Approach to the Clenshaw Summation and
     the Recursive Computation of Very High Degree and Order Normalised
     Associated Legendre Functions", Journal of Geodesy (2002).
-    `doi:10.1007/s00190-002-0216-2 <https://doi.org/10.1007/s00190-002-0216-2>`_
+    `doi: 10.1007/s00190-002-0216-2 <https://doi.org/10.1007/s00190-002-0216-2>`_
 
     Ince, Barthelmes, Rei\ |szlig|\ land, Elger, F\ |ouml|\ rste, Flechtner, and Schuh,
     "ICGEM -- 15 years of successful collection and distribution of global
     gravitational models, associated services, and future plans"
     Earth System Science Data, 11, 647--674 (2019).
-    `doi:10.5194/essd-11-647-2019 <https://doi.org/10.5194/essd-11-647-2019>`_
+    `doi: 10.5194/essd-11-647-2019 <https://doi.org/10.5194/essd-11-647-2019>`_
 
     Jekeli, "Alternative Methods to Smooth the Earth's Gravity Field", (1981).
 
     Moazezi and Zomorrodian, "GGMCalc a software for calculation of the geoid
     undulation and the height anomaly using the iteration method, and
     classical gravity anomaly", Earth Science Informatics (2012).
-    `doi:10.1007/s12145-012-0102-2 <https://doi.org/10.1007/s12145-012-0102-2>`_
+    `doi: 10.1007/s12145-012-0102-2 <https://doi.org/10.1007/s12145-012-0102-2>`_
 
     Tscherning and Poder, "Some Geodetic Applications of Clenshaw Summation",
     Bollettino di Geodesia e Scienze, (1982)
@@ -83,7 +75,7 @@ References
     Wahr, Molenaar and Frank, "Time variability of the Earth's gravity field:
     Hydrological and oceanic effects and their possible detection using
     GRACE", Journal of Geophysical Research: Solid Earth, 103(B12),
-    30205-30229, `doi:10.1029/98JB02844 <https://doi.org/10.1029/98JB02844>`_
+    30205-30229, `doi: 10.1029/98JB02844 <https://doi.org/10.1029/98JB02844>`_
 
 Download
 ########

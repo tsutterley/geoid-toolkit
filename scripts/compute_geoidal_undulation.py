@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_geoidal_undulation.py
-Written by Tyler Sutterley (12/2022)
+Written by Tyler Sutterley (05/2023)
 Computes geoid undulations from a gravity model for an input file
 
 INPUTS:
@@ -61,6 +61,7 @@ PROGRAM DEPENDENCIES:
     gauss_weights.py: Computes Gaussian weights as a function of degree
 
 UPDATE HISTORY:
+    Updated 05/2023: use pathlib to define and operate on paths
     Updated 12/2022: single implicit import of geoid toolkit
     Updated 05/2022: use argparse descriptions within sphinx documentation
     Updated 11/2021: add function for attempting to extract projection
@@ -75,12 +76,21 @@ UPDATE HISTORY:
 from __future__ import print_function
 
 import sys
-import os
-import pyproj
 import logging
+import pathlib
 import argparse
+import warnings
 import numpy as np
 import geoid_toolkit as geoidtk
+
+# attempt imports
+try:
+    import pyproj
+except (ImportError, ModuleNotFoundError) as exc:
+    warnings.filterwarnings("module")
+    warnings.warn("pyproj not available", ImportWarning)
+# ignore warnings
+warnings.filterwarnings("ignore")
 
 # PURPOSE: try to get the projection information for the input file
 def get_projection(attributes, PROJECTION):
@@ -221,7 +231,7 @@ def compute_geoidal_undulation(model_file, input_file, output_file,
         geoidtk.spatial.to_geotiff(output, attrib, output_file,
             varname='geoid_h')
     # change the permissions level to MODE
-    os.chmod(output_file, MODE)
+    output_file.chmod(mode=MODE)
 
 # PURPOSE: create argument parser
 def arguments():
@@ -234,15 +244,14 @@ def arguments():
     # command line options
     # input and output file
     parser.add_argument('infile',
-        type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='?',
+        type=pathlib.Path, nargs='?',
         help='Input file to run')
     parser.add_argument('outfile',
-        type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='?',
+        type=pathlib.Path, nargs='?',
         help='Computed output file')
     # set gravity model file to use
     parser.add_argument('--gravity','-G',
-        type=lambda p: os.path.abspath(os.path.expanduser(p)),
-        default=os.getcwd(),
+        type=pathlib.Path,
         help='Gravity model file to use')
     # maximum spherical harmonic degree (level of truncation)
     parser.add_argument('--lmax','-l',
@@ -300,12 +309,15 @@ def main():
     parser = arguments()
     args,_ = parser.parse_known_args()
 
+    # verify input and output files
+    args.gravity = pathlib.Path(args.gravity).expanduser().absolute()
+    args.infile = pathlib.Path(args.infile).expanduser().absolute()
     # set output file from input filename if not entered
     if not args.outfile:
-        model,_ = os.path.splitext(os.path.basename(args.gravity))
-        fileBasename,fileExtension = os.path.splitext(args.infile)
-        vars = (fileBasename,model,fileExtension)
-        args.outfile = '{0}_{1}{2}'.format(*vars)
+        vars = (args.infile.stem,args.gravity.stem,args.infile.suffix)
+        args.outfile = args.infile.with_name('{0}_{1}{2}'.format(*vars))
+    else:
+        args.outfile = pathlib.Path(args.outfile).expanduser().absolute()
 
     # run geoid undulation program for input file
     compute_geoidal_undulation(args.gravity, args.infile, args.outfile,

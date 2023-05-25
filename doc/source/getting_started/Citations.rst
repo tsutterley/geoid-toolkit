@@ -20,7 +20,7 @@ If you have used ``geoid-toolkit`` in your work, please consider citing our libr
 
     T. C. Sutterley, et al., "geoid-toolkit: Python tools for obtaining and working
     with static gravity field coefficients for calculating geoid heights", (2019).
-    `doi: 10.5281/zenodo.7449212 <https://doi.org/10.5281/zenodo.7449212>`_
+    `doi: 10.5281/zenodo.5768711 <https://doi.org/10.5281/zenodo.5768711>`_
 
 Contributors
 ############
