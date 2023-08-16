@@ -127,7 +127,7 @@ def read_ICGEM_geoid_grids(FILE, FILENAME=None, MARKER='', SPACING=None,
     # for each file line
     bin_count = np.zeros((nlat,nlon))
     for j in range(count, file_lines):
-        col = np.array(file_contents[j].split(), dtype=np.float)
+        col = np.array(file_contents[j].split(), dtype=np.float64)
         # calculating the lon/lat indice
         ilon = int((longlimit_west + col[0])/dlon)
         ilat = int((latlimit_north - col[1])/dlat)

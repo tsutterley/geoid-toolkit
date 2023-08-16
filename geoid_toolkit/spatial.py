@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (05/2023)
+Written by Tyler Sutterley (08/2023)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -22,6 +22,7 @@ PROGRAM DEPENDENCIES:
     constants.py: calculate reference parameters for common ellipsoids
 
 UPDATE HISTORY:
+    Updated 08/2023: remove possible crs variables from output fields list
     Updated 05/2023: use pathlib to define and operate on paths
     Updated 04/2023: copy inputs in cartesian to not modify original arrays
         added iterative methods for converting from cartesian to geodetic
@@ -51,7 +52,7 @@ UPDATE HISTORY:
     Updated 07/2021: added function for determining input variable type
     Updated 03/2021: added polar stereographic area scale calculation
         add routines for converting to and from cartesian coordinates
-        eplaced numpy bool/int to prevent deprecation warnings
+        replaced numpy bool/int to prevent deprecation warnings
     Updated 01/2021: add streaming from bytes for ascii, netCDF4, HDF5, geotiff
         set default time for geotiff files to 0
     Updated 12/2020: added module for converting ellipsoids
@@ -770,7 +771,8 @@ def _grid_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
     """
     # input data fields
     dimensions = ['time', 'lon', 'lat', 't', 'x', 'y']
-    fields = sorted(set(output.keys()) - set(dimensions))
+    crs = ['crs', 'crs_wkt', 'crs_proj4', 'projection']
+    fields = sorted(set(output.keys()) - set(dimensions) - set(crs))
     # Defining the NetCDF dimensions
     ny, nx, nt = output[fields[0]].shape
     fileID.createDimension('y', ny)
@@ -818,7 +820,8 @@ def _time_series_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
     """
     # input data fields
     dimensions = ['time', 'lon', 'lat', 't', 'x', 'y']
-    fields = sorted(set(output.keys()) - set(dimensions))
+    crs = ['crs', 'crs_wkt', 'crs_proj4', 'projection']
+    fields = sorted(set(output.keys()) - set(dimensions) - set(crs))
     # Defining the NetCDF dimensions
     nstation, nt = output[fields[0]].shape
     fileID.createDimension('station', nstation)
