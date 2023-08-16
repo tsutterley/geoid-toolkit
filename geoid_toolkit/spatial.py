@@ -23,6 +23,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 08/2023: remove possible crs variables from output fields list
+        add function for calculating geocentric latitudes from geodetic
     Updated 05/2023: use pathlib to define and operate on paths
     Updated 04/2023: copy inputs in cartesian to not modify original arrays
         added iterative methods for converting from cartesian to geodetic
@@ -1597,3 +1598,47 @@ def _zhu_closed_form(
         h[ind] = np.sign(t-1.0+l)*np.sqrt((w-wi)**2.0 + (z[ind]-zi)**2.0)
     # return latitude, longitude and height
     return (lon, lat, h)
+
+# PURPOSE: calculate the geocentric latitudes
+def geocentric_latitude(
+        lon: np.ndarray,
+        lat: np.ndarray,
+        a_axis: float = 6378137.0,
+        flat: float = 1.0/298.257223563
+    ):
+    """
+    Converts from geodetic latitude to geocentric latitude for an ellipsoid
+
+    Parameters
+    ----------
+    lon: np.ndarray,
+        longitude (degrees east)
+    lat: np.ndarray,
+        geodetic latitude (degrees north)
+    a_axis: float, default 6378137.0
+        semimajor axis of the ellipsoid
+    flat: float, default 1.0/298.257223563
+        ellipsoidal flattening
+
+    Returns
+    -------
+    geocentric_latitude: np.ndarray
+        latitude intersecting the center of the Earth (degrees north)
+
+    References
+    ----------
+    .. [1] J. P. Snyder, *Map Projections used by the U.S. Geological Survey*,
+        Geological Survey Bulletin 1532, U.S. Government Printing Office, (1982).
+    """
+    # first numerical eccentricity
+    ecc1 = np.sqrt((2.0*flat - flat**2)*a_axis**2)/a_axis
+    # geodetic latitude in radians
+    latitude_geodetic_rad = np.pi*lat/180.0
+    # prime vertical radius of curvature
+    N = a_axis/np.sqrt(1.0 - ecc1**2.*np.sin(latitude_geodetic_rad)**2.)
+    # calculate X, Y and Z from geodetic latitude and longitude
+    X = N * np.cos(latitude_geodetic_rad) * np.cos(np.pi*lon/180.0)
+    Y = N * np.cos(latitude_geodetic_rad) * np.sin(np.pi*lon/180.0)
+    Z = (N * (1.0 - ecc1**2.0)) * np.sin(latitude_geodetic_rad)
+    # calculate geocentric latitude and convert to degrees
+    return 180.0*np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))/np.pi
