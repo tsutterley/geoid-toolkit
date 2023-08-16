@@ -252,7 +252,7 @@ def arguments():
     parser.add_argument('--spacing','-S',
         type=float, default=1.0, nargs='+',
         help='Output grid spacing')
-    # bounds of output mosaic
+    # bounds of output grid
     parser.add_argument('--bounds','-B', type=float,
         nargs=4, default=[-180.0,180.0,-90.0,90.0],
         metavar=('xmin','xmax','ymin','ymax'),

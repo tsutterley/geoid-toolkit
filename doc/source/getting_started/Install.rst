@@ -4,7 +4,7 @@ Installation
 
 ``geoid-toolkit`` is available for download from the `GitHub repository <https://github.com/tsutterley/geoid-toolkit>`_,
 and the `Python Package Index (pypi) <https://pypi.org/project/geoid-toolkit/>`_,
-The contents of the repository can be download as a `zipped file <https://github.com/tsutterley/geoid-toolkit/archive/main.zip>`_  or cloned.
+The contents of the repository can be downloaded as a `zipped file <https://github.com/tsutterley/geoid-toolkit/archive/main.zip>`_  or cloned.
 
 To use this repository, please fork into your own account and then clone onto your system:
 

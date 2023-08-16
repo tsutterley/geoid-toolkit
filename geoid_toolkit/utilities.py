@@ -690,7 +690,7 @@ def icgem_list(
     try:
         # Create and submit request.
         request = urllib2.Request(host)
-        tree = lxml.etree.parse(urllib2.urlopen(request,timeout=timeout),parser)
+        tree = lxml.etree.parse(urllib2.urlopen(request, timeout=timeout),parser)
     except:
         raise Exception(f'List error from {host}')
     else:
