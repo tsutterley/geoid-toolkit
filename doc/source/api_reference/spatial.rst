@@ -67,3 +67,11 @@ General Methods
 .. autofunction:: geoid_toolkit.spatial.to_sphere
 
 .. autofunction:: geoid_toolkit.spatial.to_geodetic
+
+.. autofunction:: geoid_toolkit.spatial._moritz_iterative
+
+.. autofunction:: geoid_toolkit.spatial._bowring_iterative
+
+.. autofunction:: geoid_toolkit.spatial._zhu_closed_form
+
+.. autofunction:: geoid_toolkit.spatial.geocentric_latitude
