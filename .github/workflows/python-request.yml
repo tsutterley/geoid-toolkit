@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: [3.8]
+        python-version: [3.11]
     env:
       OS: ${{ matrix.os }}
       PYTHON: ${{ matrix.python-version }}
@@ -23,17 +23,22 @@ jobs:
         shell: bash -l {0}
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up conda ${{ matrix.python-version }}
-      uses: conda-incubator/setup-miniconda@v2
+    - uses: actions/checkout@v3
+    - name: Set up mamba ${{ matrix.python-version }}
+      uses: mamba-org/setup-micromamba@v1
       with:
-        auto-update-conda: true
-        python-version: ${{ matrix.python-version }}
-        activate-environment: geoid-toolkit
+        micromamba-version: 'latest'
         environment-file: .binder/environment.yml
-    - name: Create conda Test Environment
-      run: |
-        conda install flake8 pytest pytest-cov cython
+        init-shell: bash
+        environment-name: geoid-toolkit
+        cache-environment: true
+        post-cleanup: 'all'
+        create-args: >-
+          python=${{ matrix.python-version }}
+          flake8
+          pytest
+          pytest-cov
+          cython
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
