@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 utilities.py
-Written by Tyler Sutterley (05/2023)
+Written by Tyler Sutterley (11/2023)
 Download and management utilities for syncing time and auxiliary files
 
 PYTHON DEPENDENCIES:
@@ -9,6 +9,7 @@ PYTHON DEPENDENCIES:
         https://pypi.python.org/pypi/lxml
 
 UPDATE HISTORY:
+    Updated 11/2023: updated ssl context to fix deprecation error
     Updated 05/2023: use pathlib to define and operate on paths
     Updated 01/2023: add default ssl context attribute with protocol
     Updated 12/2022: functions for managing and maintaining git repositories
@@ -486,11 +487,41 @@ def from_ftp(
         remote_buffer.seek(0)
         return remote_buffer
 
+def _create_default_ssl_context() -> ssl.SSLContext:
+    """Creates the default SSL context
+    """
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    _set_ssl_context_options(context)
+    context.options |= ssl.OP_NO_COMPRESSION
+    return context
+
+def _create_ssl_context_no_verify() -> ssl.SSLContext:
+    """Creates an SSL context for unverified connections
+    """
+    context = _create_default_ssl_context()
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+    return context
+
+def _set_ssl_context_options(context: ssl.SSLContext) -> None:
+    """Sets the default options for the SSL context
+    """
+    if sys.version_info >= (3, 10) or ssl.OPENSSL_VERSION_INFO >= (1, 1, 0, 7):
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
+    else:
+        context.options |= ssl.OP_NO_SSLv2
+        context.options |= ssl.OP_NO_SSLv3
+        context.options |= ssl.OP_NO_TLSv1
+        context.options |= ssl.OP_NO_TLSv1_1
+
 # default ssl context
-_default_ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+_default_ssl_context = _create_ssl_context_no_verify()
 
 # PURPOSE: check internet connection
-def check_connection(HOST: str, context=_default_ssl_context):
+def check_connection(
+        HOST: str,
+        context: ssl.SSLContext = _default_ssl_context,
+    ):
     """
     Check internet connection with http host
 
@@ -498,7 +529,7 @@ def check_connection(HOST: str, context=_default_ssl_context):
     ----------
     HOST: str
         remote http host
-    context: obj, default ssl.SSLContext(ssl.PROTOCOL_TLS)
+    context: obj, default geoid_toolkit.utilities._default_ssl_context
         SSL context for ``urllib`` opener object
     """
     # attempt to connect to http host
@@ -513,7 +544,7 @@ def check_connection(HOST: str, context=_default_ssl_context):
 def http_list(
         HOST: str | list,
         timeout: int | None = None,
-        context = _default_ssl_context,
+        context: ssl.SSLContext = _default_ssl_context,
         parser = lxml.etree.HTMLParser(),
         format: str = '%Y-%m-%d %H:%M',
         pattern: str = '',
@@ -528,7 +559,7 @@ def http_list(
         remote http host path
     timeout: int or NoneType, default None
         timeout in seconds for blocking operations
-    context: obj, default ssl.SSLContext(ssl.PROTOCOL_TLS)
+    context: obj, default geoid_toolkit.utilities._default_ssl_context
         SSL context for ``urllib`` opener object
     parser: obj, default lxml.etree.HTMLParser()
         HTML parser for ``lxml``
@@ -582,7 +613,7 @@ def http_list(
 def from_http(
         HOST: str | list,
         timeout: int | None = None,
-        context = _default_ssl_context,
+        context: ssl.SSLContext = _default_ssl_context,
         local: str | pathlib.Path | None = None,
         hash: str = '',
         chunk: int = 16384,
@@ -599,7 +630,7 @@ def from_http(
         remote http host path split as list
     timeout: int or NoneType, default None
         timeout in seconds for blocking operations
-    context: obj, default ssl.SSLContext(ssl.PROTOCOL_TLS)
+    context: obj, default geoid_toolkit.utilities._default_ssl_context
         SSL context for ``urllib`` opener object
     local: str, pathlib.Path or NoneType, default None
         path to local file
@@ -665,6 +696,7 @@ def from_http(
 def icgem_list(
         host: str = 'http://icgem.gfz-potsdam.de/tom_longtime',
         timeout: int | None = None,
+        context: ssl.SSLContext = _default_ssl_context,
         parser=lxml.etree.HTMLParser()
     ):
     """
@@ -678,6 +710,8 @@ def icgem_list(
         url for the GFZ ICGEM gravity field table
     timeout: int or NoneType
         timeout in seconds for blocking operations
+    context: obj, default geoid_toolkit.utilities._default_ssl_context
+        SSL context for ``urllib`` opener object
     parser: obj, default lxml.etree.HTMLParser()
         HTML parser for ``lxml``
 
@@ -690,7 +724,8 @@ def icgem_list(
     try:
         # Create and submit request.
         request = urllib2.Request(host)
-        tree = lxml.etree.parse(urllib2.urlopen(request, timeout=timeout),parser)
+        response = urllib2.urlopen(request, timeout=timeout, context=context)
+        tree = lxml.etree.parse(response, parser)
     except:
         raise Exception(f'List error from {host}')
     else:

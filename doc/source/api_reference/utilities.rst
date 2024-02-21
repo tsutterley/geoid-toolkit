@@ -45,6 +45,12 @@ General Methods
 
 .. autofunction:: geoid_toolkit.utilities.from_ftp
 
+.. autofunction:: geoid_toolkit.utilities._create_default_ssl_context
+
+.. autofunction:: geoid_toolkit.utilities._create_ssl_context_no_verify
+
+.. autofunction:: geoid_toolkit.utilities._set_ssl_context_options
+
 .. autofunction:: geoid_toolkit.utilities.check_connection
 
 .. autofunction:: geoid_toolkit.utilities.from_http

@@ -56,7 +56,7 @@ UPDATE HISTORY:
     Updated 10/2021: add more keyword options to match read ICGEM options
     Updated 09/2021: define int/float precision to prevent deprecation warning
     Updated 11/2020: added function docstrings
-    Updated 07/2019: split read and wrapper funciton into separate files
+    Updated 07/2019: split read and wrapper function into separate files
     Written 07/2017
 """
 import numpy as np

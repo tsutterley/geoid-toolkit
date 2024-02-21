@@ -18,9 +18,6 @@ PYTHON DEPENDENCIES:
     PyYAML: YAML parser and emitter for Python
         https://github.com/yaml/pyyaml
 
-PROGRAM DEPENDENCIES:
-    constants.py: calculate reference parameters for common ellipsoids
-
 UPDATE HISTORY:
     Updated 08/2023: remove possible crs variables from output fields list
         add function for calculating geocentric latitudes from geodetic
@@ -1076,7 +1073,7 @@ def convert_ellipsoid(
     .. [1] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
     """
     if (len(phi1) != len(h1)):
-        raise ValueError('phi and h have incompatable dimensions')
+        raise ValueError('phi and h have incompatible dimensions')
     # semiminor axis of input and output ellipsoid
     b1 = (1.0 - f1)*a1
     b2 = (1.0 - f2)*a2
