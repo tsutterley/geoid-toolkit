@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (08/2023)
+Written by Tyler Sutterley (10/2023)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -18,9 +18,17 @@ PYTHON DEPENDENCIES:
     PyYAML: YAML parser and emitter for Python
         https://github.com/yaml/pyyaml
 
+PROGRAM DEPENDENCIES:
+    ref_ellipsoid.py: Computes parameters for a reference ellipsoid
+
 UPDATE HISTORY:
+    Updated 10/2023: can read from netCDF4 or HDF5 variable groups
+        apply no formatting to columns in ascii file output
+    Updated 09/2023: add function to invert field mapping keys and values
+        use datetime64[ns] for parsing dates from ascii files
     Updated 08/2023: remove possible crs variables from output fields list
         add function for calculating geocentric latitudes from geodetic
+        place PyYAML behind try/except statement to reduce build size
     Updated 05/2023: use pathlib to define and operate on paths
     Updated 04/2023: copy inputs in cartesian to not modify original arrays
         added iterative methods for converting from cartesian to geodetic
@@ -45,7 +53,8 @@ UPDATE HISTORY:
         remove fill_value attribute after creating netCDF4 and HDF5 variables
     Updated 11/2021: added empty cases to netCDF4 and HDF5 output for crs
         try to get grid mapping attributes from netCDF4 and HDF5
-    Updated 10/2021: using python logging for handling verbose output
+    Updated 10/2021: add pole case in stereographic area scale calculation
+        using python logging for handling verbose output
     Updated 09/2021: can calculate height differences between ellipsoids
     Updated 07/2021: added function for determining input variable type
     Updated 03/2021: added polar stereographic area scale calculation
@@ -65,11 +74,9 @@ import io
 import copy
 import gzip
 import uuid
-import yaml
 import logging
 import pathlib
 import datetime
-import warnings
 import numpy as np
 import dateutil.parser
 import geoid_toolkit.version
@@ -77,20 +84,19 @@ import geoid_toolkit.version
 try:
     import osgeo.gdal, osgeo.osr, osgeo.gdalconst
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    warnings.filterwarnings("module")
-    warnings.warn("GDAL not available", ImportWarning)
+    logging.debug("GDAL not available")
 try:
     import h5py
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    warnings.filterwarnings("module")
-    warnings.warn("h5py not available", ImportWarning)
+    logging.debug("h5py not available")
 try:
     import netCDF4
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    warnings.filterwarnings("module")
-    warnings.warn("netCDF4 not available", ImportWarning)
-# ignore warnings
-warnings.filterwarnings("ignore")
+    logging.debug("netCDF4 not available")
+try:
+    import yaml
+except (AttributeError, ImportError, ModuleNotFoundError) as exc:
+    logging.debug("PyYAML not available")
 
 def case_insensitive_filename(filename: str | pathlib.Path):
     """
@@ -247,7 +253,7 @@ def from_ascii(filename: str, **kwargs):
         # allocate for each variable and copy variable attributes
         for c in columns:
             if (c == 'time') and kwargs['parse_dates']:
-                dinput[c] = np.zeros((file_lines-count), dtype='datetime64[ms]')
+                dinput[c] = np.zeros((file_lines-count), dtype='datetime64[ns]')
             else:
                 dinput[c] = np.zeros((file_lines-count))
             dinput['attributes'][c] = YAML_HEADER['header']['variables'][c]
@@ -259,7 +265,7 @@ def from_ascii(filename: str, **kwargs):
         header = int(kwargs['header'])
         for c in columns:
             if (c == 'time') and kwargs['parse_dates']:
-                dinput[c] = np.zeros((file_lines-header), dtype='datetime64[ms]')
+                dinput[c] = np.zeros((file_lines-header), dtype='datetime64[ns]')
             else:
                 dinput[c] = np.zeros((file_lines-header))
         dinput['attributes'] = {c:dict() for c in columns}
@@ -298,6 +304,8 @@ def from_netCDF4(filename: str, **kwargs):
         full path of input netCDF4 file
     compression: str or NoneType, default None
         file compression type
+    group: str or NoneType, default None
+        netCDF4 variable group
     timename: str, default 'time'
         name for time-dimension variable
     xname: str, default 'lon'
@@ -311,6 +319,7 @@ def from_netCDF4(filename: str, **kwargs):
     """
     # set default keyword arguments
     kwargs.setdefault('compression', None)
+    kwargs.setdefault('group', None)
     kwargs.setdefault('timename', 'time')
     kwargs.setdefault('xname', 'lon')
     kwargs.setdefault('yname', 'lat')
@@ -353,19 +362,21 @@ def from_netCDF4(filename: str, **kwargs):
             kwargs['field_mapping']['data'] = copy.copy(kwargs['varname'])
         if kwargs['timename'] is not None:
             kwargs['field_mapping']['time'] = copy.copy(kwargs['timename'])
+    # check if reading from root group or sub-group
+    group = fileID.groups[kwargs['group']] if kwargs['group'] else fileID
     # for each variable
     for key, nc in kwargs['field_mapping'].items():
         # Getting the data from each NetCDF variable
-        dinput[key] = fileID.variables[nc][:]
+        dinput[key] = group.variables[nc][:]
         # get attributes for the included variables
         dinput['attributes'][key] = {}
         for attr in attributes_list:
             # try getting the attribute
             try:
-                ncattr, = [s for s in fileID.variables[nc].ncattrs()
+                ncattr, = [s for s in group.variables[nc].ncattrs()
                     if re.match(attr, s, re.I)]
                 dinput['attributes'][key][attr] = \
-                    fileID.variables[nc].getncattr(ncattr)
+                    group.variables[nc].getncattr(ncattr)
             except (ValueError, AttributeError):
                 pass
     # get projection information if there is a grid_mapping attribute
@@ -374,9 +385,9 @@ def from_netCDF4(filename: str, **kwargs):
         grid_mapping = dinput['attributes']['data']['grid_mapping']
         # get coordinate reference system attributes
         dinput['attributes']['crs'] = {}
-        for att_name in fileID[grid_mapping].ncattrs():
+        for att_name in group[grid_mapping].ncattrs():
             dinput['attributes']['crs'][att_name] = \
-                fileID.variables[grid_mapping].getncattr(att_name)
+                group.variables[grid_mapping].getncattr(att_name)
         # get the spatial projection reference information from wkt
         # and overwrite the file-level projection attribute (if existing)
         srs = osgeo.osr.SpatialReference()
@@ -402,6 +413,8 @@ def from_HDF5(filename: str | pathlib.Path, **kwargs):
         full path of input HDF5 file
     compression: str or NoneType, default None
         file compression type
+    group: str or NoneType, default None
+        netCDF4 variable group
     timename: str, default 'time'
         name for time-dimension variable
     xname: str, default 'lon'
@@ -415,6 +428,7 @@ def from_HDF5(filename: str | pathlib.Path, **kwargs):
     """
     # set default keyword arguments
     kwargs.setdefault('compression', None)
+    kwargs.setdefault('group', None)
     kwargs.setdefault('timename', 'time')
     kwargs.setdefault('xname', 'lon')
     kwargs.setdefault('yname', 'lat')
@@ -462,16 +476,18 @@ def from_HDF5(filename: str | pathlib.Path, **kwargs):
             kwargs['field_mapping']['data'] = copy.copy(kwargs['varname'])
         if kwargs['timename'] is not None:
             kwargs['field_mapping']['time'] = copy.copy(kwargs['timename'])
+    # check if reading from root group or sub-group
+    group = fileID[kwargs['group']] if kwargs['group'] else fileID
     # for each variable
     for key, h5 in kwargs['field_mapping'].items():
         # Getting the data from each HDF5 variable
-        dinput[key] = np.copy(fileID[h5][:])
+        dinput[key] = np.copy(group[h5][:])
         # get attributes for the included variables
         dinput['attributes'][key] = {}
         for attr in attributes_list:
             # try getting the attribute
             try:
-                dinput['attributes'][key][attr] = fileID[h5].attrs[attr]
+                dinput['attributes'][key][attr] = group[h5].attrs[attr]
             except (KeyError, AttributeError):
                 pass
     # get projection information if there is a grid_mapping attribute
@@ -480,7 +496,7 @@ def from_HDF5(filename: str | pathlib.Path, **kwargs):
         grid_mapping = dinput['attributes']['data']['grid_mapping']
         # get coordinate reference system attributes
         dinput['attributes']['crs'] = {}
-        for att_name, att_val in fileID[grid_mapping].attrs.items():
+        for att_name, att_val in group[grid_mapping].attrs.items():
             dinput['attributes']['crs'][att_name] = att_val
         # get the spatial projection reference information from wkt
         # and overwrite the file-level projection attribute (if existing)
@@ -659,7 +675,7 @@ def to_ascii(output: dict, attributes: dict, filename: str, **kwargs):
         fid.write('\n\n# End of YAML header\n')
     # write to file for each data point
     for line in range(nrow):
-        line_contents = [f'{d:0.8f}' for d in data_stack[:, line]]
+        line_contents = [f'{d}' for d in data_stack[:, line]]
         print(kwargs['delimiter'].join(line_contents), file=fid)
     # close the output file
     fid.close()
@@ -1028,6 +1044,17 @@ def default_field_mapping(variables: list | np.ndarray):
     # return the field mapping
     return field_mapping
 
+def inverse_mapping(field_mapping):
+    """
+    Reverses the field mappings of a dictionary
+
+    Parameters
+    ----------
+    field_mapping: dict
+        Field mappings for netCDF4/HDF5 read functions
+    """
+    return field_mapping.__class__(map(reversed, field_mapping.items()))
+
 def convert_ellipsoid(
         phi1: np.ndarray,
         h1: np.ndarray,
@@ -1241,12 +1268,15 @@ def wrap_longitudes(lon: float | np.ndarray):
     # convert phi from radians to degrees
     return phi*180.0/np.pi
 
+# get WGS84 parameters
+_wgs84 = geoid_toolkit.ref_ellipsoid('WGS84', UNITS='MKS')
+
 def to_cartesian(
         lon: np.ndarray,
         lat: np.ndarray,
         h: float | np.ndarray = 0.0,
-        a_axis: float = 6378137.0,
-        flat: float = 1.0/298.257223563
+        a_axis: float = _wgs84['a_axis'],
+        flat: float = _wgs84['flat'],
     ):
     """
     Converts geodetic coordinates to Cartesian coordinates
@@ -1328,8 +1358,8 @@ def to_geodetic(
         x: np.ndarray,
         y: np.ndarray,
         z: np.ndarray,
-        a_axis: float = 6378137.0,
-        flat: float = 1.0/298.257223563,
+        a_axis: float = _wgs84['a_axis'],
+        flat: float = _wgs84['flat'],
         method: str = 'bowring',
         eps: float = np.finfo(np.float64).eps,
         iterations: int = 10
@@ -1381,8 +1411,8 @@ def _moritz_iterative(
         x: np.ndarray,
         y: np.ndarray,
         z: np.ndarray,
-        a_axis: float = 6378137.0,
-        flat: float = 1.0/298.257223563,
+        a_axis: float = _wgs84['a_axis'],
+        flat: float = _wgs84['flat'],
         eps: float = np.finfo(np.float64).eps,
         iterations: int = 10
     ):
@@ -1448,8 +1478,8 @@ def _bowring_iterative(
         x: np.ndarray,
         y: np.ndarray,
         z: np.ndarray,
-        a_axis: float = 6378137.0,
-        flat: float = 1.0/298.257223563,
+        a_axis: float = _wgs84['a_axis'],
+        flat: float = _wgs84['flat'],
         eps: float = np.finfo(np.float64).eps,
         iterations: int = 10
     ):
@@ -1527,8 +1557,8 @@ def _zhu_closed_form(
         x: np.ndarray,
         y: np.ndarray,
         z: np.ndarray,
-        a_axis: float = 6378137.0,
-        flat: float = 1.0/298.257223563
+        a_axis: float = _wgs84['a_axis'],
+        flat: float = _wgs84['flat'],
     ):
     """
     Convert from cartesian coordinates to geodetic coordinates
@@ -1600,8 +1630,8 @@ def _zhu_closed_form(
 def geocentric_latitude(
         lon: np.ndarray,
         lat: np.ndarray,
-        a_axis: float = 6378137.0,
-        flat: float = 1.0/298.257223563
+        a_axis: float = _wgs84['a_axis'],
+        flat: float = _wgs84['flat'],
     ):
     """
     Converts from geodetic latitude to geocentric latitude for an ellipsoid
@@ -1639,3 +1669,56 @@ def geocentric_latitude(
     Z = (N * (1.0 - ecc1**2.0)) * np.sin(latitude_geodetic_rad)
     # calculate geocentric latitude and convert to degrees
     return 180.0*np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))/np.pi
+
+def scale_areas(
+        lat: np.ndarray,
+        flat: float = _wgs84['flat'],
+        ref: float = 70.0
+    ):
+    """
+    Calculates area scaling factors for a polar stereographic projection
+    including special case of at the exact pole [1]_ [2]_
+
+    Parameters
+    ----------
+    lat: np.ndarray
+        latitude (degrees north)
+    flat: float, default 1.0/298.257223563
+        ellipsoidal flattening
+    ref: float, default 70.0
+        reference latitude (true scale latitude)
+
+    Returns
+    -------
+    scale: np.ndarray
+        area scaling factors at input latitudes
+
+    References
+    ----------
+    .. [1] J. P. Snyder, *Map Projections used by the U.S. Geological Survey*,
+        Geological Survey Bulletin 1532, U.S. Government Printing Office, (1982).
+    .. [2] JPL Technical Memorandum 3349-85-101
+    """
+    # convert latitude from degrees to positive radians
+    theta = np.abs(lat)*np.pi/180.0
+    # convert reference latitude from degrees to positive radians
+    theta_ref = np.abs(ref)*np.pi/180.0
+    # square of the eccentricity of the ellipsoid
+    # ecc2 = (1-b**2/a**2) = 2.0*flat - flat^2
+    ecc2 = 2.0*flat - flat**2
+    # eccentricity of the ellipsoid
+    ecc = np.sqrt(ecc2)
+    # calculate ratio at input latitudes
+    m = np.cos(theta)/np.sqrt(1.0 - ecc2*np.sin(theta)**2)
+    t = np.tan(np.pi/4.0 - theta/2.0)/((1.0 - ecc*np.sin(theta)) / \
+        (1.0 + ecc*np.sin(theta)))**(ecc/2.0)
+    # calculate ratio at reference latitude
+    mref = np.cos(theta_ref)/np.sqrt(1.0 - ecc2*np.sin(theta_ref)**2)
+    tref = np.tan(np.pi/4.0 - theta_ref/2.0)/((1.0 - ecc*np.sin(theta_ref)) / \
+        (1.0 + ecc*np.sin(theta_ref)))**(ecc/2.0)
+    # distance scaling
+    k = (mref/m)*(t/tref)
+    kp = 0.5*mref*np.sqrt(((1.0+ecc)**(1.0+ecc))*((1.0-ecc)**(1.0-ecc)))/tref
+    # area scaling
+    scale = np.where(np.isclose(theta, np.pi/2.0), 1.0/(kp**2), 1.0/(k**2))
+    return scale
