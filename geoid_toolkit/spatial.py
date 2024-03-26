@@ -80,6 +80,7 @@ import datetime
 import numpy as np
 import dateutil.parser
 import geoid_toolkit.version
+from geoid_toolkit.ref_ellipsoid import ref_ellipsoid
 # attempt imports
 try:
     import osgeo.gdal, osgeo.osr, osgeo.gdalconst
@@ -1269,14 +1270,14 @@ def wrap_longitudes(lon: float | np.ndarray):
     return phi*180.0/np.pi
 
 # get WGS84 parameters
-_wgs84 = geoid_toolkit.ref_ellipsoid('WGS84', UNITS='MKS')
+_wgs84 = ref_ellipsoid('WGS84', UNITS='MKS')
 
 def to_cartesian(
         lon: np.ndarray,
         lat: np.ndarray,
         h: float | np.ndarray = 0.0,
-        a_axis: float = _wgs84['a_axis'],
-        flat: float = _wgs84['flat'],
+        a_axis: float = _wgs84['a'],
+        flat: float = _wgs84['f'],
     ):
     """
     Converts geodetic coordinates to Cartesian coordinates
@@ -1358,8 +1359,8 @@ def to_geodetic(
         x: np.ndarray,
         y: np.ndarray,
         z: np.ndarray,
-        a_axis: float = _wgs84['a_axis'],
-        flat: float = _wgs84['flat'],
+        a_axis: float = _wgs84['a'],
+        flat: float = _wgs84['f'],
         method: str = 'bowring',
         eps: float = np.finfo(np.float64).eps,
         iterations: int = 10
@@ -1411,8 +1412,8 @@ def _moritz_iterative(
         x: np.ndarray,
         y: np.ndarray,
         z: np.ndarray,
-        a_axis: float = _wgs84['a_axis'],
-        flat: float = _wgs84['flat'],
+        a_axis: float = _wgs84['a'],
+        flat: float = _wgs84['f'],
         eps: float = np.finfo(np.float64).eps,
         iterations: int = 10
     ):
@@ -1478,8 +1479,8 @@ def _bowring_iterative(
         x: np.ndarray,
         y: np.ndarray,
         z: np.ndarray,
-        a_axis: float = _wgs84['a_axis'],
-        flat: float = _wgs84['flat'],
+        a_axis: float = _wgs84['a'],
+        flat: float = _wgs84['f'],
         eps: float = np.finfo(np.float64).eps,
         iterations: int = 10
     ):
@@ -1557,8 +1558,8 @@ def _zhu_closed_form(
         x: np.ndarray,
         y: np.ndarray,
         z: np.ndarray,
-        a_axis: float = _wgs84['a_axis'],
-        flat: float = _wgs84['flat'],
+        a_axis: float = _wgs84['a'],
+        flat: float = _wgs84['f'],
     ):
     """
     Convert from cartesian coordinates to geodetic coordinates
@@ -1630,8 +1631,8 @@ def _zhu_closed_form(
 def geocentric_latitude(
         lon: np.ndarray,
         lat: np.ndarray,
-        a_axis: float = _wgs84['a_axis'],
-        flat: float = _wgs84['flat'],
+        a_axis: float = _wgs84['a'],
+        flat: float = _wgs84['f'],
     ):
     """
     Converts from geodetic latitude to geocentric latitude for an ellipsoid
@@ -1672,7 +1673,7 @@ def geocentric_latitude(
 
 def scale_areas(
         lat: np.ndarray,
-        flat: float = _wgs84['flat'],
+        flat: float = _wgs84['f'],
         ref: float = 70.0
     ):
     """
