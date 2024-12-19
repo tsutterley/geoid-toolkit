@@ -63,7 +63,7 @@ def norm_gravity(lat, h, refell):
     """
     Calculates the normal gravity of an ellipsoid at latitudes and heights
     and calculates the derivative with respect to height following
-    [HofmannWellenhof2006]_
+    :cite:p:`HofmannWellenhof:2006hy`
 
     Parameters
     ----------
@@ -95,12 +95,6 @@ def norm_gravity(lat, h, refell):
         normal gravity for ellipsoid at height
     dgamma_dh: float
         derivative of normal gravity with respect to height
-
-    References
-    ----------
-    .. [HofmannWellenhof2006] B. Hofmann-Wellenhof and H. Moritz,
-        *Physical Geodesy*, 2nd Edition, 403 pp., (2006).
-        `doi: 10.1007/978-3-211-33545-1 <https://doi.org/10.1007/978-3-211-33545-1>`_
     """
 
     # convert latitude from degrees to radians

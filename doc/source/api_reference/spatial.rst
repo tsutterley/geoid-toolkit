@@ -4,8 +4,7 @@ spatial
 
 Utilities for reading, writing and operating on spatial data
 
- - Can read ascii, netCDF4, HDF5 or geotiff files
- - Can output to ascii, netCDF4, HDF5 or geotiff files
+- Can read/write ascii, netCDF4, HDF5, and (cloud optimized) geotiff
 
 Calling Sequence
 ----------------
@@ -46,15 +45,35 @@ General Methods
 
 .. autofunction:: geoid_toolkit.spatial.from_geotiff
 
+.. autofunction:: geoid_toolkit.spatial.from_parquet
+
+.. autofunction:: geoid_toolkit.spatial.to_file
+
 .. autofunction:: geoid_toolkit.spatial.to_ascii
 
 .. autofunction:: geoid_toolkit.spatial.to_netCDF4
+
+.. autofunction:: geoid_toolkit.spatial._drift_netCDF4
+
+.. autofunction:: geoid_toolkit.spatial._grid_netCDF4
+
+.. autofunction:: geoid_toolkit.spatial._time_series_netCDF4
 
 .. autofunction:: geoid_toolkit.spatial.to_HDF5
 
 .. autofunction:: geoid_toolkit.spatial.to_geotiff
 
+.. autofunction:: geoid_toolkit.spatial.to_parquet
+
 .. autofunction:: geoid_toolkit.spatial.expand_dims
+
+.. autofunction:: geoid_toolkit.spatial.to_dms
+
+.. autofunction:: geoid_toolkit.spatial.from_dms
+
+.. autofunction:: geoid_toolkit.spatial.default_field_mapping
+
+.. autofunction:: geoid_toolkit.spatial.inverse_mapping
 
 .. autofunction:: geoid_toolkit.spatial.convert_ellipsoid
 
@@ -75,3 +94,5 @@ General Methods
 .. autofunction:: geoid_toolkit.spatial._zhu_closed_form
 
 .. autofunction:: geoid_toolkit.spatial.geocentric_latitude
+
+.. autofunction:: geoid_toolkit.spatial.scale_factors

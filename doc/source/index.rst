@@ -54,3 +54,10 @@ and calculating geoid heights
     api_reference/compute_geoidal_undulation.rst
     api_reference/read_EGM2008_geoid_grids.rst
     api_reference/read_ICGEM_geoid_grids.rst
+
+.. toctree::
+    :maxdepth: 1
+    :hidden:
+    :caption: Bibliography
+
+    getting_started/Bibliography.rst

@@ -17,7 +17,8 @@ COMMAND LINE OPTIONS:
         csv (default)
         netCDF4
         HDF5
-        geotiff
+        GTiff
+        cog
     -S X, --spacing X: output grid spacing
     -B X, --bounds X: output grid extents [xmin,xmax,ymin,ymax]
     -P X, --projection X: spatial projection as EPSG code or PROJ4 string
@@ -32,7 +33,7 @@ PYTHON DEPENDENCIES:
     h5py: Python interface for Hierarchal Data Format 5 (HDF5)
         https://www.h5py.org/
     netCDF4: Python interface to the netCDF C library
-         https://unidata.github.io/netcdf4-python/netCDF4/index.html
+        https://unidata.github.io/netcdf4-python/netCDF4/index.html
     gdal: Pythonic interface to the Geospatial Data Abstraction Library (GDAL)
         https://pypi.python.org/pypi/GDAL
     pyproj: Python interface to PROJ library
@@ -176,7 +177,7 @@ def compute_geoid_grids(model_file, output_file,
     xmin,xmax,ymin,ymax = np.copy(BOUNDS)
     # create x and y from spacing and bounds
     output['x'] = np.arange(xmin+dx/2.0,xmax+dx,dx)
-    if (FORMAT == 'geotiff'):
+    if FORMAT in ('GTiff', 'cog'):
         output['y'] = np.arange(ymax-dx/2.0,ymin-dy,-dy)
     else:
         output['y'] = np.arange(ymin+dx/2.0,ymax+dy,dy)
@@ -203,13 +204,13 @@ def compute_geoid_grids(model_file, output_file,
         geoidtk.spatial.to_netCDF4(output, attrib, output_file)
     elif (FORMAT == 'HDF5'):
         geoidtk.spatial.to_HDF5(output, attrib, output_file)
-    elif (FORMAT == 'geotiff'):
+    elif FORMAT in ('GTiff', 'cog'):
         # copy global geotiff attributes for projection and grid parameters
         attrib['wkt'] = crs1.to_wkt()
         attrib['spacing'] = (dx, -dy)
         attrib['extent'] = np.copy(BOUNDS)
         geoidtk.spatial.to_geotiff(output, attrib, output_file,
-            varname='geoid_h')
+            varname='geoid_h', driver=FORMAT)
     # change the permissions level to MODE
     output_file.chmod(mode=MODE)
 
@@ -246,7 +247,8 @@ def arguments():
         help='Gaussian smoothing radius (km)')
     # Output data format
     parser.add_argument('--format','-F',
-        type=str, default='csv', choices=('csv','netCDF4','HDF5','geotiff'),
+        type=str, default='csv',
+        choices=('csv','netCDF4','HDF5','GTiff','cog'),
         help='Output data format')
     # output grid spacing
     parser.add_argument('--spacing','-S',

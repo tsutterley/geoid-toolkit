@@ -21,6 +21,8 @@ General Methods
 
 .. autofunction:: geoid_toolkit.utilities.get_data_path
 
+.. autofunction:: geoid_toolkit.utilities.import_dependency
+
 .. autofunction:: geoid_toolkit.utilities.get_hash
 
 .. autofunction:: geoid_toolkit.utilities.get_git_revision_hash

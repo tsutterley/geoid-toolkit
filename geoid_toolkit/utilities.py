@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 utilities.py
-Written by Tyler Sutterley (11/2023)
+Written by Tyler Sutterley (08/2024)
 Download and management utilities for syncing time and auxiliary files
 
 PYTHON DEPENDENCIES:
@@ -9,6 +9,9 @@ PYTHON DEPENDENCIES:
         https://pypi.python.org/pypi/lxml
 
 UPDATE HISTORY:
+    Updated 08/2024: generalize hash function to use any available algorithm
+    Updated 06/2024: make default case for an import exception be a class
+    Updated 04/2024: add wrapper to importlib for optional dependencies
     Updated 11/2023: updated ssl context to fix deprecation error
     Updated 05/2023: use pathlib to define and operate on paths
     Updated 01/2023: add default ssl context attribute with protocol
@@ -37,12 +40,13 @@ import inspect
 import hashlib
 import logging
 import pathlib
-import dateutil
 import warnings
+import importlib
 import posixpath
 import lxml.etree
 import subprocess
-import calendar,time
+import calendar, time
+import dateutil.parser
 if sys.version_info[0] == 2:
     import urllib2
 else:
@@ -64,13 +68,54 @@ def get_data_path(relpath: list | str | pathlib.Path):
     if isinstance(relpath, list):
         # use *splat operator to extract from list
         return filepath.joinpath(*relpath)
-    elif isinstance(relpath, str):
+    elif isinstance(relpath, (str, pathlib.Path)):
         return filepath.joinpath(relpath)
+
+def import_dependency(
+        name: str,
+        extra: str = "",
+        raise_exception: bool = False
+    ):
+    """
+    Import an optional dependency
+
+    Adapted from ``pandas.compat._optional::import_optional_dependency``
+
+    Parameters
+    ----------
+    name: str
+        Module name
+    extra: str, default ""
+        Additional text to include in the ``ImportError`` message
+    raise_exception: bool, default False
+        Raise an ``ImportError`` if the module is not found
+
+    Returns
+    -------
+    module: obj
+        Imported module
+    """
+    # check if the module name is a string
+    msg = f"Invalid module name: '{name}'; must be a string"
+    assert isinstance(name, str), msg
+    # default error if module cannot be imported
+    err = f"Missing optional dependency '{name}'. {extra}"
+    module = type('module', (), {})
+    # try to import the module
+    try:
+        module = importlib.import_module(name)
+    except (ImportError, ModuleNotFoundError) as exc:
+        if raise_exception:
+            raise ImportError(err) from exc
+        else:
+            logging.debug(err)
+    # return the module
+    return module
 
 # PURPOSE: get the hash value of a file
 def get_hash(
         local: str | io.IOBase | pathlib.Path,
-        algorithm: str = 'MD5'
+        algorithm: str = 'md5'
     ):
     """
     Get the hash value from a local file or ``BytesIO`` object
@@ -79,18 +124,16 @@ def get_hash(
     ----------
     local: obj, str or pathlib.Path
         BytesIO object or path to file
-    algorithm: str, default 'MD5'
+    algorithm: str, default 'md5'
         hashing algorithm for checksum validation
-
-            - ``'MD5'``: Message Digest
-            - ``'sha1'``: Secure Hash Algorithm
     """
     # check if open file object or if local file exists
     if isinstance(local, io.IOBase):
-        if (algorithm == 'MD5'):
-            return hashlib.md5(local.getvalue()).hexdigest()
-        elif (algorithm == 'sha1'):
-            return hashlib.sha1(local.getvalue()).hexdigest()
+        # generate checksum hash for a given type
+        if algorithm in hashlib.algorithms_available:
+            return hashlib.new(algorithm, local.getvalue()).hexdigest()
+        else:
+            raise ValueError(f'Invalid hashing algorithm: {algorithm}')
     elif isinstance(local, (str, pathlib.Path)):
         # generate checksum hash for local file
         local = pathlib.Path(local).expanduser()
@@ -100,10 +143,10 @@ def get_hash(
         # open the local_file in binary read mode
         with local.open(mode='rb') as local_buffer:
             # generate checksum hash for a given type
-            if (algorithm == 'MD5'):
-                return hashlib.md5(local_buffer.read()).hexdigest()
-            elif (algorithm == 'sha1'):
-                return hashlib.sha1(local_buffer.read()).hexdigest()
+            if algorithm in hashlib.algorithms_available:
+                return hashlib.new(algorithm, local_buffer.read()).hexdigest()
+            else:
+                raise ValueError(f'Invalid hashing algorithm: {algorithm}')
     else:
         return ''
 
@@ -535,7 +578,11 @@ def check_connection(
     # attempt to connect to http host
     try:
         urllib2.urlopen(HOST, timeout=20, context=context)
+    except urllib2.HTTPError as exc:
+        logging.debug(exc.code)
+        raise RuntimeError(exc.reason) from exc
     except urllib2.URLError as exc:
+        logging.debug(exc.reason)
         raise RuntimeError('Check internet connection') from exc
     else:
         return True
@@ -585,8 +632,13 @@ def http_list(
         # Create and submit request.
         request = urllib2.Request(posixpath.join(*HOST))
         response = urllib2.urlopen(request, timeout=timeout, context=context)
-    except (urllib2.HTTPError, urllib2.URLError):
-        raise Exception('List error from {0}'.format(posixpath.join(*HOST)))
+    except urllib2.HTTPError as exc:
+        logging.debug(exc.code)
+        raise RuntimeError(exc.reason) from exc
+    except urllib2.URLError as exc:
+        logging.debug(exc.reason)
+        msg = 'List error from {0}'.format(posixpath.join(*HOST))
+        raise Exception(msg) from exc
     else:
         # read and parse request for files (column names and modified times)
         tree = lxml.etree.parse(response, parser)
@@ -697,7 +749,7 @@ def icgem_list(
         host: str = 'http://icgem.gfz-potsdam.de/tom_longtime',
         timeout: int | None = None,
         context: ssl.SSLContext = _default_ssl_context,
-        parser=lxml.etree.HTMLParser()
+        parser = lxml.etree.HTMLParser()
     ):
     """
     Parse the table of static gravity field models on the GFZ
@@ -708,7 +760,7 @@ def icgem_list(
     ----------
     host: str
         url for the GFZ ICGEM gravity field table
-    timeout: int or NoneType
+    timeout: int or NoneType, default None
         timeout in seconds for blocking operations
     context: obj, default geoid_toolkit.utilities._default_ssl_context
         SSL context for ``urllib`` opener object
@@ -725,10 +777,15 @@ def icgem_list(
         # Create and submit request.
         request = urllib2.Request(host)
         response = urllib2.urlopen(request, timeout=timeout, context=context)
-        tree = lxml.etree.parse(response, parser)
-    except:
-        raise Exception(f'List error from {host}')
+    except urllib2.HTTPError as exc:
+        logging.debug(exc.code)
+        raise RuntimeError(exc.reason) from exc
+    except urllib2.URLError as exc:
+        logging.debug(exc.reason)
+        raise Exception(f'List error from {host}') from exc
     else:
+        # read and parse request for files
+        tree = lxml.etree.parse(response, parser)
         # read and parse request for files
         colfiles = tree.xpath('//td[@class="tom-cell-modelfile"]//a/@href')
         # reduce list of files to find gfc files

@@ -60,7 +60,7 @@ from geoid_toolkit.ref_ellipsoid import ref_ellipsoid
 def topographic_potential(lat, lon, refell, clm, slm, lmax, R, density, GAUSS=0):
     """
     Calculates the potential at a given latitude and height using
-    coefficients from a topographic model following [Barthelmes2013]_
+    coefficients from a topographic model following :cite:p:`Barthelmes:2013fy`
 
     Parameters
     ----------
@@ -102,13 +102,6 @@ def topographic_potential(lat, lon, refell, clm, slm, lmax, R, density, GAUSS=0)
     -------
     T: float
         potential from topography model
-
-    References
-    ----------
-    .. [Barthelmes2013] F. Barthelmes, "Definition of Functionals of the
-        Geopotential and Their Calculation from Spherical Harmonic Models",
-        *GeoForschungsZentrum Scientific Technical Report*, STR09/02, (2013).
-        `doi: 10.2312/GFZ.b103-0902-26 <https://doi.org/10.2312/GFZ.b103-0902-26>`_
     """
     # get ellipsoid parameters for refell
     ellip = ref_ellipsoid(refell)

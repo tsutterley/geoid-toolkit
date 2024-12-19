@@ -2,7 +2,7 @@ name: geoid-docs
 channels:
   - conda-forge
 dependencies:
-  - docutils<0.18
+  - docutils
   - fontconfig
   - freetype
   - future
@@ -16,7 +16,8 @@ dependencies:
   - python-dateutil
   - pyyaml
   - sphinx
+  - sphinx-argparse>=0.4
+  - sphinxcontrib-bibtex
   - sphinx_rtd_theme
   - pip:
-     - sphinx-argparse>=0.4
      - ..
