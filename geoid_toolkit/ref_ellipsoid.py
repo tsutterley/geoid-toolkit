@@ -76,6 +76,7 @@ import numpy as np
 def ref_ellipsoid(refell, UNITS='MKS'):
     """
     Computes parameters for a reference ellipsoid
+    :cite:p:`HofmannWellenhof:2006hy`
 
     Parameters
     ----------
@@ -140,12 +141,6 @@ def ref_ellipsoid(refell, UNITS='MKS'):
         Volume of the ellipsoid
     rho_e: float
         Average density
-
-    References
-    ----------
-    .. [HofmannWellenhof2006] B. Hofmann-Wellenhof and H. Moritz,
-        *Physical Geodesy*, 2nd Edition, 403 pp., (2006).
-        `doi: 10.1007/978-3-211-33545-1 <https://doi.org/10.1007/978-3-211-33545-1>`_
     """
     # validate units
     assert UNITS in ('MKS', 'CGS')

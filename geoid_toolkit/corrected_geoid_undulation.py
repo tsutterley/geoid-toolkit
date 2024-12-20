@@ -77,7 +77,7 @@ def corrected_geoid_undulation(lat, lon, refell, clm, slm, tclm, tslm, lmax,
     """
     Calculates the topographically corrected geoidal undulation at a given
     latitude and longitude using an iterative approach described in
-    [Barthelmes2013]_ and [Moazezi2012]_
+    :cite:p:`Barthelmes:2013fy` and :cite:p:`Moazezi:2012fb`
 
     Parameters
     ----------
@@ -125,21 +125,6 @@ def corrected_geoid_undulation(lat, lon, refell, clm, slm, tclm, tslm, lmax,
     -------
     N: float
         geoidal undulation for a given ellipsoid in meters
-
-    References
-    ----------
-    .. [Barthelmes2013] F. Barthelmes, "Definition of Functionals of the
-        Geopotential and Their Calculation from Spherical Harmonic Models",
-        *GeoForschungsZentrum Scientific Technical Report*, STR09/02, (2013).
-        `doi: 10.2312/GFZ.b103-0902-26 <https://doi.org/10.2312/GFZ.b103-0902-26>`_
-    .. [HofmannWellenhof2006] B. Hofmann-Wellenhof and H. Moritz,
-        *Physical Geodesy*, 2nd Edition, 403 pp., (2006).
-        `doi: 10.1007/978-3-211-33545-1 <https://doi.org/10.1007/978-3-211-33545-1>`_
-    .. [Moazezi2012] S. Moazezi and H. Zomorrodian,
-        "GGMCalc a software for calculation of the geoid undulation and the height
-        anomaly using the iteration method, and classical gravity anomaly",
-        *Earth Science Informatics*, 5, 123--136, (2012).
-        `doi:10.1007/s12145-012-0102-2 <https://doi.org/10.1007/s12145-012-0102-2>`_
     """
     # calculate the real and normal potentials for the first iteration
     W,dWdr=real_potential(lat,lon,0.0,refell,clm,slm,lmax,R,GM,GAUSS=GAUSS)

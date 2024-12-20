@@ -67,7 +67,8 @@ def real_potential(lat, lon, h, refell, clm, slm, lmax, R, GM, GAUSS=0):
     """
     Calculates the real potential at a given latitude, longitude and
     height using coefficients from a gravity model following
-    [Barthelmes2013]_ and [Moazezi2012]_
+    :cite:p:`Barthelmes:2013fy`, :cite:p:`HofmannWellenhof:2006hy`,
+    :cite:p:`Moazezi:2012fb` and :cite:p:`Molodensky:1958jv`
 
     Parameters
     ----------
@@ -115,21 +116,6 @@ def real_potential(lat, lon, h, refell, clm, slm, lmax, R, GM, GAUSS=0):
         derivative of real potential with respect to radius
     dW_dtheta: float
         derivative of real potential with respect to theta
-
-    References
-    ----------
-    .. [Barthelmes2013] F. Barthelmes, "Definition of Functionals of the
-        Geopotential and Their Calculation from Spherical Harmonic Models",
-        *GeoForschungsZentrum Scientific Technical Report*, STR09/02, (2013).
-        `doi: 10.2312/GFZ.b103-0902-26 <https://doi.org/10.2312/GFZ.b103-0902-26>`_
-    .. [HofmannWellenhof2006] B. Hofmann-Wellenhof and H. Moritz,
-        *Physical Geodesy*, 2nd Edition, 403 pp., (2006).
-        `doi: 10.1007/978-3-211-33545-1 <https://doi.org/10.1007/978-3-211-33545-1>`_
-    .. [Moazezi2012] S. Moazezi and H. Zomorrodian,
-        "GGMCalc a software for calculation of the geoid undulation and the height
-        anomaly using the iteration method, and classical gravity anomaly",
-        *Earth Science Informatics*, 5, 123--136, (2012).
-        `doi:10.1007/s12145-012-0102-2 <https://doi.org/10.1007/s12145-012-0102-2>`_
     """
 
     # get ellipsoid parameters for refell

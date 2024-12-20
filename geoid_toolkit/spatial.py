@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (08/2023)
+Written by Tyler Sutterley (12/2024)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -15,15 +15,38 @@ PYTHON DEPENDENCIES:
         https://www.h5py.org/
     gdal: Pythonic interface to the Geospatial Data Abstraction Library (GDAL)
         https://pypi.python.org/pypi/GDAL
+    pandas: Python Data Analysis Library
+        https://pandas.pydata.org/
+    PyArrow: Apache Arrow Python bindings
+        https://arrow.apache.org/docs/python/
     PyYAML: YAML parser and emitter for Python
         https://github.com/yaml/pyyaml
+    shapely: PostGIS-ish operations outside a database context for Python
+        http://toblerity.org/shapely/index.html
 
 PROGRAM DEPENDENCIES:
-    constants.py: calculate reference parameters for common ellipsoids
+    ref_ellipsoid.py: Computes parameters for a reference ellipsoid
 
 UPDATE HISTORY:
+    Updated 12/2024: add latitude and longitude as potential dimension names
+    Updated 11/2024: added function to calculate the altitude and azimuth
+    Updated 09/2024: deprecation fix case where an array is output to scalars
+    Updated 08/2024: changed from 'geotiff' to 'GTiff' and 'cog' formats
+        added functions to convert to and from East-North-Up coordinates
+    Updated 07/2024: added functions to convert to and from DMS
+    Updated 06/2024: added function to write parquet files with metadata
+    Updated 05/2024: added function to read from parquet files
+        allowing for decoding of the geometry column from WKB
+        deprecation update to use exceptions with osgeo osr
+    Updated 04/2024: use wrapper to importlib for optional dependencies
+    Updated 03/2024: can calculate polar stereographic distortion for distances
+    Updated 10/2023: can read from netCDF4 or HDF5 variable groups
+        apply no formatting to columns in ascii file output
+    Updated 09/2023: add function to invert field mapping keys and values
+        use datetime64[ns] for parsing dates from ascii files
     Updated 08/2023: remove possible crs variables from output fields list
         add function for calculating geocentric latitudes from geodetic
+        place PyYAML behind try/except statement to reduce build size
     Updated 05/2023: use pathlib to define and operate on paths
     Updated 04/2023: copy inputs in cartesian to not modify original arrays
         added iterative methods for converting from cartesian to geodetic
@@ -48,7 +71,8 @@ UPDATE HISTORY:
         remove fill_value attribute after creating netCDF4 and HDF5 variables
     Updated 11/2021: added empty cases to netCDF4 and HDF5 output for crs
         try to get grid mapping attributes from netCDF4 and HDF5
-    Updated 10/2021: using python logging for handling verbose output
+    Updated 10/2021: add pole case in stereographic area scale calculation
+        using python logging for handling verbose output
     Updated 09/2021: can calculate height differences between ellipsoids
     Updated 07/2021: added function for determining input variable type
     Updated 03/2021: added polar stereographic area scale calculation
@@ -67,33 +91,32 @@ import re
 import io
 import copy
 import gzip
+import json
 import uuid
-import yaml
 import logging
 import pathlib
-import datetime
 import warnings
+import datetime
+import collections
 import numpy as np
 import dateutil.parser
 import geoid_toolkit.version
+from geoid_toolkit.ref_ellipsoid import ref_ellipsoid
+from geoid_toolkit.utilities import import_dependency
+
 # attempt imports
-try:
-    import osgeo.gdal, osgeo.osr, osgeo.gdalconst
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    warnings.filterwarnings("module")
-    warnings.warn("GDAL not available", ImportWarning)
-try:
-    import h5py
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    warnings.filterwarnings("module")
-    warnings.warn("h5py not available", ImportWarning)
-try:
-    import netCDF4
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    warnings.filterwarnings("module")
-    warnings.warn("netCDF4 not available", ImportWarning)
-# ignore warnings
-warnings.filterwarnings("ignore")
+osgeo = import_dependency('osgeo')
+osgeo.gdal = import_dependency('osgeo.gdal')
+osgeo.osr = import_dependency('osgeo.osr')
+osgeo.gdalconst = import_dependency('osgeo.gdalconst')
+h5py = import_dependency('h5py')
+netCDF4 = import_dependency('netCDF4')
+pd = import_dependency('pandas')
+pyarrow = import_dependency('pyarrow')
+pyarrow.parquet = import_dependency('pyarrow.parquet')
+shapely = import_dependency('shapely')
+shapely.geometry = import_dependency('shapely.geometry')
+yaml = import_dependency('yaml')
 
 def case_insensitive_filename(filename: str | pathlib.Path):
     """
@@ -172,8 +195,10 @@ def from_file(filename: str, format: str, **kwargs):
         dinput = from_netCDF4(filename, **kwargs)
     elif (format == 'HDF5'):
         dinput = from_HDF5(filename, **kwargs)
-    elif (format == 'geotiff'):
+    elif format in ('GTiff','cog'):
         dinput = from_geotiff(filename, **kwargs)
+    elif (format == 'parquet'):
+        dinput = from_parquet(filename, **kwargs)
     else:
         raise ValueError(f'Invalid format {format}')
     return dinput
@@ -250,7 +275,7 @@ def from_ascii(filename: str, **kwargs):
         # allocate for each variable and copy variable attributes
         for c in columns:
             if (c == 'time') and kwargs['parse_dates']:
-                dinput[c] = np.zeros((file_lines-count), dtype='datetime64[ms]')
+                dinput[c] = np.zeros((file_lines-count), dtype='datetime64[ns]')
             else:
                 dinput[c] = np.zeros((file_lines-count))
             dinput['attributes'][c] = YAML_HEADER['header']['variables'][c]
@@ -262,7 +287,7 @@ def from_ascii(filename: str, **kwargs):
         header = int(kwargs['header'])
         for c in columns:
             if (c == 'time') and kwargs['parse_dates']:
-                dinput[c] = np.zeros((file_lines-header), dtype='datetime64[ms]')
+                dinput[c] = np.zeros((file_lines-header), dtype='datetime64[ns]')
             else:
                 dinput[c] = np.zeros((file_lines-header))
         dinput['attributes'] = {c:dict() for c in columns}
@@ -301,6 +326,8 @@ def from_netCDF4(filename: str, **kwargs):
         full path of input netCDF4 file
     compression: str or NoneType, default None
         file compression type
+    group: str or NoneType, default None
+        netCDF4 variable group
     timename: str, default 'time'
         name for time-dimension variable
     xname: str, default 'lon'
@@ -314,6 +341,7 @@ def from_netCDF4(filename: str, **kwargs):
     """
     # set default keyword arguments
     kwargs.setdefault('compression', None)
+    kwargs.setdefault('group', None)
     kwargs.setdefault('timename', 'time')
     kwargs.setdefault('xname', 'lon')
     kwargs.setdefault('yname', 'lat')
@@ -356,19 +384,21 @@ def from_netCDF4(filename: str, **kwargs):
             kwargs['field_mapping']['data'] = copy.copy(kwargs['varname'])
         if kwargs['timename'] is not None:
             kwargs['field_mapping']['time'] = copy.copy(kwargs['timename'])
+    # check if reading from root group or sub-group
+    group = fileID.groups[kwargs['group']] if kwargs['group'] else fileID
     # for each variable
     for key, nc in kwargs['field_mapping'].items():
         # Getting the data from each NetCDF variable
-        dinput[key] = fileID.variables[nc][:]
+        dinput[key] = group.variables[nc][:]
         # get attributes for the included variables
         dinput['attributes'][key] = {}
         for attr in attributes_list:
             # try getting the attribute
             try:
-                ncattr, = [s for s in fileID.variables[nc].ncattrs()
+                ncattr, = [s for s in group.variables[nc].ncattrs()
                     if re.match(attr, s, re.I)]
                 dinput['attributes'][key][attr] = \
-                    fileID.variables[nc].getncattr(ncattr)
+                    group.variables[nc].getncattr(ncattr)
             except (ValueError, AttributeError):
                 pass
     # get projection information if there is a grid_mapping attribute
@@ -377,11 +407,12 @@ def from_netCDF4(filename: str, **kwargs):
         grid_mapping = dinput['attributes']['data']['grid_mapping']
         # get coordinate reference system attributes
         dinput['attributes']['crs'] = {}
-        for att_name in fileID[grid_mapping].ncattrs():
+        for att_name in group[grid_mapping].ncattrs():
             dinput['attributes']['crs'][att_name] = \
-                fileID.variables[grid_mapping].getncattr(att_name)
+                group.variables[grid_mapping].getncattr(att_name)
         # get the spatial projection reference information from wkt
         # and overwrite the file-level projection attribute (if existing)
+        osgeo.osr.UseExceptions()
         srs = osgeo.osr.SpatialReference()
         srs.ImportFromWkt(dinput['attributes']['crs']['crs_wkt'])
         dinput['attributes']['projection'] = srs.ExportToProj4()
@@ -405,6 +436,8 @@ def from_HDF5(filename: str | pathlib.Path, **kwargs):
         full path of input HDF5 file
     compression: str or NoneType, default None
         file compression type
+    group: str or NoneType, default None
+        netCDF4 variable group
     timename: str, default 'time'
         name for time-dimension variable
     xname: str, default 'lon'
@@ -418,6 +451,7 @@ def from_HDF5(filename: str | pathlib.Path, **kwargs):
     """
     # set default keyword arguments
     kwargs.setdefault('compression', None)
+    kwargs.setdefault('group', None)
     kwargs.setdefault('timename', 'time')
     kwargs.setdefault('xname', 'lon')
     kwargs.setdefault('yname', 'lat')
@@ -465,16 +499,18 @@ def from_HDF5(filename: str | pathlib.Path, **kwargs):
             kwargs['field_mapping']['data'] = copy.copy(kwargs['varname'])
         if kwargs['timename'] is not None:
             kwargs['field_mapping']['time'] = copy.copy(kwargs['timename'])
+    # check if reading from root group or sub-group
+    group = fileID[kwargs['group']] if kwargs['group'] else fileID
     # for each variable
     for key, h5 in kwargs['field_mapping'].items():
         # Getting the data from each HDF5 variable
-        dinput[key] = np.copy(fileID[h5][:])
+        dinput[key] = np.copy(group[h5][:])
         # get attributes for the included variables
         dinput['attributes'][key] = {}
         for attr in attributes_list:
             # try getting the attribute
             try:
-                dinput['attributes'][key][attr] = fileID[h5].attrs[attr]
+                dinput['attributes'][key][attr] = group[h5].attrs[attr]
             except (KeyError, AttributeError):
                 pass
     # get projection information if there is a grid_mapping attribute
@@ -483,10 +519,11 @@ def from_HDF5(filename: str | pathlib.Path, **kwargs):
         grid_mapping = dinput['attributes']['data']['grid_mapping']
         # get coordinate reference system attributes
         dinput['attributes']['crs'] = {}
-        for att_name, att_val in fileID[grid_mapping].attrs.items():
+        for att_name, att_val in group[grid_mapping].attrs.items():
             dinput['attributes']['crs'][att_name] = att_val
         # get the spatial projection reference information from wkt
         # and overwrite the file-level projection attribute (if existing)
+        osgeo.osr.UseExceptions()
         srs = osgeo.osr.SpatialReference()
         srs.ImportFromWkt(dinput['attributes']['crs']['crs_wkt'])
         dinput['attributes']['projection'] = srs.ExportToProj4()
@@ -600,7 +637,132 @@ def from_geotiff(filename: str, **kwargs):
     # return the spatial variables
     return dinput
 
-def to_ascii(output: dict, attributes: dict, filename: str, **kwargs):
+def from_parquet(filename: str, **kwargs):
+    """
+    Read data from a parquet file
+
+    Parameters
+    ----------
+    filename: str
+        full path of input parquet file
+    index: str, default 'time'
+        name of index column
+    columns: list or None, default None
+        column names of parquet file
+    primary_column: str, default 'geometry'
+        default geometry column in geoparquet files
+    geometry_encoding: str, default 'WKB'
+        default encoding for geoparquet files
+    """
+    # set default keyword arguments
+    kwargs.setdefault('index', 'time')
+    kwargs.setdefault('columns', None)
+    kwargs.setdefault('primary_column', 'geometry')
+    kwargs.setdefault('geometry_encoding', 'WKB')
+    filename = case_insensitive_filename(filename)
+    # read input parquet file
+    dinput = pd.read_parquet(filename)
+    # reset the dataframe index if not a range index
+    if not isinstance(dinput.index, pd.RangeIndex):
+        dinput.reset_index(inplace=True, names=kwargs['index'])
+    # output parquet file information
+    attr = {}
+    # get parquet file metadata
+    metadata = pyarrow.parquet.read_metadata(filename).metadata
+    # decode parquet metadata from JSON
+    for att_name, val in metadata.items():
+        try:
+            att_val = json.loads(val.decode('utf-8'))
+            attr[att_name.decode('utf-8')] = att_val
+        except Exception as exc:
+            pass
+    # check if parquet file contains geometry metadata
+    attr['geoparquet'] = False
+    primary_column = kwargs['primary_column']
+    encoding = kwargs['geometry_encoding']
+    if 'geo' in attr.keys():
+        # extract crs and encoding from geoparquet metadata
+        primary_column = attr['geo']['primary_column']
+        crs_metadata = attr['geo']['columns'][primary_column]['crs']
+        encoding = attr['geo']['columns'][primary_column]['encoding']
+        attr['geometry_encoding'] = encoding
+        # create spatial reference object from PROJJSON
+        osgeo.osr.UseExceptions()
+        srs = osgeo.osr.SpatialReference()
+        srs.SetFromUserInput(json.dumps(crs_metadata))
+        # add projection information to attributes
+        attr['projection'] = srs.ExportToProj4()
+        attr['wkt'] = srs.ExportToWkt()
+    elif 'geoidtk' in attr.keys():
+        # extract crs from geoidtk metadata
+        crs_metadata = attr['geoidtk']['crs']
+        # create spatial reference object from PROJJSON
+        osgeo.osr.UseExceptions()
+        srs = osgeo.osr.SpatialReference()
+        srs.SetFromUserInput(json.dumps(crs_metadata))
+        # add projection information to attributes
+        attr['projection'] = srs.ExportToProj4()
+        attr['wkt'] = srs.ExportToWkt()
+    # extract x and y coordinates
+    if (encoding == 'WKB') and (primary_column in dinput.keys()):
+        # set as geoparquet file
+        attr['geoparquet'] = True
+        # decode geometry column from WKB
+        geometry = shapely.from_wkb(dinput[primary_column].values)
+        dinput['x'] = shapely.get_x(geometry)
+        dinput['y'] = shapely.get_y(geometry)
+    # remap columns to default names
+    if kwargs['columns'] is not None:
+        field_mapping = default_field_mapping(kwargs['columns'])
+        remap = inverse_mapping(field_mapping)
+        dinput.rename(columns=remap, inplace=True)
+    # return the data and attributes
+    dinput.attrs = copy.copy(attr)
+    return dinput
+
+def to_file(
+        output: dict,
+        attributes: dict,
+        filename: str | pathlib.Path,
+        format: str,
+        **kwargs
+    ):
+    """
+    Wrapper function for writing data to an output format
+
+    Parameters
+    ----------
+    output: dict
+        python dictionary of output data
+    attributes: dict
+        python dictionary of output attributes
+    filename: str or pathlib.Path,
+        full path of output file
+    format: str
+        format of output file
+    **kwargs: dict
+        Keyword arguments for file writer
+    """
+    # read input file to extract spatial coordinates and data
+    if (format == 'ascii'):
+        to_ascii(output, attributes, filename, **kwargs)
+    elif (format == 'netCDF4'):
+        to_netCDF4(output, attributes, filename, **kwargs)
+    elif (format == 'HDF5'):
+        to_HDF5(output, attributes, filename, **kwargs)
+    elif format in ('GTiff','cog'):
+        to_geotiff(output, attributes, filename, **kwargs)
+    elif (format == 'parquet'):
+        to_parquet(output, attributes, filename, **kwargs)
+    else:
+        raise ValueError(f'Invalid format {format}')
+
+def to_ascii(
+        output: dict,
+        attributes: dict,
+        filename: str | pathlib.Path,
+        **kwargs
+    ):
     """
     Write data to an ascii file
 
@@ -610,7 +772,7 @@ def to_ascii(output: dict, attributes: dict, filename: str, **kwargs):
         python dictionary of output data
     attributes: dict
         python dictionary of output attributes
-    filename: str
+    filename: str or pathlib.Path
         full path of output ascii file
     delimiter: str, default ','
         delimiter for output spatial file
@@ -662,7 +824,7 @@ def to_ascii(output: dict, attributes: dict, filename: str, **kwargs):
         fid.write('\n\n# End of YAML header\n')
     # write to file for each data point
     for line in range(nrow):
-        line_contents = [f'{d:0.8f}' for d in data_stack[:, line]]
+        line_contents = [f'{d}' for d in data_stack[:, line]]
         print(kwargs['delimiter'].join(line_contents), file=fid)
     # close the output file
     fid.close()
@@ -682,8 +844,10 @@ def to_netCDF4(
         python dictionary of output data
     attributes: dict
         python dictionary of output attributes
-    filename: str
+    filename: str or pathlib.Path
         full path of output netCDF4 file
+    mode: str, default 'w'
+        NetCDF file mode
     data_type: str, default 'drift'
         Input data type
 
@@ -703,7 +867,7 @@ def to_netCDF4(
     elif kwargs['data_type'] in ('grid',):
         kwargs.pop('data_type')
         _grid_netCDF4(fileID, output, attributes, **kwargs)
-    elif  kwargs['data_type'] in ('time series',):
+    elif kwargs['data_type'] in ('time series',):
         kwargs.pop('data_type')
         _time_series_netCDF4(fileID, output, attributes, **kwargs)
     # add attribute for date created
@@ -770,12 +934,13 @@ def _grid_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
     attributes: dict
         python dictionary of output attributes
     """
-    # input data fields
-    dimensions = ['time', 'lon', 'lat', 't', 'x', 'y']
+    # output data fields
+    dimensions = ['t', 'time', 'lon', 'longitude', 'x', 'lat', 'latitude', 'y']
     crs = ['crs', 'crs_wkt', 'crs_proj4', 'projection']
     fields = sorted(set(output.keys()) - set(dimensions) - set(crs))
     # Defining the NetCDF dimensions
-    ny, nx, nt = output[fields[0]].shape
+    reference_fields = [v for v in fields if output[v].ndim == 3]
+    ny, nx, nt = output[reference_fields[0]].shape
     fileID.createDimension('y', ny)
     fileID.createDimension('x', nx)
     fileID.createDimension('time', nt)
@@ -819,12 +984,13 @@ def _time_series_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
     attributes: dict
         python dictionary of output attributes
     """
-    # input data fields
-    dimensions = ['time', 'lon', 'lat', 't', 'x', 'y']
+    # output data fields
+    dimensions = ['t', 'time', 'lon', 'longitude', 'x', 'lat', 'latitude', 'y']
     crs = ['crs', 'crs_wkt', 'crs_proj4', 'projection']
     fields = sorted(set(output.keys()) - set(dimensions) - set(crs))
     # Defining the NetCDF dimensions
-    nstation, nt = output[fields[0]].shape
+    reference_fields = [v for v in fields if output[v].ndim == 2]
+    nstation, nt = output[reference_fields[0]].shape
     fileID.createDimension('station', nstation)
     fileID.createDimension('time', nt)
     # defining the NetCDF variables
@@ -853,7 +1019,7 @@ def _time_series_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
 def to_HDF5(
         output: dict,
         attributes: dict,
-        filename: str,
+        filename: str | pathlib.Path,
         **kwargs
     ):
     """
@@ -865,8 +1031,10 @@ def to_HDF5(
         python dictionary of output data
     attributes: dict
         python dictionary of output attributes
-    filename: str
+    filename: str or pathlib.Path
         full path of output HDF5 file
+    mode: str, default 'w'
+        HDF5 file mode
     """
     # set default keyword arguments
     kwargs.setdefault('mode', 'w')
@@ -911,11 +1079,11 @@ def to_HDF5(
 def to_geotiff(
         output: dict,
         attributes: dict,
-        filename: str,
+        filename: str | pathlib.Path,
         **kwargs
     ):
     """
-    Write data to a geotiff file
+    Write data to a (cloud optimized) geotiff file
 
     Parameters
     ----------
@@ -923,7 +1091,7 @@ def to_geotiff(
         python dictionary of output data
     attributes: dict
         python dictionary of output attributes
-    filename: str
+    filename: str or pathlib.Path
         full path of output geotiff file
     varname: str, default 'data'
         output variable name
@@ -959,6 +1127,7 @@ def to_geotiff(
     dx, dy = attributes['spacing']
     ds.SetGeoTransform([xmin, dx, 0, ymax, 0, dy])
     # set the spatial projection reference information
+    osgeo.osr.UseExceptions()
     srs = osgeo.osr.SpatialReference()
     srs.ImportFromWkt(attributes['wkt'])
     # export
@@ -975,6 +1144,120 @@ def to_geotiff(
     logging.info(str(filename))
     # close dataset
     ds.FlushCache()
+
+def to_parquet(
+        output: dict,
+        attributes: dict,
+        filename: str | pathlib.Path,
+        **kwargs
+    ):
+    """
+    Write data to a (geo)parquet file
+
+    Parameters
+    ----------
+    output: dict
+        python dictionary of output data
+    attributes: dict
+        python dictionary of output attributes
+    filename: str or pathlib.Path,
+        full path of output parquet file
+    crs: int, default None
+        coordinate reference system EPSG code
+    index: bool, default None
+        write index to parquet file
+    compression: str, default 'snappy'
+        file compression type
+    geoparquet: bool, default False
+        write geoparquet file
+    geometry_encoding: str, default 'WKB'
+        default encoding for geoparquet geometry
+    primary_column: str, default 'geometry'
+        default column name for geoparquet geometry
+    """
+    # set default keyword arguments
+    kwargs.setdefault('crs', None)
+    kwargs.setdefault('index', None)
+    kwargs.setdefault('compression', 'snappy')
+    kwargs.setdefault('schema_version', '1.1.0')
+    kwargs.setdefault('geoparquet', False)
+    kwargs.setdefault('geometry_encoding', 'WKB')
+    kwargs.setdefault('primary_column', 'geometry')
+    # convert to pandas dataframe
+    df = pd.DataFrame(output)
+    attrs = df.attrs.copy()
+    # add coordinate reference system to attributes
+    if kwargs['crs'] and isinstance(kwargs['crs'], int):
+        # create spatial reference object from EPSG code
+        osgeo.osr.UseExceptions()
+        srs = osgeo.osr.SpatialReference()
+        srs.ImportFromEPSG(kwargs['crs'])
+        # add projection information to attributes
+        attributes['crs'] = json.loads(srs.ExportToPROJJSON())
+    elif kwargs['crs'] and isinstance(kwargs['crs'], dict):
+        # create spatial reference object from PROJJSON
+        osgeo.osr.UseExceptions()
+        srs = osgeo.osr.SpatialReference()
+        srs.SetFromUserInput(json.dumps(kwargs['crs']))
+        # add projection information to attributes
+        attributes['crs'] = copy.copy(kwargs['crs'])
+    # convert spatial coordinates to WKB encoded geometry
+    if kwargs['geoparquet'] and (kwargs['geometry_encoding'] == 'WKB'):
+        # get geometry columns
+        primary_column = kwargs['primary_column']
+        geometries = ['lon', 'longitude', 'x', 'lat', 'latitude', 'y']
+        geom_vars = [v for v in geometries if v in output.keys()]
+        # convert to shapely geometry
+        points = shapely.points(df[geom_vars[0]], df[geom_vars[1]])
+        df.drop(columns=geom_vars, inplace=True)
+        df[primary_column] = shapely.to_wkb(points)
+        # get bounding box of total set of points
+        bbox = shapely.MultiPoint(points).bounds
+        # drop attributes for geometry columns
+        [attributes.pop(v) for v in geom_vars if v in attributes]
+        # add attributes for geoparquet
+        attrs[b"geo"] = attrs.get(b"geo", {})
+        attrs[b"geo"]["version"] = kwargs['schema_version']
+        attrs[b"geo"]["primary_column"] = primary_column
+        attrs[b"geo"]["columns"] = {primary_column: {
+                "encoding": 'WKB',
+                "crs": json.loads(srs.ExportToPROJJSON()),
+                "bbox": bbox,
+                "covering": {
+                    "bbox": collections.OrderedDict(
+                        xmin=[bbox[0], "xmin"],
+                        ymin=[bbox[1], "ymin"],
+                        xmax=[bbox[2], "xmax"],
+                        ymax=[bbox[3], "ymax"]
+                    )
+                }
+            }
+        }
+    elif kwargs['geoparquet'] and (kwargs['geometry_encoding'] == 'point'):
+        raise ValueError('geoarrow encodings are currently unsupported')
+    # add attribute for date created
+    attributes['date_created'] = datetime.datetime.now().isoformat()
+    # add attributes for software information
+    attributes['software_reference'] = geoid_toolkit.version.project_name
+    attributes['software_version'] = geoid_toolkit.version.full_version
+    # dump the attributes to encoded JSON-format
+    attr_metadata = {b"geoidtk": json.dumps(attributes).encode('utf-8')}
+    for att_name, att_val in attrs.items():
+        attr_metadata[att_name] = json.dumps(att_val).encode('utf-8')
+    # convert dataframe to arrow table
+    table = pyarrow.Table.from_pandas(df,
+        preserve_index=kwargs['index'])
+    # update parquet metadata
+    metadata = table.schema.metadata
+    metadata.update(attr_metadata)
+    # replace schema metadata with updated
+    table = table.replace_schema_metadata(metadata)
+    # write arrow table to (geo)parquet file
+    filename = pathlib.Path(filename).expanduser().absolute()
+    logging.info(str(filename))
+    pyarrow.parquet.write_table(table, filename,
+        compression=kwargs['compression']
+    )
 
 def expand_dims(obj: dict, varname: str = 'data'):
     """
@@ -1031,6 +1314,17 @@ def default_field_mapping(variables: list | np.ndarray):
     # return the field mapping
     return field_mapping
 
+def inverse_mapping(field_mapping):
+    """
+    Reverses the field mappings of a dictionary
+
+    Parameters
+    ----------
+    field_mapping: dict
+        Field mappings for netCDF4/HDF5 read functions
+    """
+    return field_mapping.__class__(map(reversed, field_mapping.items()))
+
 def convert_ellipsoid(
         phi1: np.ndarray,
         h1: np.ndarray,
@@ -1042,7 +1336,8 @@ def convert_ellipsoid(
         itmax: int = 10
     ):
     """
-    Convert latitudes and heights to a different ellipsoid using Newton-Raphson
+    Convert latitudes and heights to a different ellipsoid using
+    Newton-Raphson :cite:p:`Meeus:1991vh`
 
     Parameters
     ----------
@@ -1070,13 +1365,9 @@ def convert_ellipsoid(
         latitude of output ellipsoid in degrees
     h2: np.ndarray
         height above output ellipsoid in meters
-
-    References
-    ----------
-    .. [1] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
     """
     if (len(phi1) != len(h1)):
-        raise ValueError('phi and h have incompatable dimensions')
+        raise ValueError('phi and h have incompatible dimensions')
     # semiminor axis of input and output ellipsoid
     b1 = (1.0 - f1)*a1
     b2 = (1.0 - f2)*a2
@@ -1184,18 +1475,20 @@ def convert_ellipsoid(
     return (phi2, h2)
 
 def compute_delta_h(
+        lat: np.ndarray,
         a1: float,
         f1: float,
         a2: float,
-        f2: float,
-        lat: np.ndarray
+        f2: float
     ):
     """
     Compute difference in elevation for two ellipsoids at a given
-        latitude using a simplified empirical equation
+    latitude using a simplified empirical relation :cite:p:`Meeus:1991vh`
 
     Parameters
     ----------
+    lat: np.ndarray
+        latitudes (degrees north)
     a1: float
         semi-major axis of input ellipsoid
     f1: float
@@ -1204,30 +1497,22 @@ def compute_delta_h(
         semi-major axis of output ellipsoid
     f2: float
         flattening of output ellipsoid
-    lat: np.ndarray
-        latitudes (degrees north)
 
     Returns
     -------
     delta_h: np.ndarray
         difference in elevation for two ellipsoids
-
-    References
-    ----------
-    .. [1] J Meeus, *Astronomical Algorithms*, pp. 77--82, (1991).
     """
-    # force phi into range -90 <= phi <= 90
-    gt90, = np.nonzero((lat < -90.0) | (lat > 90.0))
-    lat[gt90] = np.sign(lat[gt90])*90.0
-    # semiminor axis of input and output ellipsoid
+    # force latitudes to be within -90 to 90 and convert to radians
+    phi = np.clip(lat, -90.0, 90.0)*np.pi/180.0
+    # semi-minor axis of input and output ellipsoid
     b1 = (1.0 - f1)*a1
     b2 = (1.0 - f2)*a2
-    # compute delta_a and delta_b coefficients
+    # compute differences in semi-major and semi-minor axes
     delta_a = a2 - a1
     delta_b = b2 - b1
     # compute differences between ellipsoids
     # delta_h = -(delta_a * cos(phi)^2 + delta_b * sin(phi)^2)
-    phi = lat * np.pi/180.0
     delta_h = -(delta_a*np.cos(phi)**2 + delta_b*np.sin(phi)**2)
     return delta_h
 
@@ -1244,12 +1529,64 @@ def wrap_longitudes(lon: float | np.ndarray):
     # convert phi from radians to degrees
     return phi*180.0/np.pi
 
+def to_dms(d: np.ndarray):
+    """
+    Convert decimal degrees to degrees, minutes and seconds
+
+    Parameters
+    ----------
+    d: np.ndarray
+        decimal degrees
+
+    Returns
+    -------
+    degree: np.ndarray
+        degrees
+    minute: np.ndarray
+        minutes (arcminutes)
+    second: np.ndarray
+        seconds (arcseconds)
+    """
+    sign = np.sign(d)
+    minute, second = np.divmod(np.abs(d)*3600.0, 60.0)
+    degree, minute = np.divmod(minute, 60.0)
+    return (sign*degree, minute, second)
+
+def from_dms(
+        degree: np.ndarray,
+        minute: np.ndarray,
+        second: np.ndarray
+    ):
+    """
+    Convert degrees, minutes and seconds to decimal degrees
+
+    Parameters
+    ----------
+    degree: np.ndarray
+        degrees
+    minute: np.ndarray
+        minutes (arcminutes)
+    second: np.ndarray
+        seconds (arcseconds)
+
+    Returns
+    -------
+    d: np.ndarray
+        decimal degrees
+    """
+    sign = np.sign(degree)
+    d = np.abs(degree) + minute/60.0 + second/3600.0
+    return sign*d
+
+# get WGS84 parameters
+_wgs84 = ref_ellipsoid('WGS84', UNITS='MKS')
+
 def to_cartesian(
         lon: np.ndarray,
         lat: np.ndarray,
         h: float | np.ndarray = 0.0,
-        a_axis: float = 6378137.0,
-        flat: float = 1.0/298.257223563
+        a_axis: float = _wgs84['a'],
+        flat: float = _wgs84['f'],
     ):
     """
     Converts geodetic coordinates to Cartesian coordinates
@@ -1272,8 +1609,9 @@ def to_cartesian(
         for spherical coordinates set to 0
     """
     # verify axes and copy to not modify inputs
-    lon = np.atleast_1d(np.copy(lon))
-    lat = np.atleast_1d(np.copy(lat))
+    singular_values = (np.ndim(lon) == 0)
+    lon = np.atleast_1d(np.copy(lon)).astype(np.float64)
+    lat = np.atleast_1d(np.copy(lat)).astype(np.float64)
     # fix coordinates to be 0:360
     lon[lon < 0] += 360.0
     # Linear eccentricity and first numerical eccentricity
@@ -1290,7 +1628,11 @@ def to_cartesian(
     Y = (N + h) * np.cos(latitude_geodetic_rad) * np.sin(lon*dtr)
     Z = (N * (1.0 - ecc1**2.0) + h) * np.sin(latitude_geodetic_rad)
     # return the cartesian coordinates
-    return (X, Y, Z)
+    # flattened to singular values if necessary
+    if singular_values:
+        return (X[0], Y[0], Z[0])
+    else:
+        return (X, Y, Z)
 
 def to_sphere(x: np.ndarray, y: np.ndarray, z: np.ndarray):
     """
@@ -1306,9 +1648,10 @@ def to_sphere(x: np.ndarray, y: np.ndarray, z: np.ndarray):
         cartesian z-coordinates
     """
     # verify axes and copy to not modify inputs
-    x = np.atleast_1d(np.copy(x))
-    y = np.atleast_1d(np.copy(y))
-    z = np.atleast_1d(np.copy(z))
+    singular_values = (np.ndim(x) == 0)
+    x = np.atleast_1d(np.copy(x)).astype(np.float64)
+    y = np.atleast_1d(np.copy(y)).astype(np.float64)
+    z = np.atleast_1d(np.copy(z)).astype(np.float64)
     # calculate radius
     rad = np.sqrt(x**2.0 + y**2.0 + z**2.0)
     # calculate angular coordinates
@@ -1324,15 +1667,19 @@ def to_sphere(x: np.ndarray, y: np.ndarray, z: np.ndarray):
     # convert to degrees and fix to -90:90
     lat = 90.0 - (180.0*th/np.pi)
     np.clip(lat, -90, 90, out=lat)
-    # return latitude, longitude and radius
-    return (lon, lat, rad)
+    # return longitude, latitude and radius
+    # flattened to singular values if necessary
+    if singular_values:
+        return (lon[0], lat[0], rad[0])
+    else:
+        return (lon, lat, rad)
 
 def to_geodetic(
         x: np.ndarray,
         y: np.ndarray,
         z: np.ndarray,
-        a_axis: float = 6378137.0,
-        flat: float = 1.0/298.257223563,
+        a_axis: float = _wgs84['a'],
+        flat: float = _wgs84['f'],
         method: str = 'bowring',
         eps: float = np.finfo(np.float64).eps,
         iterations: int = 10
@@ -1343,11 +1690,11 @@ def to_geodetic(
 
     Parameters
     ----------
-    x, float
+    x, np.ndarray
         cartesian x-coordinates
-    y, float
+    y, np.ndarray
         cartesian y-coordinates
-    z, float
+    z, np.ndarray
         cartesian z-coordinates
     a_axis: float, default 6378137.0
         semimajor axis of the ellipsoid
@@ -1365,41 +1712,56 @@ def to_geodetic(
         maximum number of iterations
     """
     # verify axes and copy to not modify inputs
-    x = np.atleast_1d(np.copy(x))
-    y = np.atleast_1d(np.copy(y))
-    z = np.atleast_1d(np.copy(z))
+    singular_values = (np.ndim(x) == 0)
+    x = np.atleast_1d(np.copy(x)).astype(np.float64)
+    y = np.atleast_1d(np.copy(y)).astype(np.float64)
+    z = np.atleast_1d(np.copy(z)).astype(np.float64)
     # calculate the geodetic coordinates using the specified method
     if (method.lower() == 'moritz'):
-        return _moritz_iterative(x, y, z, a_axis=a_axis, flat=flat,
-            eps=eps, iterations=iterations)
+        lon, lat, h = _moritz_iterative(x, y, z,
+            a_axis=a_axis,
+            flat=flat,
+            eps=eps,
+            iterations=iterations)
     elif (method.lower() == 'bowring'):
-        return _bowring_iterative(x, y, z, a_axis=a_axis, flat=flat,
-            eps=eps, iterations=iterations)
+        lon, lat, h = _bowring_iterative(x, y, z,
+            a_axis=a_axis,
+            flat=flat,
+            eps=eps,
+            iterations=iterations)
     elif (method.lower() == 'zhu'):
-        return _zhu_closed_form(x, y, z, a_axis=a_axis, flat=flat)
+        lon, lat, h = _zhu_closed_form(x, y, z,
+            a_axis=a_axis,
+            flat=flat)
     else:
         raise ValueError(f'Unknown conversion method: {method}')
+    # return longitude, latitude and height
+    # flattened to singular values if necessary
+    if singular_values:
+        return (lon[0], lat[0], h[0])
+    else:
+        return (lon, lat, h)
 
 def _moritz_iterative(
         x: np.ndarray,
         y: np.ndarray,
         z: np.ndarray,
-        a_axis: float = 6378137.0,
-        flat: float = 1.0/298.257223563,
+        a_axis: float = _wgs84['a'],
+        flat: float = _wgs84['f'],
         eps: float = np.finfo(np.float64).eps,
         iterations: int = 10
     ):
     """
     Convert from cartesian coordinates to geodetic coordinates
-    using the iterative solution of [1]_
+    using the iterative solution of :cite:p:`HofmannWellenhof:2006hy`
 
     Parameters
     ----------
-    x, float
+    x, np.ndarray
         cartesian x-coordinates
-    y, float
+    y, np.ndarray
         cartesian y-coordinates
-    z, float
+    z, np.ndarray
         cartesian z-coordinates
     a_axis: float, default 6378137.0
         semimajor axis of the ellipsoid
@@ -1409,13 +1771,6 @@ def _moritz_iterative(
         tolerance for iterative method
     iterations: int, default 10
         maximum number of iterations
-
-    References
-    ----------
-    .. [1] B. Hofmann-Wellenhof and H. Moritz,
-        *Physical Geodesy*, 2nd Edition, 403 pp., (2006).
-        `doi: 10.1007/978-3-211-33545-1
-        <https://doi.org/10.1007/978-3-211-33545-1>`_
     """
     # Linear eccentricity and first numerical eccentricity
     lin_ecc = np.sqrt((2.0*flat - flat**2)*a_axis**2)
@@ -1444,29 +1799,29 @@ def _moritz_iterative(
         phi = np.arctan(z/(p*(1.0 - ecc1**2*N/(N + h))))
         # add to iterator
         i += 1
-    # return latitude, longitude and height
+    # return longitude, latitude and height
     return (lon, phi/dtr, h)
 
 def _bowring_iterative(
         x: np.ndarray,
         y: np.ndarray,
         z: np.ndarray,
-        a_axis: float = 6378137.0,
-        flat: float = 1.0/298.257223563,
+        a_axis: float = _wgs84['a'],
+        flat: float = _wgs84['f'],
         eps: float = np.finfo(np.float64).eps,
         iterations: int = 10
     ):
     """
-    Convert from cartesian coordinates to geodetic coordinates
-    using the iterative solution of [1]_ [2]_
+    Convert from cartesian coordinates to geodetic coordinates using
+    the iterative solution of :cite:p:`Bowring:1976jh` :cite:p:`Bowring:1985du`
 
     Parameters
     ----------
-    x, float
+    x, np.ndarray
         cartesian x-coordinates
-    y, float
+    y, np.ndarray
         cartesian y-coordinates
-    z, float
+    z, np.ndarray
         cartesian z-coordinates
     a_axis: float, default 6378137.0
         semimajor axis of the ellipsoid
@@ -1476,17 +1831,6 @@ def _bowring_iterative(
         tolerance for iterative method
     iterations: int, default 10
         maximum number of iterations
-
-    References
-    ----------
-    .. [1] B. R. Bowring, "Transformation from spatial
-        to geodetic coordinates," *Survey Review*, 23(181),
-        323--327, (1976). `doi: 10.1179/sre.1976.23.181.323
-        <https://doi.org/10.1179/sre.1976.23.181.323>`_
-    .. [2] B. R. Bowring, "The Accuracy Of Geodetic
-        Latitude and Height Equations," *Survey Review*, 28(218),
-        202--206, (1985). `doi: 10.1179/sre.1985.28.218.202
-        <https://doi.org/10.1179/sre.1985.28.218.202>`_
     """
     # semiminor axis of the WGS84 ellipsoid [m]
     b_axis = (1.0 - flat)*a_axis
@@ -1523,40 +1867,32 @@ def _bowring_iterative(
     N = a_axis/np.sqrt(1.0 - e12 * np.sin(phi)**2)
     # estimate final height (Bowring, 1985)
     h = p*np.cos(phi) + z*np.sin(phi) - a_axis**2/N
-    # return latitude, longitude and height
+    # return longitude, latitude and height
     return (lon, phi/dtr, h)
 
 def _zhu_closed_form(
         x: np.ndarray,
         y: np.ndarray,
         z: np.ndarray,
-        a_axis: float = 6378137.0,
-        flat: float = 1.0/298.257223563
+        a_axis: float = _wgs84['a'],
+        flat: float = _wgs84['f'],
     ):
     """
     Convert from cartesian coordinates to geodetic coordinates
-    using the closed-form solution of [1]_
+    using the closed-form solution of :cite:p:`Zhu:1993ja`
 
     Parameters
     ----------
-    x, float
+    x, np.ndarray
         cartesian x-coordinates
-    y, float
+    y, np.ndarray
         cartesian y-coordinates
-    z, float
+    z, np.ndarray
         cartesian z-coordinates
     a_axis: float, default 6378137.0
         semimajor axis of the ellipsoid
     flat: float, default 1.0/298.257223563
         ellipsoidal flattening
-
-    References
-    ----------
-    .. [1] J. Zhu, "Exact conversion of Earth-centered,
-        Earth-fixed coordinates to geodetic coordinates,"
-        *Journal of Guidance, Control, and Dynamics*,
-        16(2), 389--391, (1993). `doi: 10.2514/3.21016
-        <https://arc.aiaa.org/doi/abs/10.2514/3.21016>`_
     """
     # semiminor axis of the WGS84 ellipsoid [m]
     b_axis = (1.0 - flat)*a_axis
@@ -1596,18 +1932,249 @@ def _zhu_closed_form(
         # calculate latitude and height
         lat[ind] = np.arctan2(zi, ((1.0 - e12)*wi))/dtr
         h[ind] = np.sign(t-1.0+l)*np.sqrt((w-wi)**2.0 + (z[ind]-zi)**2.0)
-    # return latitude, longitude and height
+    # return longitude, latitude and height
     return (lon, lat, h)
+
+def to_ENU(
+        x: np.ndarray,
+        y: np.ndarray,
+        z: np.ndarray,
+        lon0: float | np.ndarray = 0.0,
+        lat0: float | np.ndarray = 0.0,
+        h0: float | np.ndarray = 0.0,
+        a_axis: float = _wgs84['a'],
+        flat: float = _wgs84['f'],
+    ):
+    """
+    Convert from Earth-Centered Earth-Fixed (ECEF) cartesian coordinates
+    to East-North-Up coordinates (ENU)
+
+    Parameters
+    ----------
+    x, np.ndarray
+        cartesian x-coordinates
+    y, np.ndarray
+        cartesian y-coordinates
+    z, np.ndarray
+        cartesian z-coordinates
+    lon0: float or np.ndarray, default 0.0
+        reference longitude (degrees east)
+    lat0: float or np.ndarray, default 0.0
+        reference latitude (degrees north)
+    h0: float or np.ndarray, default 0.0
+        reference height (meters)
+    a_axis: float, default 6378137.0
+        semimajor axis of the ellipsoid
+    flat: float, default 1.0/298.257223563
+        ellipsoidal flattening
+
+    Returns
+    -------
+    E: np.ndarray
+        east coordinates
+    N: np.ndarray
+        north coordinates
+    U: np.ndarray
+        up coordinates
+    """
+    # degrees to radians
+    dtr = np.pi/180.0
+    # verify axes and copy to not modify inputs
+    singular_values = (np.ndim(x) == 0)
+    x = np.atleast_1d(np.copy(x)).astype(np.float64)
+    y = np.atleast_1d(np.copy(y)).astype(np.float64)
+    z = np.atleast_1d(np.copy(z)).astype(np.float64)
+    # convert latitude and longitude to ECEF
+    X0, Y0, Z0 = to_cartesian(lon0, lat0, h=h0, a_axis=a_axis, flat=flat)
+    # calculate the rotation matrix
+    R = np.zeros((3, 3))
+    R[0,0] = -np.sin(dtr*lon0)
+    R[0,1] = np.cos(dtr*lon0)
+    R[0,2] = 0.0
+    R[1,0] = -np.sin(dtr*lat0)*np.cos(dtr*lon0)
+    R[1,1] = -np.sin(dtr*lat0)*np.sin(dtr*lon0)
+    R[1,2] = np.cos(dtr*lat0)
+    R[2,0] = np.cos(dtr*lat0)*np.cos(dtr*lon0)
+    R[2,1] = np.cos(dtr*lat0)*np.sin(dtr*lon0)
+    R[2,2] = np.sin(dtr*lat0)
+    # calculate the ENU coordinates
+    E, N, U = np.dot(R, np.vstack((x - X0, y - Y0, z - Z0)))
+    # return the ENU coordinates
+    # flattened to singular values if necessary
+    if singular_values:
+        return (E[0], N[0], U[0])
+    else:
+        return (E, N, U)
+
+def from_ENU(
+        E: np.ndarray,
+        N: np.ndarray,
+        U: np.ndarray,
+        lon0: float | np.ndarray = 0.0,
+        lat0: float | np.ndarray = 0.0,
+        h0: float | np.ndarray = 0.0,
+        a_axis: float = _wgs84['a'],
+        flat: float = _wgs84['f'],
+    ):
+    """
+    Convert from East-North-Up coordinates (ENU) to
+    Earth-Centered Earth-Fixed (ECEF) cartesian coordinates
+
+    Parameters
+    ----------
+    E, np.ndarray
+        east coordinates
+    N, np.ndarray
+        north coordinates
+    U, np.ndarray
+        up coordinates
+    lon0: float or np.ndarray, default 0.0
+        reference longitude (degrees east)
+    lat0: float or np.ndarray, default 0.0
+        reference latitude (degrees north)
+    h0: float or np.ndarray, default 0.0
+        reference height (meters)
+    a_axis: float, default 6378137.0
+        semimajor axis of the ellipsoid
+    flat: float, default 1.0/298.257223563
+        ellipsoidal flattening
+
+    Returns
+    -------
+    x, float
+        cartesian x-coordinates
+    y, float
+        cartesian y-coordinates
+    z, float
+        cartesian z-coordinates
+    """
+    # degrees to radians
+    dtr = np.pi/180.0
+    # verify axes and copy to not modify inputs
+    singular_values = (np.ndim(E) == 0)
+    E = np.atleast_1d(np.copy(E)).astype(np.float64)
+    N = np.atleast_1d(np.copy(N)).astype(np.float64)
+    U = np.atleast_1d(np.copy(U)).astype(np.float64)
+    # convert latitude and longitude to ECEF
+    X0, Y0, Z0 = to_cartesian(lon0, lat0, h=h0, a_axis=a_axis, flat=flat)
+    # calculate the rotation matrix
+    R = np.zeros((3, 3))
+    R[0,0] = -np.sin(dtr*lon0)
+    R[1,0] = np.cos(dtr*lon0)
+    R[2,0] = 0.0
+    R[0,1] = -np.sin(dtr*lat0)*np.cos(dtr*lon0)
+    R[1,1] = -np.sin(dtr*lat0)*np.sin(dtr*lon0)
+    R[2,1] = np.cos(dtr*lat0)
+    R[0,2] = np.cos(dtr*lat0)*np.cos(dtr*lon0)
+    R[1,2] = np.cos(dtr*lat0)*np.sin(dtr*lon0)
+    R[2,2] = np.sin(dtr*lat0)
+    # calculate the ECEF coordinates
+    x, y, z = np.dot(R, np.vstack((E, N, U)))
+    # add reference coordinates
+    x += X0
+    y += Y0
+    z += Z0
+    # return the ECEF coordinates
+    # flattened to singular values if necessary
+    if singular_values:
+        return (x[0], y[0], z[0])
+    else:
+        return (x, y, z)
+
+def to_horizontal(
+        E: np.ndarray,
+        N: np.ndarray,
+        U: np.ndarray,
+    ):
+    """
+    Convert from East-North-Up coordinates (ENU) to a
+    celestial horizontal coordinate system (alt-az)
+
+    Parameters
+    ----------
+    E: np.ndarray
+        east coordinates
+    N: np.ndarray
+        north coordinates
+    U: np.ndarray
+        up coordinates
+
+    Returns
+    -------
+    alpha: np.ndarray
+        altitude (elevation) angle in degrees
+    phi: np.ndarray
+        azimuth angle in degrees
+    D: np.ndarray
+        distance from observer to object in meters
+    """
+    # calculate distance to object
+    # convert coordinates to unit vectors
+    D = np.sqrt(E**2 + N**2 + U**2)
+    # altitude (elevation) angle in degrees
+    alpha = np.arcsin(U/D)*180.0/np.pi
+    # azimuth angle in degrees (fixed to 0 to 360)
+    phi = np.mod(np.arctan2(E/D, N/D)*180.0/np.pi, 360.0)
+    return (alpha, phi, D)
+
+def to_zenith(
+        x: np.ndarray,
+        y: np.ndarray,
+        z: np.ndarray,
+        lon0: float | np.ndarray = 0.0,
+        lat0: float | np.ndarray = 0.0,
+        h0: float | np.ndarray = 0.0,
+        a_axis: float = _wgs84['a'],
+        flat: float = _wgs84['f'],
+    ):
+    """
+    Calculate zenith angle of an object from Earth-Centered
+    Earth-Fixed (ECEF) cartesian coordinates
+
+    Parameters
+    ----------
+    x, np.ndarray
+        cartesian x-coordinates
+    y, np.ndarray
+        cartesian y-coordinates
+    z, np.ndarray
+        cartesian z-coordinates
+    lon0: float or np.ndarray, default 0.0
+        reference longitude (degrees east)
+    lat0: float or np.ndarray, default 0.0
+        reference latitude (degrees north)
+    h0: float or np.ndarray, default 0.0
+        reference height (meters)
+    a_axis: float, default 6378137.0
+        semimajor axis of the ellipsoid
+    flat: float, default 1.0/298.257223563
+        ellipsoidal flattening
+
+    Returns
+    -------
+    zenith: np.ndarray
+        zenith angle of object in degrees
+    """
+    # convert from ECEF to ENU
+    E, N, U = to_ENU(x, y, z, lon0=lon0, lat0=lat0, h0=h0,
+        a_axis=a_axis, flat=flat)
+    # convert from ENU to horizontal coordinates
+    alpha, phi, D = to_horizontal(E, N, U)
+    # calculate zenith angle in degrees
+    zenith = 90.0 - alpha
+    # return zenith angle
+    return zenith
 
 # PURPOSE: calculate the geocentric latitudes
 def geocentric_latitude(
         lon: np.ndarray,
         lat: np.ndarray,
-        a_axis: float = 6378137.0,
-        flat: float = 1.0/298.257223563
+        a_axis: float = _wgs84['a'],
+        flat: float = _wgs84['f'],
     ):
     """
     Converts from geodetic latitude to geocentric latitude for an ellipsoid
+    :cite:p:`Snyder:1982gf`
 
     Parameters
     ----------
@@ -1624,11 +2191,6 @@ def geocentric_latitude(
     -------
     geocentric_latitude: np.ndarray
         latitude intersecting the center of the Earth (degrees north)
-
-    References
-    ----------
-    .. [1] J. P. Snyder, *Map Projections used by the U.S. Geological Survey*,
-        Geological Survey Bulletin 1532, U.S. Government Printing Office, (1982).
     """
     # first numerical eccentricity
     ecc1 = np.sqrt((2.0*flat - flat**2)*a_axis**2)/a_axis
@@ -1642,3 +2204,67 @@ def geocentric_latitude(
     Z = (N * (1.0 - ecc1**2.0)) * np.sin(latitude_geodetic_rad)
     # calculate geocentric latitude and convert to degrees
     return 180.0*np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))/np.pi
+
+def scale_areas(*args, **kwargs):
+    warnings.warn("Deprecated. Please use geoid_toolkit.spatial.scale_factors instead",
+        DeprecationWarning)
+    return scale_factors(*args, **kwargs)
+
+def scale_factors(
+        lat: np.ndarray,
+        flat: float = _wgs84['f'],
+        reference_latitude: float = 70.0,
+        metric: str = 'area'
+    ):
+    """
+    Calculates scaling factors to account for polar stereographic
+    distortion including special case of at the exact pole
+    :cite:p:`Snyder:1982gf`
+
+    Parameters
+    ----------
+    lat: np.ndarray
+        latitude (degrees north)
+    flat: float, default 1.0/298.257223563
+        ellipsoidal flattening
+    reference_latitude: float, default 70.0
+        reference latitude (true scale latitude)
+    metric: str, default 'area'
+        metric to calculate scaling factors
+
+            - ``'distance'``: scale factors for distance
+            - ``'area'``: scale factors for area
+
+    Returns
+    -------
+    scale: np.ndarray
+        scaling factors at input latitudes
+    """
+    assert metric.lower() in ['distance', 'area'], 'Unknown metric'
+    # convert latitude from degrees to positive radians
+    theta = np.abs(lat)*np.pi/180.0
+    # convert reference latitude from degrees to positive radians
+    theta_ref = np.abs(reference_latitude)*np.pi/180.0
+    # square of the eccentricity of the ellipsoid
+    # ecc2 = (1-b**2/a**2) = 2.0*flat - flat^2
+    ecc2 = 2.0*flat - flat**2
+    # eccentricity of the ellipsoid
+    ecc = np.sqrt(ecc2)
+    # calculate ratio at input latitudes
+    m = np.cos(theta)/np.sqrt(1.0 - ecc2*np.sin(theta)**2)
+    t = np.tan(np.pi/4.0 - theta/2.0)/((1.0 - ecc*np.sin(theta)) / \
+        (1.0 + ecc*np.sin(theta)))**(ecc/2.0)
+    # calculate ratio at reference latitude
+    mref = np.cos(theta_ref)/np.sqrt(1.0 - ecc2*np.sin(theta_ref)**2)
+    tref = np.tan(np.pi/4.0 - theta_ref/2.0)/((1.0 - ecc*np.sin(theta_ref)) / \
+        (1.0 + ecc*np.sin(theta_ref)))**(ecc/2.0)
+    # distance scaling
+    k = (mref/m)*(t/tref)
+    kp = 0.5*mref*np.sqrt(((1.0+ecc)**(1.0+ecc))*((1.0-ecc)**(1.0-ecc)))/tref
+    if (metric.lower() == 'distance'):
+        # distance scaling
+        scale = np.where(np.isclose(theta, np.pi/2.0), 1.0/kp, 1.0/k)
+    elif (metric.lower() == 'area'):
+        # area scaling
+        scale = np.where(np.isclose(theta, np.pi/2.0), 1.0/(kp**2), 1.0/(k**2))
+    return scale

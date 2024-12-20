@@ -21,6 +21,8 @@ General Methods
 
 .. autofunction:: geoid_toolkit.utilities.get_data_path
 
+.. autofunction:: geoid_toolkit.utilities.import_dependency
+
 .. autofunction:: geoid_toolkit.utilities.get_hash
 
 .. autofunction:: geoid_toolkit.utilities.get_git_revision_hash
@@ -44,6 +46,12 @@ General Methods
 .. autofunction:: geoid_toolkit.utilities.ftp_list
 
 .. autofunction:: geoid_toolkit.utilities.from_ftp
+
+.. autofunction:: geoid_toolkit.utilities._create_default_ssl_context
+
+.. autofunction:: geoid_toolkit.utilities._create_ssl_context_no_verify
+
+.. autofunction:: geoid_toolkit.utilities._set_ssl_context_options
 
 .. autofunction:: geoid_toolkit.utilities.check_connection
 

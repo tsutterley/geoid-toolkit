@@ -69,7 +69,7 @@ UPDATE HISTORY:
         output spherical harmonic degree and order in dict
     Updated 03/2021: made degree of truncation LMAX a keyword argument
     Updated 07/2020: added function docstrings
-    Updated 07/2019: split read and wrapper funciton into separate files
+    Updated 07/2019: split read and wrapper function into separate files
     Updated 07/2017: include parameters to change the tide system
     Written 12/2015
 """

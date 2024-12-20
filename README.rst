@@ -18,7 +18,7 @@ geoid-toolkit
    :target: https://pypi.python.org/pypi/geoid-toolkit/
 
 .. |Documentation Status| image:: https://readthedocs.org/projects/geoid-toolkit/badge/?version=latest
-   :target: https://gravity-toolkit.readthedocs.io/projects/geoid-toolkit/en/latest/?badge=latest
+   :target: https://geoid-toolkit.readthedocs.io/en/latest/?badge=latest
 
 .. |zenodo| image:: https://zenodo.org/badge/199943310.svg
    :target: https://zenodo.org/badge/latestdoi/199943310
