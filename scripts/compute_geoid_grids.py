@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_geoid_grids.py
-Written by Tyler Sutterley (05/2023)
+Written by Tyler Sutterley (06/2025)
 Computes geoid undulations from a gravity model
 
 COMMAND LINE OPTIONS:
@@ -51,6 +51,7 @@ PROGRAM DEPENDENCIES:
     gauss_weights.py: Computes Gaussian weights as a function of degree
 
 UPDATE HISTORY:
+    Updated 06/2025: use import_dependency to import optional packages
     Updated 05/2023: use pathlib to define and operate on paths
     Updated 12/2022: single implicit import of geoid toolkit
     Updated 05/2022: use argparse descriptions within sphinx documentation
@@ -62,18 +63,11 @@ import sys
 import logging
 import pathlib
 import argparse
-import warnings
 import numpy as np
 import geoid_toolkit as geoidtk
 
 # attempt imports
-try:
-    import pyproj
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    warnings.filterwarnings("module")
-    warnings.warn("pyproj not available", ImportWarning)
-# ignore warnings
-warnings.filterwarnings("ignore")
+pyproj = geoidtk.utilities.import_dependency('pyproj')
 
 # PURPOSE: try to get the projection information
 def get_projection(PROJECTION):

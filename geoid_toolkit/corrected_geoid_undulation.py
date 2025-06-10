@@ -75,9 +75,9 @@ from geoid_toolkit.norm_gravity import norm_gravity
 def corrected_geoid_undulation(lat, lon, refell, clm, slm, tclm, tslm, lmax,
     R, GM, density, GAUSS=0, EPS=1e-8):
     """
-    Calculates the topographically corrected geoidal undulation at a given
-    latitude and longitude using an iterative approach described in
-    :cite:p:`Barthelmes:2013fy` and :cite:p:`Moazezi:2012fb`
+    Calculates the topographically corrected geoidal undulation
+    using the iterative approach described in
+    :cite:t:`Barthelmes:2013fy,Moazezi:2012fb`
 
     Parameters
     ----------

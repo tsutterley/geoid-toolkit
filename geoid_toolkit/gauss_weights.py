@@ -51,7 +51,7 @@ import numpy as np
 def gauss_weights(hw, LMAX, CUTOFF=1e-10):
     """
     Computes the Gaussian weights as a function of degree using
-    a normalized form from :cite:p:`Jekeli:1981vj`
+    a normalized form from :cite:t:`Jekeli:1981vj`
 
     Parameters
     ----------

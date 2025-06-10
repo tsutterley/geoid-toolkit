@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 read_EGM2008_geoid_grids.py
-Written by Tyler Sutterley (05/2023)
+Written by Tyler Sutterley (06/2025)
 Reads EGM2008 geoid height spatial grids from unformatted binary files
 provided by the National Geospatial-Intelligence Agency
 Outputs spatial grids as netCDF4 files
@@ -24,6 +24,7 @@ PYTHON DEPENDENCIES:
         https://unidata.github.io/netcdf4-python/
 
 UPDATE HISTORY:
+    Updated 06/2025: use import_dependency to import optional packages
     Updated 05/2023: use pathlib to define and operate on paths
     Updated 12/2022: single implicit import of geoid toolkit
         place netCDF4 import within try/except statements
@@ -35,18 +36,11 @@ import logging
 import pathlib
 import argparse
 import datetime
-import warnings
 import numpy as np
 import geoid_toolkit as geoidtk
 
 # attempt imports
-try:
-    import netCDF4
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    warnings.filterwarnings("module")
-    warnings.warn("netCDF4 not available", ImportWarning)
-# ignore warnings
-warnings.filterwarnings("ignore")
+netCDF4 = geoidtk.utilities.import_dependency('netCDF4')
 
 def read_EGM2008_geoid_grids(FILE, FILENAME=None, LOVE=0.3,
     VERBOSE=False, MODE=0o775):

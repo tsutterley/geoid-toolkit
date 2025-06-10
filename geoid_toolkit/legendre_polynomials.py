@@ -11,7 +11,7 @@ CALLING SEQUENCE:
     Pl,dPl = legendre_polynomials(lmax, np.cos(theta))
 
 INPUTS:
-    lmax: maximum degree of Legrendre polynomials
+    lmax: maximum degree of Legendre polynomials
     x: elements ranging from -1 to 1
         typically cos(theta), where theta is the colatitude in radians
 
@@ -48,12 +48,12 @@ import numpy as np
 def legendre_polynomials(lmax,x,ASTYPE=np.float64):
     """
     Computes fully-normalized Legendre polynomials and their first derivative
-    following :cite:p:`HofmannWellenhof:2006hy`
+    following :cite:t:`HofmannWellenhof:2006hy`
 
     Parameters
     ----------
     lmax: int
-        maximum degree of Legrendre polynomials
+        maximum degree of Legendre polynomials
     x: float
         elements ranging from -1 to 1
 

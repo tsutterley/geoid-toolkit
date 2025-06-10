@@ -83,7 +83,7 @@ from geoid_toolkit.calculate_tidal_offset import calculate_tidal_offset
 # PURPOSE: read spherical harmonic coefficients of a gravity model
 def read_ICGEM_harmonics(model_file, **kwargs):
     """
-    Extract gravity model spherical harmonics from GFZ ICGEM gfc files
+    Extract gravity model spherical harmonics from GFZ ICGEM ``gfc`` files
 
     Parameters
     ----------

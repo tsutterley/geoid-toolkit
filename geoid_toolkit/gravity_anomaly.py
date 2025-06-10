@@ -84,10 +84,8 @@ from geoid_toolkit.norm_gravity import norm_gravity
 
 def gravity_anomaly(lat,lon,h,refell,clm,slm,lmax,R,GM,METHOD='first',GAUSS=0):
     """
-    Calculates the gravity anomaly at a given latitude and longitude
-    for a given method following :cite:p:`Barthelmes:2013fy`,
-    :cite:p:`HofmannWellenhof:2006hy`, :cite:p:`Moazezi:2012fb` and
-    :cite:p:`Molodensky:1958jv`
+    Calculates the gravity anomaly for a given method following
+    :cite:t:`Barthelmes:2013fy,HofmannWellenhof:2006hy,Moazezi:2012fb,Molodensky:1958jv`
 
     Parameters
     ----------

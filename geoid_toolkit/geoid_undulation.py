@@ -74,9 +74,8 @@ from geoid_toolkit.norm_gravity import norm_gravity
 
 def geoid_undulation(lat, lon, refell, clm, slm, lmax, R, GM, GAUSS=0, EPS=1e-8):
     """
-    Calculates the geoidal undulation at a given latitude and longitude using
-    an iterative approach described in :cite:p:`Barthelmes:2013fy`
-    :cite:p:`HofmannWellenhof:2006hy` and :cite:p:`Moazezi:2012fb`
+    Calculates the geoidal undulation using the iterative approach described in
+    :cite:t:`Barthelmes:2013fy,HofmannWellenhof:2006hy,Moazezi:2012fb`
 
     Parameters
     ----------
