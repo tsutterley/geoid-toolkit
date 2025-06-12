@@ -64,9 +64,8 @@ from geoid_toolkit.legendre_polynomials import legendre_polynomials
 
 def norm_potential(lat, lon, h, refell, lmax):
     """
-    Calculates the normal potential at a given latitude and height
-    following :cite:p:`Barthelmes:2013fy`, :cite:p:`HofmannWellenhof:2006hy`,
-    :cite:p:`Moazezi:2012fb` and :cite:p:`Molodensky:1958jv`
+    Calculates the normal potential following
+    :cite:t:`Barthelmes:2013fy,HofmannWellenhof:2006hy,Moazezi:2012fb,Molodensky:1958jv`
 
     Parameters
     ----------

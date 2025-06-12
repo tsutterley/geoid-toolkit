@@ -33,10 +33,7 @@ import numpy as np
 # http://ddfe.curtin.edu.au/gravitymodels/Earth2014/potential_model/
 def read_topography_harmonics(model_file):
     """
-    Reads `Earth 2014
-    <https://ddfe.curtin.edu.au/gravitymodels/Earth2014/
-    potential_model/readme_earth2014_potential_models.txt>`_
-    topography harmonics from :cite:p:`Rexer:2016gr`
+    Reads Earth 2014 topography harmonics from :cite:t:`Rexer:2016gr`
 
     Parameters
     ----------

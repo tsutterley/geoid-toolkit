@@ -68,7 +68,7 @@ def calculate_tidal_offset(TIDE, GM, R, refell, LOVE=0.3,
     REFERENCE='tide_free'):
     """
     Calculates the spherical harmonic offset to change permanent tide systems
-    :cite:p:`HofmannWellenhof:2006hy` and :cite:p:`Losch:2003ve`
+    :cite:p:`HofmannWellenhof:2006hy,Losch:2003ve`
 
     Parameters
     ----------

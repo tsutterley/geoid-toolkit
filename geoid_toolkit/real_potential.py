@@ -65,10 +65,8 @@ from geoid_toolkit.gauss_weights import gauss_weights
 
 def real_potential(lat, lon, h, refell, clm, slm, lmax, R, GM, GAUSS=0):
     """
-    Calculates the real potential at a given latitude, longitude and
-    height using coefficients from a gravity model following
-    :cite:p:`Barthelmes:2013fy`, :cite:p:`HofmannWellenhof:2006hy`,
-    :cite:p:`Moazezi:2012fb` and :cite:p:`Molodensky:1958jv`
+    Calculates the real potential using gravity model coefficients following
+    :cite:t:`Barthelmes:2013fy,HofmannWellenhof:2006hy,Moazezi:2012fb,Molodensky:1958jv`
 
     Parameters
     ----------

@@ -59,8 +59,8 @@ from geoid_toolkit.ref_ellipsoid import ref_ellipsoid
 
 def topographic_potential(lat, lon, refell, clm, slm, lmax, R, density, GAUSS=0):
     """
-    Calculates the potential at a given latitude and height using
-    coefficients from a topographic model following :cite:p:`Barthelmes:2013fy`
+    Calculates the potential coefficients from a topographic model following
+    :cite:t:`Barthelmes:2013fy`
 
     Parameters
     ----------

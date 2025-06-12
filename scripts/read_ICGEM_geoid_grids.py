@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 read_ICGEM_geoid_grids.py
-Written by Tyler Sutterley (05/2023)
+Written by Tyler Sutterley (06/2025)
 Reads geoid height spatial grids from the GFZ Geoid Calculation Service
     http://icgem.gfz-potsdam.de/home
 Outputs spatial grids as netCDF4 files
@@ -23,6 +23,7 @@ PYTHON DEPENDENCIES:
         https://unidata.github.io/netcdf4-python/
 
 UPDATE HISTORY:
+    Updated 06/2025: use import_dependency to import optional packages
     Updated 05/2023: use pathlib to define and operate on paths
     Updated 12/2022: single implicit import of geoid toolkit
         place netCDF4 import within try/except statements
@@ -47,18 +48,11 @@ import logging
 import pathlib
 import argparse
 import datetime
-import warnings
 import numpy as np
 import geoid_toolkit as geoidtk
 
 # attempt imports
-try:
-    import netCDF4
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    warnings.filterwarnings("module")
-    warnings.warn("netCDF4 not available", ImportWarning)
-# ignore warnings
-warnings.filterwarnings("ignore")
+netCDF4 = geoidtk.utilities.import_dependency('netCDF4')
 
 # PURPOSE: Reads .gdf grids from the GFZ calculation service
 def read_ICGEM_geoid_grids(FILE, FILENAME=None, MARKER='', SPACING=None,

@@ -1,0 +1,26 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: geoid-toolkit
+message: Python-based geoid and gravity calculation software
+type: software
+authors:
+  - given-names: Tyler
+    family-names: Sutterley
+    affiliation: University of Washington, Applied Physics Laboratory
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.5768711
+    description: Zenodo Archive
+repository-code: 'https://github.com/tsutterley/geoid-toolkit'
+url: 'https://geoid-toolkit.readthedocs.io'
+repository: 'https://pypi.org/project/geoid-toolkit'
+doi: "10.5281/zenodo.5768711"
+version: "1.1.2"
+date-released: "2025-06-12"
+keywords:
+  - geophysics
+  - geodesy
+  - gravity
+license: MIT

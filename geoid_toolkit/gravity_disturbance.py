@@ -70,9 +70,8 @@ from geoid_toolkit.norm_potential import norm_potential
 
 def gravity_disturbance(lat,lon,h,refell,clm,slm,lmax,R,GM,GAUSS=0):
     """
-    Calculates the gravity disturbance at a given latitude and longitude
-    following :cite:p:`Barthelmes:2013fy`, :cite:p:`HofmannWellenhof:2006hy`,
-    :cite:p:`Moazezi:2012fb` and :cite:p:`Molodensky:1958jv`
+    Calculates the gravity disturbance following
+    :cite:t:`Barthelmes:2013fy,HofmannWellenhof:2006hy,Moazezi:2012fb,Molodensky:1958jv`
 
     Parameters
     ----------

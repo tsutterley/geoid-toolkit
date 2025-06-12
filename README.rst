@@ -2,29 +2,28 @@
 geoid-toolkit
 =============
 
-|Language|
 |License|
-|PyPI Version|
 |Documentation Status|
+|PyPI|
+|commits-since|
 |zenodo|
-
-.. |Language| image:: https://img.shields.io/pypi/pyversions/geoid-toolkit?color=green
-   :target: https://www.python.org/
 
 .. |License| image:: https://img.shields.io/github/license/tsutterley/geoid-toolkit
    :target: https://github.com/tsutterley/geoid-toolkit/blob/main/LICENSE
 
-.. |PyPI Version| image:: https://img.shields.io/pypi/v/geoid-toolkit.svg
-   :target: https://pypi.python.org/pypi/geoid-toolkit/
-
 .. |Documentation Status| image:: https://readthedocs.org/projects/geoid-toolkit/badge/?version=latest
    :target: https://geoid-toolkit.readthedocs.io/en/latest/?badge=latest
 
-.. |zenodo| image:: https://zenodo.org/badge/199943310.svg
-   :target: https://zenodo.org/badge/latestdoi/199943310
+.. |PyPI| image:: https://img.shields.io/pypi/v/geoid-toolkit.svg
+   :target: https://pypi.python.org/pypi/geoid-toolkit/
 
-Python tools for obtaining and working with static gravity field coefficients
-and calculating geoid heights
+.. |commits-since| image:: https://img.shields.io/github/commits-since/tsutterley/geoid-toolkit/latest
+   :target: https://github.com/tsutterley/geoid-toolkit/releases/latest
+
+.. |zenodo| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.5768711.svg
+   :target: https://doi.org/10.5281/zenodo.5768711
+
+Python tools for obtaining and working with static gravity field coefficients and calculating geoid heights
 
 - `GFZ International Centre for Global Earth Models (ICGEM) <http://icgem.gfz-potsdam.de>`_
 

@@ -61,9 +61,8 @@ from geoid_toolkit.ref_ellipsoid import ref_ellipsoid
 
 def norm_gravity(lat, h, refell):
     """
-    Calculates the normal gravity of an ellipsoid at latitudes and heights
-    and calculates the derivative with respect to height following
-    :cite:p:`HofmannWellenhof:2006hy`
+    Calculates the normal gravity of an ellipsoid and calculates the derivative
+    with respect to height following :cite:t:`HofmannWellenhof:2006hy`
 
     Parameters
     ----------
