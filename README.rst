@@ -5,6 +5,7 @@ geoid-toolkit
 |License|
 |Documentation Status|
 |PyPI|
+|conda-forge|
 |commits-since|
 |zenodo|
 
@@ -16,6 +17,9 @@ geoid-toolkit
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/geoid-toolkit.svg
    :target: https://pypi.python.org/pypi/geoid-toolkit/
+
+.. |conda-forge| image:: https://img.shields.io/conda/vn/conda-forge/geoid-toolkit
+   :target: https://anaconda.org/conda-forge/geoid-toolkit
 
 .. |commits-since| image:: https://img.shields.io/github/commits-since/tsutterley/geoid-toolkit/latest
    :target: https://github.com/tsutterley/geoid-toolkit/releases/latest
