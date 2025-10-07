@@ -37,13 +37,23 @@ release = f"v{version}"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    "matplotlib.sphinxext.plot_directive",
+    "myst_nb",
     "numpydoc",
     'sphinxcontrib.bibtex',
     "sphinx.ext.autodoc",
     "sphinx.ext.graphviz",
     "sphinx.ext.viewcode",
+    "sphinx_design",
     "sphinxarg.ext"
 ]
+
+# use myst for notebooks
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".ipynb": "myst-nb",
+}
+nb_execution_mode = "off"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -63,6 +73,9 @@ numpydoc_show_class_members = False
 pygments_style = 'native'
 bibtex_bibfiles = ['_assets/geoid-refs.bib']
 bibtex_default_style = 'plain'
+plot_html_show_formats = False
+numfig = True
+numfig_secnum_depth = 1
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -76,11 +89,14 @@ html_show_copyright = True
 # a list of builtin themes.
 #
 html_theme = 'sphinx_rtd_theme'
-html_theme_options = {}
+html_theme_options = {
+    "logo_only": True,
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
+html_logo = "_assets/logo.png"
 html_static_path = ['_static']
 repository_url = f"https://github.com/tsutterley/geoid-toolkit"
 html_context = {

@@ -1,0 +1,167 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "geoid-toolkit"
+version = "1.1.2"
+description = "Python tools for reading gravity model coefficients and calculating geoid heights"
+keywords = [
+    "gravity fields",
+    "physical geodesy",
+    "satellite geodesy",
+    "geoid height",
+]
+
+authors = [
+    {name = "Tyler Sutterley"},
+    {email = "tsutterl@uw.edu"}
+]
+maintainers = [{ name = "geoid-toolkit contributors" }]
+license = {file = "LICENSE"}
+readme = "README.rst"
+
+requires-python = "~=3.6"
+dependencies = [
+    "lxml",
+    "numpy",
+    "python-dateutil",
+]
+
+classifiers=[
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+
+[project.urls]
+Homepage = "https://geoid-toolkit.readthedocs.io"
+Documentation = "https://geoid-toolkit.readthedocs.io"
+Repository = "https://github.com/tsutterley/geoid-toolkit"
+Issues = "https://github.com/tsutterley/geoid-toolkit/issues"
+
+[project.optional-dependencies]
+all = ["cartopy", "gdal", "h5py", "jupyterlab", "matplotlib", "netCDF4", "notebook", "pyproj"]
+doc = ["docutils", "graphviz", "myst-nb", "numpydoc", "sphinx", "sphinx-argparse>=0.4", "sphinxcontrib-bibtex", "sphinx-design", "sphinx_rtd_theme"]
+dev = ["flake8", "pytest>=4.6", "pytest-cov", "pytest-xdist"]
+
+[tool.setuptools.packages.find]
+exclude = ["test*", "run*"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+norecursedirs = ".git"
+addopts = "-n auto --verbose --capture=no"
+python_files = [
+    "test*.py"
+]
+testpaths = [
+    "test"
+]
+
+[tool.coverage.run]
+branch = true
+source = [
+    "geoid-toolkit",
+    "test",
+]
+omit = [
+    "setup.py",
+    "conf.py",
+    "scripts/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+precision = 2
+
+[tool.ruff]
+line-length = 80
+indent-width = 4
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+docstring-code-format = false
+
+[tool.pixi.workspace]
+name = "geoid-toolkit"
+authors = ["geoid-toolkit contributors"]
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "linux-64", "win-64"]
+
+[tool.pixi.pypi-dependencies]
+geoid-toolkit = { path = ".", editable = true }
+
+[tool.pixi.environments]
+default = { solve-group = "default" }
+all = { features = ["all"], solve-group = "default" }
+dev = { features = ["all", "dev", "doc"], solve-group = "default" }
+doc = { features = ["doc"], solve-group = "default" }
+
+[tool.pixi.tasks.start]
+cmd = "jupyter lab"
+cwd = "doc/source/notebooks"
+description = "Start JupyterLab in the notebooks directory"
+
+[tool.pixi.tasks.export-env]
+args = [ { "arg" = "flags", "default" = "" } ]
+cmd = "pixi workspace export conda-environment {{ flags }} > environment.yml"
+description = "Export workspace to a conda environment file" 
+
+[tool.pixi.feature.doc.tasks.docs]
+args = [ { "arg" = "flags", "default" = "" } ]
+cmd = "make html {{ flags }}"
+cwd = "doc"
+description = "Create HTML documentation with sphinx"
+
+[tool.pixi.feature.dev.tasks.lint]
+args = [ { "arg" = "flags", "default" = "--select=E9,F63,F7,F82 --show-source" }, { "arg" = "test", "default" = "." } ]
+cmd = "flake8 {{ test }} --count {{ flags }} --statistics --extend-exclude 'build/,run/,*.ipynb_checkpoints/,.pixi/'"
+description = "Run flake8 to check for compilation errors"
+
+[tool.pixi.dependencies]
+lxml = "*"
+numpy = "*"
+python-dateutil = "*"
+
+[tool.pixi.feature.all.dependencies]
+cartopy = "*"
+gdal = "*"
+h5py = "*"
+jupyterlab = "*"
+matplotlib = "*"
+netCDF4 = "*"
+notebook = "*"
+pyproj = "*"
+
+[tool.pixi.feature.dev.dependencies]
+flake8 = "*"
+pytest = "*"
+pytest-cov = "*"
+pytest-xdist = "*"
+
+[tool.pixi.feature.doc.dependencies]
+docutils = "*"
+graphviz = "*"
+markupsafe = "*"
+myst-nb = "*"
+numpydoc = "*"
+sphinx = "*"
+sphinx-argparse = "*"
+sphinxcontrib-bibtex = "*"
+sphinx-design = "*"
+sphinx_rtd_theme = "*"
