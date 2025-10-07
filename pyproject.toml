@@ -110,7 +110,7 @@ geoid-toolkit = { path = ".", editable = true }
 default = { solve-group = "default" }
 all = { features = ["all"], solve-group = "default" }
 dev = { features = ["all", "dev", "doc"], solve-group = "default" }
-doc = { features = ["doc"], solve-group = "default" }
+doc = { features = ["all", "doc"], solve-group = "default" }
 
 [tool.pixi.tasks.start]
 cmd = "jupyter lab"
