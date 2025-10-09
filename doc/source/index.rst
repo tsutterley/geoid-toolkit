@@ -1,6 +1,6 @@
-=============
-geoid-toolkit
-=============
+===========================
+geoid-toolkit Documentation
+===========================
 
 Welcome to the documentation for ``geoid-toolkit``, a set of Python tools
 for obtaining and working with static gravity field coefficients
