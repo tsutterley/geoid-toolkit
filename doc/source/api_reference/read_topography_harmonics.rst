@@ -1,6 +1,6 @@
-=========================
-read_topography_harmonics
-=========================
+=============================
+``read_topography_harmonics``
+=============================
 
 - Reads the coefficients for a given `topographic model file <http://ddfe.curtin.edu.au/gravitymodels/Earth2014/potential_model/>`_
 

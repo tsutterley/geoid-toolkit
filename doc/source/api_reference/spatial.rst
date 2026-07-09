@@ -1,6 +1,6 @@
-=======
-spatial
-=======
+===========
+``spatial``
+===========
 
 Utilities for reading, writing and operating on spatial data
 

@@ -1,6 +1,6 @@
-======================
-compute_geoid_grids.py
-======================
+==========================
+``compute_geoid_grids.py``
+==========================
 
 - Computes geoid undulations from a gravity model
 

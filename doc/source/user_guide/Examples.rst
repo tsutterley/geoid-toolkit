@@ -4,13 +4,18 @@
 Examples
 ========
 
-Jupyter Notebooks providing demonstrations of the ``geoid-toolkit`` functionality:
+.. important::
+  Running the example notebooks requires a `full installation <../getting_started/Install.html>`_ to include all of the optional dependencies.
 
-- Creating Spatial Maps |github spatial| |nbviewer spatial|
-    Creates a spatial map of geoidal undulations on a global Equirectangular projection using coefficients from a gravity field model
+.. toctree::
+   :maxdepth: 1
+   :hidden:
 
-.. |github spatial| image:: https://img.shields.io/badge/GitHub-view-6f42c1?style=flat&logo=Github
-   :target: https://github.com/tsutterley/geoid-toolkit/blob/main/notebooks/Calculate-Geoidal-Undulation.ipynb
+   ../notebooks/Calculate-Geoidal-Undulation
 
-.. |nbviewer spatial| image:: https://raw.githubusercontent.com/jupyter/design/master/logos/Badges/nbviewer_badge.svg
-   :target: https://nbviewer.jupyter.org/github/tsutterley/geoid-toolkit/blob/main/notebooks/Calculate-Geoidal-Undulation.ipynb
+.. grid:: 1 2 4 4
+
+    .. grid-item-card::  Calculate Geoidal Undulation
+      :text-align: center
+      :link: ../notebooks/Calculate-Geoidal-Undulation.html
+      :link-alt: Calculates geoidal undulations from a gravity field model

@@ -1,14 +1,16 @@
 #!/usr/bin/env python
-u"""
+"""
 utilities.py
-Written by Tyler Sutterley (08/2024)
-Download and management utilities for syncing time and auxiliary files
+Written by Tyler Sutterley (07/2026)
+Download and management utilities for syncing files
 
 PYTHON DEPENDENCIES:
     lxml: processing XML and HTML in Python
         https://pypi.python.org/pypi/lxml
 
 UPDATE HISTORY:
+    Updated 07/2026: can use an environment variable to set cache directory
+        this overrides the default platform-specific cache directory
     Updated 08/2024: generalize hash function to use any available algorithm
     Updated 06/2024: make default case for an import exception be a class
     Updated 04/2024: add wrapper to importlib for optional dependencies
@@ -26,6 +28,7 @@ UPDATE HISTORY:
     Updated 09/2020: copy from http and https to bytesIO object in chunks
     Written 08/2020
 """
+
 from __future__ import print_function, division, annotations
 
 import sys
@@ -45,12 +48,17 @@ import importlib
 import posixpath
 import lxml.etree
 import subprocess
+import platformdirs
 import calendar, time
 import dateutil.parser
+
 if sys.version_info[0] == 2:
+    from urlparse import urlparse
     import urllib2
 else:
+    from urllib.parse import urlparse
     import urllib.request as urllib2
+
 
 # PURPOSE: get absolute path within a package from a relative path
 def get_data_path(relpath: list | str | pathlib.Path):
@@ -71,11 +79,71 @@ def get_data_path(relpath: list | str | pathlib.Path):
     elif isinstance(relpath, (str, pathlib.Path)):
         return filepath.joinpath(relpath)
 
+
+# PURPOSE: get absolute path within a package from a relative path
+def get_data_path(relpath: list | str | pathlib.Path):
+    """
+    Get the absolute path within a package from a relative path
+
+    Parameters
+    ----------
+    relpath: list, str or pathlib.Path
+        relative path
+    """
+    # current file path
+    filename = inspect.getframeinfo(inspect.currentframe()).filename
+    filepath = pathlib.Path(filename).absolute().parent
+    if isinstance(relpath, list):
+        # use *splat operator to extract from list
+        return filepath.joinpath(*relpath)
+    elif isinstance(relpath, str):
+        return filepath.joinpath(relpath)
+
+
+# PURPOSE: get the path to the user cache directory
+def get_cache_path(
+    relpath: list | str | pathlib.Path | None = None,
+    appname='geoidtk',
+    ensure_exists=True,
+):
+    """
+    Get the path to the user cache directory for an application
+
+    Parameters
+    ----------
+    relpath: list, str, pathlib.Path or None
+        Relative path
+    appname: str, default 'geoidtk'
+        Application name
+    ensure_exists: bool, default True
+        Verify that the cache directory exists
+    """
+    # check for custom environment variable for cache directory
+    cache_dir = os.environ.get('GEOIDTK_CACHE_DIR')
+    if cache_dir:
+        # custom environment variable for cache directory
+        filepath = pathlib.Path(cache_dir).expanduser().absolute()
+        # ensure that the cache directory exists
+        filepath.mkdir(parents=True, exist_ok=True)
+    else:
+        # platform-specific cache directory
+        filepath = platformdirs.user_cache_path(
+            appname=appname, ensure_exists=ensure_exists
+        )
+    # append relative path to cache directory
+    if isinstance(relpath, list):
+        # use *splat operator to extract from list
+        filepath = filepath.joinpath(*relpath)
+    elif isinstance(relpath, (str, pathlib.Path)):
+        filepath = filepath.joinpath(relpath)
+    return pathlib.Path(filepath)
+
+
 def import_dependency(
-        name: str,
-        extra: str = "",
-        raise_exception: bool = False
-    ):
+    name: str,
+    extra: str = '',
+    raise_exception: bool = False,
+):
     """
     Import an optional dependency
 
@@ -96,8 +164,8 @@ def import_dependency(
         Imported module
     """
     # check if the module name is a string
-    msg = f"Invalid module name: '{name}'; must be a string"
-    assert isinstance(name, str), msg
+    if not isinstance(name, str):
+        raise TypeError(f"Invalid module name: '{name}'; must be a string")
     # default error if module cannot be imported
     err = f"Missing optional dependency '{name}'. {extra}"
     module = type('module', (), {})
@@ -112,11 +180,57 @@ def import_dependency(
     # return the module
     return module
 
+
+def dependency_available(
+    name: str,
+    minversion: str | None = None,
+):
+    """
+    Checks whether a module is installed without importing it
+
+    Adapted from ``xarray.namedarray.utils.module_available``
+
+    Parameters
+    ----------
+    name: str
+        Module name
+    minversion : str, optional
+        Minimum version of the module
+
+    Returns
+    -------
+    available : bool
+        Whether the module is installed
+    """
+    # check if module is available
+    if importlib.util.find_spec(name) is None:
+        return False
+    # check if the version is greater than the minimum required
+    if minversion is not None:
+        version = importlib.metadata.version(name)
+        return version >= minversion
+    # return if both checks are passed
+    return True
+
+
+def is_valid_url(url: str) -> bool:
+    """
+    Checks if a string is a valid URL
+
+    Parameters
+    ----------
+    url: str
+        URL to check
+    """
+    try:
+        result = urlparse(str(url))
+        return all([result.scheme, result.netloc])
+    except AttributeError:
+        return False
+
+
 # PURPOSE: get the hash value of a file
-def get_hash(
-        local: str | io.IOBase | pathlib.Path,
-        algorithm: str = 'md5'
-    ):
+def get_hash(local: str | io.IOBase | pathlib.Path, algorithm: str = 'md5'):
     """
     Get the hash value from a local file or ``BytesIO`` object
 
@@ -150,11 +264,9 @@ def get_hash(
     else:
         return ''
 
+
 # PURPOSE: get the git hash value
-def get_git_revision_hash(
-        refname: str = 'HEAD',
-        short: bool = False
-    ):
+def get_git_revision_hash(refname: str = 'HEAD', short: bool = False):
     """
     Get the ``git`` hash value for a particular reference
 
@@ -177,10 +289,10 @@ def get_git_revision_hash(
     with warnings.catch_warnings():
         return str(subprocess.check_output(cmd), encoding='utf8').strip()
 
+
 # PURPOSE: get the current git status
 def get_git_status():
-    """Get the status of a ``git`` repository as a boolean value
-    """
+    """Get the status of a ``git`` repository as a boolean value"""
     # get path to .git directory from current file path
     filename = inspect.getframeinfo(inspect.currentframe()).filename
     basepath = pathlib.Path(filename).absolute().parent.parent
@@ -189,6 +301,7 @@ def get_git_status():
     cmd = ['git', f'--git-dir={gitpath}', 'status', '--porcelain']
     with warnings.catch_warnings():
         return bool(subprocess.check_output(cmd))
+
 
 # PURPOSE: recursively split a url path
 def url_split(s: str):
@@ -201,11 +314,12 @@ def url_split(s: str):
         url string
     """
     head, tail = posixpath.split(s)
-    if head in ('http:','https:','ftp:','s3:'):
-        return s,
+    if head in ('http:', 'https:', 'ftp:', 's3:'):
+        return (s,)
     elif head in ('', posixpath.sep):
-        return tail,
+        return (tail,)
     return url_split(head) + (tail,)
+
 
 # PURPOSE: convert file lines to arguments
 def convert_arg_line_to_args(arg_line):
@@ -218,16 +332,14 @@ def convert_arg_line_to_args(arg_line):
         line string containing a single argument and/or comments
     """
     # remove commented lines and after argument comments
-    for arg in re.sub(r'\#(.*?)$',r'',arg_line).split():
+    for arg in re.sub(r'\#(.*?)$', r'', arg_line).split():
         if not arg.strip():
             continue
         yield arg
 
+
 # PURPOSE: returns the Unix timestamp value for a formatted date string
-def get_unix_time(
-        time_string: str,
-        format: str = '%Y-%m-%d %H:%M:%S'
-    ):
+def get_unix_time(time_string: str, format: str = '%Y-%m-%d %H:%M:%S'):
     """
     Get the Unix timestamp value for a formatted date string
 
@@ -252,6 +364,7 @@ def get_unix_time(
     else:
         return parsed_time.timestamp()
 
+
 # PURPOSE: output a time string in isoformat
 def isoformat(time_string: str):
     """
@@ -270,6 +383,7 @@ def isoformat(time_string: str):
     else:
         return parsed_time.isoformat()
 
+
 # PURPOSE: rounds a number to an even number less than or equal to original
 def even(value: float):
     """
@@ -280,7 +394,8 @@ def even(value: float):
     value: float
         number to be rounded
     """
-    return 2*int(value//2)
+    return 2 * int(value // 2)
+
 
 # PURPOSE: rounds a number upward to its nearest integer
 def ceil(value: float):
@@ -292,15 +407,16 @@ def ceil(value: float):
     value: float
         number to be rounded upward
     """
-    return -int(-value//1)
+    return -int(-value // 1)
+
 
 # PURPOSE: make a copy of a file with all system information
 def copy(
-        source: str | pathlib.Path,
-        destination: str | pathlib.Path,
-        move: bool = False,
-        **kwargs
-    ):
+    source: str | pathlib.Path,
+    destination: str | pathlib.Path,
+    move: bool = False,
+    **kwargs,
+):
     """
     Copy or move a file with all system information
 
@@ -323,12 +439,11 @@ def copy(
     if move:
         source.unlink()
 
+
 # PURPOSE: check ftp connection
 def check_ftp_connection(
-        HOST: str,
-        username: str | None = None,
-        password: str | None = None
-    ):
+    HOST: str, username: str | None = None, password: str | None = None
+):
     """
     Check internet connection with ftp host
 
@@ -345,7 +460,7 @@ def check_ftp_connection(
     try:
         f = ftplib.FTP(HOST)
         f.login(username, password)
-        f.voidcmd("NOOP")
+        f.voidcmd('NOOP')
     except IOError:
         raise RuntimeError('Check internet connection')
     except ftplib.error_perm:
@@ -353,16 +468,17 @@ def check_ftp_connection(
     else:
         return True
 
+
 # PURPOSE: list a directory on a ftp host
 def ftp_list(
-        HOST: str | list,
-        username: str | None = None,
-        password: str | None = None,
-        timeout: int | None = None,
-        basename: bool = False,
-        pattern: str | None = None,
-        sort: bool = False
-    ):
+    HOST: str | list,
+    username: str | None = None,
+    password: str | None = None,
+    timeout: int | None = None,
+    basename: bool = False,
+    pattern: str | None = None,
+    sort: bool = False,
+):
     """
     List a directory on a ftp host
 
@@ -395,17 +511,17 @@ def ftp_list(
         HOST = url_split(HOST)
     # try to connect to ftp host
     try:
-        ftp = ftplib.FTP(HOST[0],timeout=timeout)
-    except (socket.gaierror,IOError):
+        ftp = ftplib.FTP(HOST[0], timeout=timeout)
+    except (socket.gaierror, IOError):
         raise RuntimeError(f'Unable to connect to {HOST[0]}')
     else:
-        ftp.login(username,password)
+        ftp.login(username, password)
         # list remote path
         output = ftp.nlst(posixpath.join(*HOST[1:]))
         # get last modified date of ftp files and convert into unix time
-        mtimes = [None]*len(output)
+        mtimes = [None] * len(output)
         # iterate over each file in the list and get the modification time
-        for i,f in enumerate(output):
+        for i, f in enumerate(output):
             try:
                 # try sending modification time command
                 mdtm = ftp.sendcmd(f'MDTM {f}')
@@ -414,19 +530,19 @@ def ftp_list(
                 pass
             else:
                 # convert the modification time into unix time
-                mtimes[i] = get_unix_time(mdtm[4:], format="%Y%m%d%H%M%S")
+                mtimes[i] = get_unix_time(mdtm[4:], format='%Y%m%d%H%M%S')
         # reduce to basenames
         if basename:
             output = [posixpath.basename(i) for i in output]
         # reduce using regular expression pattern
         if pattern:
-            i = [i for i,f in enumerate(output) if re.search(pattern,f)]
+            i = [i for i, f in enumerate(output) if re.search(pattern, f)]
             # reduce list of listed items and last modified times
             output = [output[indice] for indice in i]
             mtimes = [mtimes[indice] for indice in i]
         # sort the list
         if sort:
-            i = [i for i,j in sorted(enumerate(output), key=lambda i: i[1])]
+            i = [i for i, j in sorted(enumerate(output), key=lambda i: i[1])]
             # sort list of listed items and last modified times
             output = [output[indice] for indice in i]
             mtimes = [mtimes[indice] for indice in i]
@@ -435,19 +551,20 @@ def ftp_list(
         # return the list of items and last modified times
         return (output, mtimes)
 
+
 # PURPOSE: download a file from a ftp host
 def from_ftp(
-        HOST: str | list,
-        username: str | None = None,
-        password: str | None = None,
-        timeout: int | None = None,
-        local: str | pathlib.Path | None = None,
-        hash: str = '',
-        chunk: int = 8192,
-        verbose: bool = False,
-        fid=sys.stdout,
-        mode: oct = 0o775
-    ):
+    HOST: str | list,
+    username: str | None = None,
+    password: str | None = None,
+    timeout: int | None = None,
+    local: str | pathlib.Path | None = None,
+    hash: str = '',
+    chunk: int = 8192,
+    verbose: bool = False,
+    fid=sys.stdout,
+    mode: oct = 0o775,
+):
     """
     Download a file from a ftp host
 
@@ -489,16 +606,17 @@ def from_ftp(
     try:
         # try to connect to ftp host
         ftp = ftplib.FTP(HOST[0], timeout=timeout)
-    except (socket.gaierror,IOError):
+    except (socket.gaierror, IOError):
         raise RuntimeError(f'Unable to connect to {HOST[0]}')
     else:
-        ftp.login(username,password)
+        ftp.login(username, password)
         # remote path
         ftp_remote_path = posixpath.join(*HOST[1:])
         # copy remote file contents to bytesIO object
         remote_buffer = io.BytesIO()
-        ftp.retrbinary(f'RETR {ftp_remote_path}',
-            remote_buffer.write, blocksize=chunk)
+        ftp.retrbinary(
+            f'RETR {ftp_remote_path}', remote_buffer.write, blocksize=chunk
+        )
         remote_buffer.seek(0)
         # save file basename with bytesIO object
         remote_buffer.filename = HOST[-1]
@@ -506,7 +624,7 @@ def from_ftp(
         remote_hash = hashlib.md5(remote_buffer.getvalue()).hexdigest()
         # get last modified date of remote file and convert into unix time
         mdtm = ftp.sendcmd(f'MDTM {ftp_remote_path}')
-        remote_mtime = get_unix_time(mdtm[4:], format="%Y%m%d%H%M%S")
+        remote_mtime = get_unix_time(mdtm[4:], format='%Y%m%d%H%M%S')
         # compare checksums
         if local and (hash != remote_hash):
             # convert to absolute path
@@ -530,25 +648,25 @@ def from_ftp(
         remote_buffer.seek(0)
         return remote_buffer
 
+
 def _create_default_ssl_context() -> ssl.SSLContext:
-    """Creates the default SSL context
-    """
+    """Creates the default SSL context"""
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     _set_ssl_context_options(context)
     context.options |= ssl.OP_NO_COMPRESSION
     return context
 
+
 def _create_ssl_context_no_verify() -> ssl.SSLContext:
-    """Creates an SSL context for unverified connections
-    """
+    """Creates an SSL context for unverified connections"""
     context = _create_default_ssl_context()
     context.check_hostname = False
     context.verify_mode = ssl.CERT_NONE
     return context
 
+
 def _set_ssl_context_options(context: ssl.SSLContext) -> None:
-    """Sets the default options for the SSL context
-    """
+    """Sets the default options for the SSL context"""
     if sys.version_info >= (3, 10) or ssl.OPENSSL_VERSION_INFO >= (1, 1, 0, 7):
         context.minimum_version = ssl.TLSVersion.TLSv1_2
     else:
@@ -557,14 +675,16 @@ def _set_ssl_context_options(context: ssl.SSLContext) -> None:
         context.options |= ssl.OP_NO_TLSv1
         context.options |= ssl.OP_NO_TLSv1_1
 
+
 # default ssl context
 _default_ssl_context = _create_ssl_context_no_verify()
 
+
 # PURPOSE: check internet connection
 def check_connection(
-        HOST: str,
-        context: ssl.SSLContext = _default_ssl_context,
-    ):
+    HOST: str,
+    context: ssl.SSLContext = _default_ssl_context,
+):
     """
     Check internet connection with http host
 
@@ -587,16 +707,17 @@ def check_connection(
     else:
         return True
 
+
 # PURPOSE: list a directory on an Apache http Server
 def http_list(
-        HOST: str | list,
-        timeout: int | None = None,
-        context: ssl.SSLContext = _default_ssl_context,
-        parser = lxml.etree.HTMLParser(),
-        format: str = '%Y-%m-%d %H:%M',
-        pattern: str = '',
-        sort: bool = False
-    ):
+    HOST: str | list,
+    timeout: int | None = None,
+    context: ssl.SSLContext = _default_ssl_context,
+    parser=lxml.etree.HTMLParser(),
+    format: str = '%Y-%m-%d %H:%M',
+    pattern: str = '',
+    sort: bool = False,
+):
     """
     List a directory on an Apache http Server
 
@@ -644,35 +765,38 @@ def http_list(
         tree = lxml.etree.parse(response, parser)
         colnames = tree.xpath('//tr/td[not(@*)]//a/@href')
         # get the Unix timestamp value for a modification time
-        collastmod = [get_unix_time(i,format=format)
-            for i in tree.xpath('//tr/td[@align="right"][1]/text()')]
+        collastmod = [
+            get_unix_time(i, format=format)
+            for i in tree.xpath('//tr/td[@align="right"][1]/text()')
+        ]
         # reduce using regular expression pattern
         if pattern:
-            i = [i for i,f in enumerate(colnames) if re.search(pattern, f)]
+            i = [i for i, f in enumerate(colnames) if re.search(pattern, f)]
             # reduce list of column names and last modified times
             colnames = [colnames[indice] for indice in i]
             collastmod = [collastmod[indice] for indice in i]
         # sort the list
         if sort:
-            i = [i for i,j in sorted(enumerate(colnames), key=lambda i: i[1])]
+            i = [i for i, j in sorted(enumerate(colnames), key=lambda i: i[1])]
             # sort list of column names and last modified times
             colnames = [colnames[indice] for indice in i]
             collastmod = [collastmod[indice] for indice in i]
         # return the list of column names and last modified times
         return (colnames, collastmod)
 
+
 # PURPOSE: download a file from a http host
 def from_http(
-        HOST: str | list,
-        timeout: int | None = None,
-        context: ssl.SSLContext = _default_ssl_context,
-        local: str | pathlib.Path | None = None,
-        hash: str = '',
-        chunk: int = 16384,
-        verbose: bool = False,
-        fid = sys.stdout,
-        mode: oct = 0o775
-    ):
+    HOST: str | list,
+    timeout: int | None = None,
+    context: ssl.SSLContext = _default_ssl_context,
+    local: str | pathlib.Path | None = None,
+    hash: str = '',
+    chunk: int = 16384,
+    verbose: bool = False,
+    fid=sys.stdout,
+    mode: oct = 0o775,
+):
     """
     Download a file from a http host
 
@@ -743,14 +867,15 @@ def from_http(
         remote_buffer.seek(0)
         return remote_buffer
 
+
 # PURPOSE: list a directory on the GFZ ICGEM https server
 # http://icgem.gfz-potsdam.de
 def icgem_list(
-        host: str = 'http://icgem.gfz-potsdam.de/tom_longtime',
-        timeout: int | None = None,
-        context: ssl.SSLContext = _default_ssl_context,
-        parser = lxml.etree.HTMLParser()
-    ):
+    host: str = 'http://icgem.gfz-potsdam.de/tom_longtime',
+    timeout: int | None = None,
+    context: ssl.SSLContext = _default_ssl_context,
+    parser=lxml.etree.HTMLParser(),
+):
     """
     Parse the table of static gravity field models on the GFZ
     `International Centre for Global Earth Models (ICGEM) <http://icgem.gfz-potsdam.de/>`_
@@ -790,5 +915,8 @@ def icgem_list(
         colfiles = tree.xpath('//td[@class="tom-cell-modelfile"]//a/@href')
         # reduce list of files to find gfc files
         # return the dict of model files mapped by name
-        return {re.findall(r'(.*?).gfc',posixpath.basename(f)).pop():url_split(f)
-            for i,f in enumerate(colfiles) if re.search(r'gfc$',f)}
+        return {
+            re.findall(r'(.*?).gfc', posixpath.basename(f)).pop(): url_split(f)
+            for i, f in enumerate(colfiles)
+            if re.search(r'gfc$', f)
+        }

@@ -1,6 +1,6 @@
-=============
-ref_ellipsoid
-=============
+=================
+``ref_ellipsoid``
+=================
 
 - Computes parameters for a reference ellipsoid
 

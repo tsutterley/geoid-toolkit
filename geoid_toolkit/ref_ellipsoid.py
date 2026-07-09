@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-u"""
+"""
 ref_ellipsoid.py
 Written by Tyler Sutterley (12/2022)
 
@@ -71,7 +71,9 @@ UPDATE HISTORY:
     Updated 06/2014: changed message to sys.exit
     Updated 02/2014: minor update to if statements
 """
+
 import numpy as np
+
 
 def ref_ellipsoid(refell, UNITS='MKS'):
     """
@@ -146,151 +148,177 @@ def ref_ellipsoid(refell, UNITS='MKS'):
     assert UNITS in ('MKS', 'CGS')
 
     # set parameters for ellipsoid
-    if refell.upper() in ('CLK66','NAD27'):
+    if refell.upper() in ('CLK66', 'NAD27'):
         # Clarke 1866
-        a_axis = 6378206.4# [m] semimajor axis of the ellipsoid
-        flat = 1.0/294.9786982# flattening of the ellipsoid
+        a_axis = 6378206.4  # [m] semimajor axis of the ellipsoid
+        flat = 1.0 / 294.9786982  # flattening of the ellipsoid
 
-    elif refell.upper() in ('GRS80','NAD83'):
+    elif refell.upper() in ('GRS80', 'NAD83'):
         # Geodetic Reference System 1980
         # North American Datum 1983
-        a_axis = 6378135.0# [m] semimajor axis of the ellipsoid
-        flat = 1.0/298.26# flattening of the ellipsoid
-        GM = 3.986005e14# [m^3/s^2] Geocentric Gravitational Constant
+        a_axis = 6378135.0  # [m] semimajor axis of the ellipsoid
+        flat = 1.0 / 298.26  # flattening of the ellipsoid
+        GM = 3.986005e14  # [m^3/s^2] Geocentric Gravitational Constant
 
-    elif (refell.upper() == 'GRS67'):
+    elif refell.upper() == 'GRS67':
         # Geodetic Reference System 1967
         # International Astronomical Union (IAU ellipsoid)
-        a_axis = 6378160.0# [m] semimajor axis of the ellipsoid
-        flat = 1.0/298.247167427# flattening of the ellipsoid
-        GM = 3.98603e14# [m^3/s^2] Geocentric Gravitational Constant
-        omega = 7292115.1467e-11# angular velocity of the Earth [rad/s]
+        a_axis = 6378160.0  # [m] semimajor axis of the ellipsoid
+        flat = 1.0 / 298.247167427  # flattening of the ellipsoid
+        GM = 3.98603e14  # [m^3/s^2] Geocentric Gravitational Constant
+        omega = 7292115.1467e-11  # angular velocity of the Earth [rad/s]
 
-    elif (refell.upper() == 'WGS72'):
+    elif refell.upper() == 'WGS72':
         # World Geodetic System 1972
-        a_axis = 6378135.0# [m] semimajor axis of the ellipsoid
-        flat = 1.0/298.26# flattening of the ellipsoid
+        a_axis = 6378135.0  # [m] semimajor axis of the ellipsoid
+        flat = 1.0 / 298.26  # flattening of the ellipsoid
 
-    elif (refell.upper() == 'WGS84'):
+    elif refell.upper() == 'WGS84':
         # World Geodetic System 1984
-        a_axis = 6378137.0# [m] semimajor axis of the ellipsoid
-        flat = 1.0/298.257223563# flattening of the ellipsoid
+        a_axis = 6378137.0  # [m] semimajor axis of the ellipsoid
+        flat = 1.0 / 298.257223563  # flattening of the ellipsoid
 
-    elif (refell.upper() == 'ATS77'):
+    elif refell.upper() == 'ATS77':
         # Quasi-earth centred ellipsoid for ATS77
-        a_axis = 6378135.0# [m] semimajor axis of the ellipsoid
-        flat = 1.0/298.257# flattening of the ellipsoid
+        a_axis = 6378135.0  # [m] semimajor axis of the ellipsoid
+        flat = 1.0 / 298.257  # flattening of the ellipsoid
 
-    elif (refell.upper() == 'KRASS'):
+    elif refell.upper() == 'KRASS':
         # Krassovsky (USSR)
-        a_axis = 6378245.0# [m] semimajor axis of the ellipsoid
-        flat = 1.0/298.3# flattening of the ellipsoid
+        a_axis = 6378245.0  # [m] semimajor axis of the ellipsoid
+        flat = 1.0 / 298.3  # flattening of the ellipsoid
 
-    elif (refell.upper() == 'INTER'):
+    elif refell.upper() == 'INTER':
         # International
-        a_axis = 6378388.0# [m] semimajor axis of the ellipsoid
-        flat = 1/297.0# flattening of the ellipsoid
+        a_axis = 6378388.0  # [m] semimajor axis of the ellipsoid
+        flat = 1 / 297.0  # flattening of the ellipsoid
 
-    elif (refell.upper() == 'MAIRY'):
+    elif refell.upper() == 'MAIRY':
         # Modified Airy (Ireland 1965/1975)
-        a_axis = 6377340.189# [m] semimajor axis of the ellipsoid
-        flat = 1/299.3249646# flattening of the ellipsoid
+        a_axis = 6377340.189  # [m] semimajor axis of the ellipsoid
+        flat = 1 / 299.3249646  # flattening of the ellipsoid
 
-    elif (refell.upper() == 'TOPEX'):
+    elif refell.upper() == 'TOPEX':
         # TOPEX/POSEIDON ellipsoid
-        a_axis = 6378136.3# [m] semimajor axis of the ellipsoid
-        flat = 1.0/298.257# flattening of the ellipsoid
-        GM = 3.986004415e14# [m^3/s^2]
+        a_axis = 6378136.3  # [m] semimajor axis of the ellipsoid
+        flat = 1.0 / 298.257  # flattening of the ellipsoid
+        GM = 3.986004415e14  # [m^3/s^2]
 
-    elif (refell.upper() == 'EGM96'):
+    elif refell.upper() == 'EGM96':
         # EGM 1996 gravity model
-        a_axis = 6378136.3# [m] semimajor axis of the ellipsoid
-        flat = 1.0/298.256415099# flattening of the ellipsoid
-        GM = 3.986004415e14# [m^3/s^2]
+        a_axis = 6378136.3  # [m] semimajor axis of the ellipsoid
+        flat = 1.0 / 298.256415099  # flattening of the ellipsoid
+        GM = 3.986004415e14  # [m^3/s^2]
 
-    elif (refell.upper() == 'HGH80'):
+    elif refell.upper() == 'HGH80':
         # Hughes 1980 Ellipsoid used in some NSIDC data
-        a_axis = 6378273.0# [m] semimajor axis of the ellipsoid
-        flat = 1.0/298.279411123064# flattening of the ellipsoid
+        a_axis = 6378273.0  # [m] semimajor axis of the ellipsoid
+        flat = 1.0 / 298.279411123064  # flattening of the ellipsoid
 
     else:
         raise ValueError('Incorrect reference ellipsoid Name')
 
-    if refell.upper() not in ('GRS80','GRS67','NAD83','TOPEX','EGM96'):
+    if refell.upper() not in ('GRS80', 'GRS67', 'NAD83', 'TOPEX', 'EGM96'):
         # for ellipsoids not listing the Geocentric Gravitational Constant
-        GM = 3.986004418e14# [m^3/s^2]
+        GM = 3.986004418e14  # [m^3/s^2]
 
     if refell.upper() not in ('GRS67'):
         # for ellipsoids not listing the angular velocity of the Earth
-        omega = 7292115e-11# [rad/s]
+        omega = 7292115e-11  # [rad/s]
 
     # universal gravitational constant [N*m^2/kg^2]
     G = 6.67430e-11
 
     # convert units to CGS
-    if (UNITS == 'CGS'):
+    if UNITS == 'CGS':
         a_axis *= 100.0
         GM *= 1e6
-        G *= 1000.0 # [dyn*cm^2/g^2]
+        G *= 1000.0  # [dyn*cm^2/g^2]
 
     # DERIVED PARAMETERS:
     # mean radius of the Earth having the same volume
     # (4pi/3)R^3 = (4pi/3)(a^2)b = (4pi/3)(a^3)(1 - f)
-    rad_e = a_axis*(1.0 - flat)**(1.0/3.0)
+    rad_e = a_axis * (1.0 - flat) ** (1.0 / 3.0)
 
     # semiminor axis of the ellipsoid
-    b_axis = (1.0 -flat)*a_axis# [m]
+    b_axis = (1.0 - flat) * a_axis  # [m]
     # Ratio between ellipsoidal axes
-    ratio = (1.0 -flat)
+    ratio = 1.0 - flat
     # Polar radius of curvature
-    pol_rad=a_axis/(1.0 -flat)
+    pol_rad = a_axis / (1.0 - flat)
 
     # Linear eccentricity
-    lin_ecc = np.sqrt((2.0*flat - flat**2)*a_axis**2)
+    lin_ecc = np.sqrt((2.0 * flat - flat**2) * a_axis**2)
     # first numerical eccentricity
-    ecc1 = lin_ecc/a_axis
+    ecc1 = lin_ecc / a_axis
     # second numerical eccentricity
-    ecc2 = lin_ecc/b_axis
+    ecc2 = lin_ecc / b_axis
 
     # m parameter [omega^2*a^2*b/(GM)]
     # p. 70, Eqn.(2-137)
-    mp = omega**2*((1 -flat)*a_axis**3)/GM
+    mp = omega**2 * ((1 - flat) * a_axis**3) / GM
 
     # q, q_0
     # p. 67, Eqn.(2-113)
-    q = 0.5*((1.0 + 3.0/(ecc2**2))*np.arctan(ecc2)-3.0/ecc2)
-    q_0 = 3*(1.0 +1.0/(ecc2**2))*(1.0 -1.0/ecc2*np.arctan(ecc2))-1.0
+    q = 0.5 * ((1.0 + 3.0 / (ecc2**2)) * np.arctan(ecc2) - 3.0 / ecc2)
+    q_0 = (
+        3 * (1.0 + 1.0 / (ecc2**2)) * (1.0 - 1.0 / ecc2 * np.arctan(ecc2)) - 1.0
+    )
 
     # J_2 p. 75 Eqn.(2-167), p. 76 Eqn.(2-172)
-    j_2 = (ecc1**2)*(1.0 - 2.0*mp*ecc2/(15.0*q))/3.0
+    j_2 = (ecc1**2) * (1.0 - 2.0 * mp * ecc2 / (15.0 * q)) / 3.0
     # Normalized C20 terms.
     # p. 60, Eqn.(2-80)
-    C20 = -j_2/np.sqrt(5.0)
+    C20 = -j_2 / np.sqrt(5.0)
 
     # Normal gravity at the equator.
     # p. 71, Eqn.(2-141)
-    ga = GM/(a_axis*b_axis)*(1.0 -mp -mp*ecc2*q_0/(6.0*q))
+    ga = GM / (a_axis * b_axis) * (1.0 - mp - mp * ecc2 * q_0 / (6.0 * q))
 
     # Normal gravity at the pole.
     # p. 71, Eqn.(2-142)
-    gb = GM/(a_axis**2.0)*(1.0 +mp*ecc2*q_0/(3.0*q))
+    gb = GM / (a_axis**2.0) * (1.0 + mp * ecc2 * q_0 / (3.0 * q))
 
     # ratio between gravity at pole versus gravity at equator
-    dk = b_axis*gb/(a_axis*ga) - 1.0
+    dk = b_axis * gb / (a_axis * ga) - 1.0
 
     # Normal potential at the ellipsoid
     # p. 68, Eqn.(2-123)
-    U0 = GM/lin_ecc*np.arctan(ecc2)+(1.0/3.0)*omega**2*a_axis**2
+    U0 = GM / lin_ecc * np.arctan(ecc2) + (1.0 / 3.0) * omega**2 * a_axis**2
 
     # Surface area of the reference ellipsoid [m^2]
-    area = np.pi*a_axis**2.*(2.+((1.-ecc1**2)/ecc1)*np.log((1.+ecc1)/(1.-ecc1)))
+    area = (
+        np.pi
+        * a_axis**2.0
+        * (2.0 + ((1.0 - ecc1**2) / ecc1) * np.log((1.0 + ecc1) / (1.0 - ecc1)))
+    )
     # Volume of the reference ellipsoid [m^3]
-    vol = (4.0*np.pi/3.0)*(a_axis**3.0)*(1.0-ecc1**2.0)**0.5
+    vol = (4.0 * np.pi / 3.0) * (a_axis**3.0) * (1.0 - ecc1**2.0) ** 0.5
     # Average density [kg/m^3]
-    rho_e = GM/(G*vol)
+    rho_e = GM / (G * vol)
 
-    return {'a':a_axis, 'b':b_axis, 'f':flat, 'rad_p':pol_rad, 'rad_e':rad_e,
-            'ratio':ratio, 'GM':GM, 'omega':omega, 'C20':C20, 'J2':j_2, 'U0':U0,
-            'dk':dk, 'norm_a':ga, 'norm_b':gb, 'mp':mp, 'q':q, 'q0':q_0,
-            'ecc':lin_ecc, 'ecc1':ecc1,'ecc2':ecc2, 'area':area, 'volume':vol,
-            'rho_e':rho_e}
+    return {
+        'a': a_axis,
+        'b': b_axis,
+        'f': flat,
+        'rad_p': pol_rad,
+        'rad_e': rad_e,
+        'ratio': ratio,
+        'GM': GM,
+        'omega': omega,
+        'C20': C20,
+        'J2': j_2,
+        'U0': U0,
+        'dk': dk,
+        'norm_a': ga,
+        'norm_b': gb,
+        'mp': mp,
+        'q': q,
+        'q0': q_0,
+        'ecc': lin_ecc,
+        'ecc1': ecc1,
+        'ecc2': ecc2,
+        'area': area,
+        'volume': vol,
+        'rho_e': rho_e,
+    }

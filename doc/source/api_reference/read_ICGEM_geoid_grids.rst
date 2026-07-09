@@ -1,6 +1,6 @@
-=========================
-read_ICGEM_geoid_grids.py
-=========================
+=============================
+``read_ICGEM_geoid_grids.py``
+=============================
 
 - Reads geoid height spatial grids from the `GFZ International Centre for Global Earth Models (ICGEM) <http://icgem.gfz-potsdam.de/>`_
 - Outputs spatial grids as netCDF4 files

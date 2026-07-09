@@ -1,6 +1,6 @@
-===========================
-read_EGM2008_geoid_grids.py
-===========================
+===============================
+``read_EGM2008_geoid_grids.py``
+===============================
 
 - Reads EGM2008 geoid height spatial grids from unformatted binary files provided by the `National Geospatial-Intelligence Agency <https://earth-info.nga.mil/php/download.php?file=egm-08interpolation>`_
 - Outputs spatial grids as netCDF4 files

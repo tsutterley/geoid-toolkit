@@ -1,6 +1,6 @@
-=========
-utilities
-=========
+=============
+``utilities``
+=============
 
 Download and management utilities for syncing time and auxiliary files
 
@@ -21,7 +21,13 @@ General Methods
 
 .. autofunction:: geoid_toolkit.utilities.get_data_path
 
+.. autofunction:: geoid_toolkit.utilities.get_cache_path
+
 .. autofunction:: geoid_toolkit.utilities.import_dependency
+
+.. autofunction:: geoid_toolkit.utilities.dependency_available
+
+.. autofunction:: geoid_toolkit.utilities.is_valid_url
 
 .. autofunction:: geoid_toolkit.utilities.get_hash
 

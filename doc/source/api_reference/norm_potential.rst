@@ -1,6 +1,6 @@
-==============
-norm_potential
-==============
+==================
+``norm_potential``
+==================
 
 - Calculates the normal potential at a given latitude and height
 

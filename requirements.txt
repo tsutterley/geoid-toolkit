@@ -1,3 +1,0 @@
-lxml
-numpy
-python-dateutil

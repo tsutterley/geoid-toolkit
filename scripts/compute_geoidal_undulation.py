@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-u"""
+"""
 compute_geoidal_undulation.py
 Written by Tyler Sutterley (06/2025)
 Computes geoid undulations from a gravity model for an input file
@@ -75,6 +75,7 @@ UPDATE HISTORY:
     Updated 09/2020: can use HDF5 and netCDF4 as inputs and outputs
     Written 07/2017
 """
+
 from __future__ import print_function
 
 import sys
@@ -87,34 +88,39 @@ import geoid_toolkit as geoidtk
 # attempt imports
 pyproj = geoidtk.utilities.import_dependency('pyproj')
 
+
 # PURPOSE: try to get the projection information for the input file
 def get_projection(attributes, PROJECTION):
     # coordinate reference system string from file
     try:
         crs = pyproj.CRS.from_string(attributes['projection'])
-    except (ValueError,pyproj.exceptions.CRSError):
+    except (ValueError, pyproj.exceptions.CRSError):
         pass
     else:
         return crs
     # EPSG projection code
     try:
         crs = pyproj.CRS.from_epsg(int(PROJECTION))
-    except (ValueError,pyproj.exceptions.CRSError):
+    except (ValueError, pyproj.exceptions.CRSError):
         pass
     else:
         return crs
     # coordinate reference system string
     try:
         crs = pyproj.CRS.from_string(PROJECTION)
-    except (ValueError,pyproj.exceptions.CRSError):
+    except (ValueError, pyproj.exceptions.CRSError):
         pass
     else:
         return crs
     # no projection can be made
     raise pyproj.exceptions.CRSError
 
+
 # PURPOSE: read csv, netCDF or HDF5 data and compute geoid undulation
-def compute_geoidal_undulation(model_file, input_file, output_file,
+def compute_geoidal_undulation(
+    model_file,
+    input_file,
+    output_file,
     LMAX=None,
     TIDE=None,
     GAUSS=0,
@@ -124,8 +130,8 @@ def compute_geoidal_undulation(model_file, input_file, output_file,
     TYPE='drift',
     PROJECTION='4326',
     VERBOSE=False,
-    MODE=0o775):
-
+    MODE=0o775,
+):
     # create logger for verbosity level
     loglevel = logging.INFO if VERBOSE else logging.CRITICAL
     logging.basicConfig(level=loglevel)
@@ -160,163 +166,233 @@ def compute_geoidal_undulation(model_file, input_file, output_file,
     attrib['geoid_h']['units'] = 'm'
     attrib['geoid_h']['long_name'] = 'Geoidal_Undulation'
     args = (Ylms['modelname'], Ylms['max_degree'])
-    attrib['geoid_h']['description'] = ('{0}_geoidal_undulation_'
-        'computed_from_degree_{1}_gravity_model.').format(*args)
+    attrib['geoid_h']['description'] = (
+        '{0}_geoidal_undulation_computed_from_degree_{1}_gravity_model.'
+    ).format(*args)
     attrib['geoid_h']['tide_system'] = Ylms['tide_system']
     attrib['geoid_h']['degree_of_truncation'] = LMAX
     attrib['geoid_h']['_FillValue'] = fill_value
 
     # read input file to extract time, spatial coordinates and data
-    if (FORMAT == 'csv'):
-        dinput = geoidtk.spatial.from_ascii(input_file,
-            columns=VARIABLES,
-            header=HEADER)
-    elif (FORMAT == 'netCDF4'):
-        dinput = geoidtk.spatial.from_netCDF4(input_file,
+    if FORMAT == 'csv':
+        dinput = geoidtk.spatial.from_ascii(
+            input_file, columns=VARIABLES, header=HEADER
+        )
+    elif FORMAT == 'netCDF4':
+        dinput = geoidtk.spatial.from_netCDF4(
+            input_file,
             timename=VARIABLES[0],
             xname=VARIABLES[2],
             yname=VARIABLES[1],
-            varname=VARIABLES[3])
-    elif (FORMAT == 'HDF5'):
-        dinput = geoidtk.spatial.from_HDF5(input_file,
+            varname=VARIABLES[3],
+        )
+    elif FORMAT == 'HDF5':
+        dinput = geoidtk.spatial.from_HDF5(
+            input_file,
             timename=VARIABLES[0],
             xname=VARIABLES[2],
             yname=VARIABLES[1],
-            varname=VARIABLES[3])
+            varname=VARIABLES[3],
+        )
     elif FORMAT in ('GTiff', 'cog'):
         dinput = geoidtk.spatial.from_geotiff(input_file)
         # copy global geotiff attributes for projection and grid parameters
-        for att_name in ['projection','wkt','spacing','extent']:
+        for att_name in ['projection', 'wkt', 'spacing', 'extent']:
             attrib[att_name] = dinput['attributes'][att_name]
 
     # converting x,y from projection to latitude/longitude
     crs1 = get_projection(dinput['attributes'], PROJECTION)
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
-    if (TYPE == 'grid'):
-        ny,nx = (len(dinput['y']),len(dinput['x']))
-        gridx,gridy = np.meshgrid(dinput['x'],dinput['y'])
-        lon,lat = transformer.transform(gridx,gridy)
+    if TYPE == 'grid':
+        ny, nx = (len(dinput['y']), len(dinput['x']))
+        gridx, gridy = np.meshgrid(dinput['x'], dinput['y'])
+        lon, lat = transformer.transform(gridx, gridy)
         # calculate geoid at coordinates and reshape to output
-        N = geoidtk.geoid_undulation(lat.flatten(), lon.flatten(),
-            REFERENCE, Ylms['clm'], Ylms['slm'],
-            LMAX, R, GM, GAUSS=GAUSS).reshape(ny,nx)
-    elif (TYPE == 'drift'):
-        lon,lat = transformer.transform(dinput['x'],dinput['y'])
+        N = geoidtk.geoid_undulation(
+            lat.flatten(),
+            lon.flatten(),
+            REFERENCE,
+            Ylms['clm'],
+            Ylms['slm'],
+            LMAX,
+            R,
+            GM,
+            GAUSS=GAUSS,
+        ).reshape(ny, nx)
+    elif TYPE == 'drift':
+        lon, lat = transformer.transform(dinput['x'], dinput['y'])
         # calculate geoid at coordinates
-        N = geoidtk.geoid_undulation(lat, lon,
-            REFERENCE, Ylms['clm'], Ylms['slm'],
-            LMAX, R, GM, GAUSS=GAUSS)
+        N = geoidtk.geoid_undulation(
+            lat,
+            lon,
+            REFERENCE,
+            Ylms['clm'],
+            Ylms['slm'],
+            LMAX,
+            R,
+            GM,
+            GAUSS=GAUSS,
+        )
     # replace fill values with fill value
-    N = np.ma.asarray(N,dtype=np.float64)
+    N = np.ma.asarray(N, dtype=np.float64)
     N.mask = np.copy(dinput['data'].mask)
     N.fill_value = np.copy(fill_value)
     N.data[N.mask] = N.fill_value
 
     # output to file
-    output = {'lon':lon,'lat':lat,'geoid_h':N}
-    if (FORMAT == 'csv'):
-        geoidtk.spatial.to_ascii(output, attrib, output_file,
-            delimiter=',', columns=['lat','lon','geoid_h'])
-    elif (FORMAT == 'netCDF4'):
+    output = {'lon': lon, 'lat': lat, 'geoid_h': N}
+    if FORMAT == 'csv':
+        geoidtk.spatial.to_ascii(
+            output,
+            attrib,
+            output_file,
+            delimiter=',',
+            columns=['lat', 'lon', 'geoid_h'],
+        )
+    elif FORMAT == 'netCDF4':
         geoidtk.spatial.to_netCDF4(output, attrib, output_file)
-    elif (FORMAT == 'HDF5'):
+    elif FORMAT == 'HDF5':
         geoidtk.spatial.to_HDF5(output, attrib, output_file)
     elif FORMAT in ('GTiff', 'cog'):
-        geoidtk.spatial.to_geotiff(output, attrib, output_file,
-            varname='geoid_h')
+        geoidtk.spatial.to_geotiff(
+            output, attrib, output_file, varname='geoid_h'
+        )
     # change the permissions level to MODE
     output_file.chmod(mode=MODE)
+
 
 # PURPOSE: create argument parser
 def arguments():
     parser = argparse.ArgumentParser(
         description="""Calculates geoidal undulations for an input file
             """,
-        fromfile_prefix_chars="@"
+        fromfile_prefix_chars='@',
     )
     parser.convert_arg_line_to_args = geoidtk.utilities.convert_arg_line_to_args
     # command line options
     # input and output file
-    parser.add_argument('infile',
-        type=pathlib.Path, nargs='?',
-        help='Input file to run')
-    parser.add_argument('outfile',
-        type=pathlib.Path, nargs='?',
-        help='Computed output file')
+    parser.add_argument(
+        'infile', type=pathlib.Path, nargs='?', help='Input file to run'
+    )
+    parser.add_argument(
+        'outfile', type=pathlib.Path, nargs='?', help='Computed output file'
+    )
     # set gravity model file to use
-    parser.add_argument('--gravity','-G',
-        type=pathlib.Path,
-        help='Gravity model file to use')
+    parser.add_argument(
+        '--gravity', '-G', type=pathlib.Path, help='Gravity model file to use'
+    )
     # maximum spherical harmonic degree (level of truncation)
-    parser.add_argument('--lmax','-l',
-        type=int, help='Maximum spherical harmonic degree')
+    parser.add_argument(
+        '--lmax', '-l', type=int, help='Maximum spherical harmonic degree'
+    )
     # tide system of output geoid
     # tide_free: no permanent direct and indirect tidal potentials
     # mean_tide: permanent tidal potentials (direct and indirect)
     # zero_tide: permanent direct tidal potential removed
-    parser.add_argument('--tide','-T',
-        type=str, default='tide_free',
-        choices=['tide_free','mean_tide','zero_tide'],
-        help='Tide system of output geoid')
+    parser.add_argument(
+        '--tide',
+        '-T',
+        type=str,
+        default='tide_free',
+        choices=['tide_free', 'mean_tide', 'zero_tide'],
+        help='Tide system of output geoid',
+    )
     # Gaussian smoothing radius (km)
-    parser.add_argument('--radius','-R',
-        type=float, default=0,
-        help='Gaussian smoothing radius (km)')
+    parser.add_argument(
+        '--radius',
+        '-R',
+        type=float,
+        default=0,
+        help='Gaussian smoothing radius (km)',
+    )
     # input and output data format
-    parser.add_argument('--format','-F',
-        type=str, default='csv',
-        choices=('csv','netCDF4','HDF5','GTiff','cog'),
-        help='Input and output data format')
+    parser.add_argument(
+        '--format',
+        '-F',
+        type=str,
+        default='csv',
+        choices=('csv', 'netCDF4', 'HDF5', 'GTiff', 'cog'),
+        help='Input and output data format',
+    )
     # variable names (for csv names of columns)
-    parser.add_argument('--variables','-v',
-        type=str, nargs='+', default=['time','lat','lon','data'],
-        help='Variable names of data in input file')
+    parser.add_argument(
+        '--variables',
+        '-v',
+        type=str,
+        nargs='+',
+        default=['time', 'lat', 'lon', 'data'],
+        help='Variable names of data in input file',
+    )
     # number of header lines for csv files
-    parser.add_argument('--header','-H',
-        type=int, default=0,
-        help='Number of header lines for csv files')
+    parser.add_argument(
+        '--header',
+        '-H',
+        type=int,
+        default=0,
+        help='Number of header lines for csv files',
+    )
     # input data type
     # drift: drift buoys or satellite/airborne altimetry (time per data point)
     # grid: spatial grids or images (single time for all data points)
-    parser.add_argument('--type','-t',
-        type=str, default='drift',
-        choices=('drift','grid'),
-        help='Input data type')
+    parser.add_argument(
+        '--type',
+        '-t',
+        type=str,
+        default='drift',
+        choices=('drift', 'grid'),
+        help='Input data type',
+    )
     # spatial projection (EPSG code or PROJ4 string)
-    parser.add_argument('--projection','-P',
-        type=str, default='4326',
-        help='Spatial projection as EPSG code or PROJ4 string')
+    parser.add_argument(
+        '--projection',
+        '-P',
+        type=str,
+        default='4326',
+        help='Spatial projection as EPSG code or PROJ4 string',
+    )
     # verbose output of processing run
     # print information about each input and output file
-    parser.add_argument('--verbose','-V',
-        default=False, action='store_true',
-        help='Verbose output of run')
+    parser.add_argument(
+        '--verbose',
+        '-V',
+        default=False,
+        action='store_true',
+        help='Verbose output of run',
+    )
     # permissions mode of the local files (number in octal)
-    parser.add_argument('--mode','-M',
-        type=lambda x: int(x,base=8), default=0o775,
-        help='Permission mode of output file')
+    parser.add_argument(
+        '--mode',
+        '-M',
+        type=lambda x: int(x, base=8),
+        default=0o775,
+        help='Permission mode of output file',
+    )
     # return the parser
     return parser
+
 
 # This is the main part of the program that calls the individual functions
 def main():
     # Read the system arguments listed after the program
     parser = arguments()
-    args,_ = parser.parse_known_args()
+    args, _ = parser.parse_known_args()
 
     # verify input and output files
     args.gravity = pathlib.Path(args.gravity).expanduser().absolute()
     args.infile = pathlib.Path(args.infile).expanduser().absolute()
     # set output file from input filename if not entered
     if not args.outfile:
-        vars = (args.infile.stem,args.gravity.stem,args.infile.suffix)
+        vars = (args.infile.stem, args.gravity.stem, args.infile.suffix)
         args.outfile = args.infile.with_name('{0}_{1}{2}'.format(*vars))
     else:
         args.outfile = pathlib.Path(args.outfile).expanduser().absolute()
 
     # run geoid undulation program for input file
-    compute_geoidal_undulation(args.gravity, args.infile, args.outfile,
+    compute_geoidal_undulation(
+        args.gravity,
+        args.infile,
+        args.outfile,
         LMAX=args.lmax,
         TIDE=args.tide,
         GAUSS=args.radius,
@@ -326,7 +402,9 @@ def main():
         TYPE=args.type,
         PROJECTION=args.projection,
         VERBOSE=args.verbose,
-        MODE=args.mode)
+        MODE=args.mode,
+    )
+
 
 # run main program
 if __name__ == '__main__':
