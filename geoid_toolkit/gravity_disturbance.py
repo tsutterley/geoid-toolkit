@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-u"""
+"""
 gravity_disturbance.py
 Written by Tyler Sutterley (04/2022)
 Calculates the gravity disturbance at a given latitude and longitude
@@ -65,10 +65,12 @@ UPDATE HISTORY:
     Updated 07/2017: added Gaussian smoothing with option GAUSS
     Written 07/2017
 """
+
 from geoid_toolkit.real_potential import real_potential
 from geoid_toolkit.norm_potential import norm_potential
 
-def gravity_disturbance(lat,lon,h,refell,clm,slm,lmax,R,GM,GAUSS=0):
+
+def gravity_disturbance(lat, lon, h, refell, clm, slm, lmax, R, GM, GAUSS=0):
     """
     Calculates the gravity disturbance following
     :cite:t:`Barthelmes:2013fy,HofmannWellenhof:2006hy,Moazezi:2012fb,Molodensky:1958jv`
@@ -117,7 +119,9 @@ def gravity_disturbance(lat,lon,h,refell,clm,slm,lmax,R,GM,GAUSS=0):
         gravity disturbance for a given ellipsoid in meters
     """
     # calculate the real and normal potentials at a given height
-    W,dWdr = real_potential(lat,lon,h,refell,clm,slm,lmax,R,GM,GAUSS=GAUSS)
-    U,dUdr,dUdt = norm_potential(lat,lon,h,refell,lmax)
+    W, dWdr = real_potential(
+        lat, lon, h, refell, clm, slm, lmax, R, GM, GAUSS=GAUSS
+    )
+    U, dUdr, dUdt = norm_potential(lat, lon, h, refell, lmax)
     delta_g_h = -(dWdr - dUdr)
     return delta_g_h

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-u"""
+"""
 calculate_tidal_offset.py
 Written by Tyler Sutterley (04/2022)
 Calculates the spherical harmonic offset to change tide systems
@@ -61,11 +61,14 @@ UPDATE HISTORY:
     Updated 11/2020: added function docstrings
     Written 07/2017
 """
+
 import numpy as np
 from geoid_toolkit.ref_ellipsoid import ref_ellipsoid
 
-def calculate_tidal_offset(TIDE, GM, R, refell, LOVE=0.3,
-    REFERENCE='tide_free'):
+
+def calculate_tidal_offset(
+    TIDE, GM, R, refell, LOVE=0.3, REFERENCE='tide_free'
+):
     """
     Calculates the spherical harmonic offset to change permanent tide systems
     :cite:p:`HofmannWellenhof:2006hy,Losch:2003ve`
@@ -117,21 +120,21 @@ def calculate_tidal_offset(TIDE, GM, R, refell, LOVE=0.3,
     ellip = ref_ellipsoid(refell)
     # standard gravitational acceleration
     gamma = 9.80665
-    trans = (-0.198*gamma*R**3)/(np.sqrt(5.0)*GM*ellip['a']**2)
+    trans = (-0.198 * gamma * R**3) / (np.sqrt(5.0) * GM * ellip['a'] ** 2)
     # conversion to switch to tide free
-    if (REFERENCE == 'tide_free'):
+    if REFERENCE == 'tide_free':
         tide_free_conv = 0.0
-    elif (REFERENCE == 'mean_tide'):
+    elif REFERENCE == 'mean_tide':
         tide_free_conv = -(1.0 + LOVE)
-    elif (REFERENCE == 'zero_tide'):
+    elif REFERENCE == 'zero_tide':
         tide_free_conv = -LOVE
     # conversion for each tidal system
-    if (TIDE == 'mean_tide'):
+    if TIDE == 'mean_tide':
         conv = (1.0 + LOVE) + tide_free_conv
-    elif (TIDE == 'zero_tide'):
+    elif TIDE == 'zero_tide':
         conv = LOVE + tide_free_conv
-    elif (TIDE == 'tide_free'):
+    elif TIDE == 'tide_free':
         conv = 0.0 + tide_free_conv
     # return the C20 offset to change tide systems
-    delta = conv*trans
+    delta = conv * trans
     return delta

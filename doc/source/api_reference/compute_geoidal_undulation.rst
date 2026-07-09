@@ -1,6 +1,6 @@
-=============================
-compute_geoidal_undulation.py
-=============================
+=================================
+``compute_geoidal_undulation.py``
+=================================
 
 - Computes geoid undulations from a gravity model for an input file (ascii, netCDF4, HDF5, GTiff, cog)
 

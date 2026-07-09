@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=64"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -18,29 +18,29 @@ authors = [
     {email = "tsutterl@uw.edu"}
 ]
 maintainers = [{ name = "geoid-toolkit contributors" }]
-license = {file = "LICENSE"}
-readme = "README.rst"
+license = "MIT"
+license-files = ["LICENSE"]
+readme = {file = "README.md", content-type = "text/markdown"}
 
 requires-python = "~=3.6"
 dependencies = [
     "lxml",
     "numpy",
+    "platformdirs",
     "python-dateutil",
 ]
 
 classifiers=[
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.6",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: Physics",
 ]
 
@@ -123,10 +123,16 @@ cmd = "pixi workspace export conda-environment {{ flags }} > environment.yml"
 description = "Export workspace to a conda environment file" 
 
 [tool.pixi.feature.doc.tasks.docs]
-args = [ { "arg" = "flags", "default" = "" } ]
-cmd = "make html {{ flags }}"
+args = [ { "arg" = "builder", "default" = "html"}, { "arg" = "flags", "default" = "" } ]
+cmd = "make {{ builder }} {{ flags }}"
 cwd = "doc"
-description = "Create HTML documentation with sphinx"
+description = "Create documentation with sphinx"
+
+[tool.pixi.feature.doc.tasks.clean-docs]
+args = [ { "arg" = "builder", "default" = "html"}, { "arg" = "flags", "default" = "" } ]
+cmd = "make clean && make {{ builder }} {{ flags }}"
+cwd = "doc"
+description = "Remove build artifacts and rebuild the documentation with sphinx"
 
 [tool.pixi.feature.dev.tasks.lint]
 args = [ { "arg" = "flags", "default" = "--select=E9,F63,F7,F82 --show-source" }, { "arg" = "test", "default" = "." } ]
@@ -136,6 +142,7 @@ description = "Run flake8 to check for compilation errors"
 [tool.pixi.dependencies]
 lxml = "*"
 numpy = "*"
+platformdirs = "*"
 python-dateutil = "*"
 
 [tool.pixi.feature.all.dependencies]

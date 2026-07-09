@@ -1,6 +1,6 @@
-===================
-gravity_disturbance
-===================
+=======================
+``gravity_disturbance``
+=======================
 
 - Calculates the gravity disturbance at a given latitude and longitude
 

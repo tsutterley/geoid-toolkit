@@ -17,5 +17,6 @@ from geoid_toolkit.read_topography_harmonics import read_topography_harmonics
 from geoid_toolkit.real_potential import real_potential
 from geoid_toolkit.ref_ellipsoid import ref_ellipsoid
 from geoid_toolkit.topographic_potential import topographic_potential
+
 # get version number
 __version__ = geoid_toolkit.version.version

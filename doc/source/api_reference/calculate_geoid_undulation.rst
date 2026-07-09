@@ -1,6 +1,6 @@
-==========================
-calculate_geoid_undulation
-==========================
+==============================
+``calculate_geoid_undulation``
+==============================
 
 - Wrapper function for computing geoid undulations from a gravity model
 

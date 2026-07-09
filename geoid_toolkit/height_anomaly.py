@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-u"""
+"""
 height_anomaly.py
 Written by Tyler Sutterley (04/2022)
 Calculates the height anomaly at a given latitude and longitude using an
@@ -68,12 +68,16 @@ UPDATE HISTORY:
     Updated 07/2017: added Gaussian smoothing with option GAUSS
     Written 07/2017
 """
+
 import numpy as np
 from geoid_toolkit.real_potential import real_potential
 from geoid_toolkit.norm_potential import norm_potential
 from geoid_toolkit.norm_gravity import norm_gravity
 
-def height_anomaly(lat,lon,h,refell,clm,slm,lmax,R,GM,GAUSS=0,EPS=1e-8):
+
+def height_anomaly(
+    lat, lon, h, refell, clm, slm, lmax, R, GM, GAUSS=0, EPS=1e-8
+):
     """
     Calculates the height anomaly using the iterative approach described in
     :cite:t:`Barthelmes:2013fy,HofmannWellenhof:2006hy,Moazezi:2012fb,Molodensky:1958jv`
@@ -124,25 +128,29 @@ def height_anomaly(lat,lon,h,refell,clm,slm,lmax,R,GM,GAUSS=0,EPS=1e-8):
         height anomaly for a given ellipsoid in meters
     """
     # calculate the real and normal potentials for the first iteration
-    W,dWdr = real_potential(lat,lon,h,refell,clm,slm,lmax,R,GM,GAUSS=GAUSS)
-    U,dUdr,dUdt = norm_potential(lat, lon, h, refell, lmax)
+    W, dWdr = real_potential(
+        lat, lon, h, refell, clm, slm, lmax, R, GM, GAUSS=GAUSS
+    )
+    U, dUdr, dUdt = norm_potential(lat, lon, h, refell, lmax)
     # normal gravity at latitude
-    gamma_h,dgamma_dh = norm_gravity(lat, h, refell)
+    gamma_h, dgamma_dh = norm_gravity(lat, h, refell)
     # height anomaly for first iteration
     zeta_1 = (W - U) / gamma_h
     # set zeta to the first iteration and set RMS as infinite
     zeta = np.copy(zeta_1)
     RMS = np.inf
-    while (RMS > EPS):
+    while RMS > EPS:
         # calculate the real and normal potentials for the iteration
-        W,dWdr = real_potential(lat,lon,h,refell,clm,slm,lmax,R,GM,GAUSS=GAUSS)
-        U,dUdr,dUdt = norm_potential(lat,lon,h-zeta_1,refell,lmax)
+        W, dWdr = real_potential(
+            lat, lon, h, refell, clm, slm, lmax, R, GM, GAUSS=GAUSS
+        )
+        U, dUdr, dUdt = norm_potential(lat, lon, h - zeta_1, refell, lmax)
         # normal gravity at latitude
-        gamma_h,dgamma_dh = norm_gravity(lat,h-zeta_1,refell)
+        gamma_h, dgamma_dh = norm_gravity(lat, h - zeta_1, refell)
         # add height anomaly for iteration
         zeta_1 += (W - U) / gamma_h
         # calculate RMS between iterations
-        RMS = np.sqrt(np.sum((zeta - zeta_1)**2)/len(lat))
+        RMS = np.sqrt(np.sum((zeta - zeta_1) ** 2) / len(lat))
         # set zeta to the previous iteration
         zeta = np.copy(zeta_1)
     # return the height anomaly

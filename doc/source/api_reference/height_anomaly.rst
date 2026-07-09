@@ -1,6 +1,6 @@
-==============
-height_anomaly
-==============
+==================
+``height_anomaly``
+==================
 
 - Calculates the height anomaly at a given latitude and longitude using an iterative approach
 

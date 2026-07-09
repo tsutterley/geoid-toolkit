@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-u"""
+"""
 gravity_anomaly.py
 Written by Tyler Sutterley (04/2022)
 Calculates the gravity anomaly at a given latitude and longitude using
@@ -77,12 +77,16 @@ UPDATE HISTORY:
     Updated 07/2017: added Gaussian smoothing with option GAUSS
     Written 07/2017
 """
+
 from geoid_toolkit.geoid_undulation import geoid_undulation
 from geoid_toolkit.height_anomaly import height_anomaly
 from geoid_toolkit.gravity_disturbance import gravity_disturbance
 from geoid_toolkit.norm_gravity import norm_gravity
 
-def gravity_anomaly(lat,lon,h,refell,clm,slm,lmax,R,GM,METHOD='first',GAUSS=0):
+
+def gravity_anomaly(
+    lat, lon, h, refell, clm, slm, lmax, R, GM, METHOD='first', GAUSS=0
+):
     """
     Calculates the gravity anomaly for a given method following
     :cite:t:`Barthelmes:2013fy,HofmannWellenhof:2006hy,Moazezi:2012fb,Molodensky:1958jv`
@@ -137,17 +141,25 @@ def gravity_anomaly(lat,lon,h,refell,clm,slm,lmax,R,GM,METHOD='first',GAUSS=0):
         gravity anomaly for a given ellipsoid in meters
     """
     # compute the gravity disturbance and the normal gravity
-    delta_g_h = gravity_disturbance(lat,lon,h,refell,clm,slm,lmax,R,GM,GAUSS=GAUSS)
-    gamma_h,dgamma_dh = norm_gravity(lat, h, refell)
+    delta_g_h = gravity_disturbance(
+        lat, lon, h, refell, clm, slm, lmax, R, GM, GAUSS=GAUSS
+    )
+    gamma_h, dgamma_dh = norm_gravity(lat, h, refell)
     # compute the gravity anomaly for a given method
-    if (METHOD.lower() == 'first'):
-        N = geoid_undulation(lat,lon,refell,clm,slm,lmax,R,GM,GAUSS=GAUSS)
+    if METHOD.lower() == 'first':
+        N = geoid_undulation(
+            lat, lon, refell, clm, slm, lmax, R, GM, GAUSS=GAUSS
+        )
         ddelta_g = delta_g_h + N * dgamma_dh
-    elif (METHOD.lower() == 'second'):
-        N = geoid_undulation(lat,lon,refell,clm,slm,lmax,R,GM,GAUSS=GAUSS)
-        gamma_0,dgamma_d0 = norm_gravity(lat, 0, refell)
-        ddelta_g = delta_g_h - (h-N) * dgamma_dh - gamma_0
-    elif (METHOD.lower() == 'molodensky'):
-        zeta = height_anomaly(lat,lon,h,refell,clm,slm,lmax,R,GM,GAUSS=GAUSS)
+    elif METHOD.lower() == 'second':
+        N = geoid_undulation(
+            lat, lon, refell, clm, slm, lmax, R, GM, GAUSS=GAUSS
+        )
+        gamma_0, dgamma_d0 = norm_gravity(lat, 0, refell)
+        ddelta_g = delta_g_h - (h - N) * dgamma_dh - gamma_0
+    elif METHOD.lower() == 'molodensky':
+        zeta = height_anomaly(
+            lat, lon, h, refell, clm, slm, lmax, R, GM, GAUSS=GAUSS
+        )
         ddelta_g = delta_g_h + zeta * dgamma_dh
     return ddelta_g

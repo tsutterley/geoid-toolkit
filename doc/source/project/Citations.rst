@@ -23,15 +23,20 @@ Dependencies
 
 This software is also dependent on other commonly used Python packages:
 
+- `lxml: processing XML and HTML in Python <https://pypi.python.org/pypi/lxml>`_
+- `numpy: Scientific Computing Tools For Python <https://www.numpy.org>`_
+- `platformdirs: Python module for determining platform-specific directories <https://pypi.org/project/platformdirs/>`_
+- `python-dateutil: powerful extensions to datetime <https://dateutil.readthedocs.io/en/stable/>`_
+
+Optional Dependencies
+---------------------
+
 - `cartopy: Python package designed for geospatial data processing <https://scitools.org.uk/cartopy>`_
 - `gdal: Pythonic interface to the Geospatial Data Abstraction Library (GDAL) <https://pypi.python.org/pypi/GDAL>`_
 - `h5py: Python interface for Hierarchal Data Format 5 (HDF5) <https://www.h5py.org/>`_
-- `lxml: processing XML and HTML in Python <https://pypi.python.org/pypi/lxml>`_
 - `matplotlib: Python 2D plotting library <https://matplotlib.org>`_
 - `netCDF4: Python interface to the netCDF C library <https://unidata.github.io/netcdf4-python/>`_
-- `numpy: Scientific Computing Tools For Python <https://www.numpy.org>`_
 - `pyproj: Python interface to PROJ library <https://pypi.org/project/pyproj/>`_
-- `python-dateutil: powerful extensions to datetime <https://dateutil.readthedocs.io/en/stable/>`_
 
 Disclaimer
 ##########

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-u"""
+"""
 read_ICGEM_harmonics.py
 Written by Tyler Sutterley (05/2023)
 Reads the coefficients for a given gravity model file
@@ -73,12 +73,14 @@ UPDATE HISTORY:
     Updated 07/2017: include parameters to change the tide system
     Written 12/2015
 """
+
 import re
 import io
 import pathlib
 import zipfile
 import numpy as np
 from geoid_toolkit.calculate_tidal_offset import calculate_tidal_offset
+
 
 # PURPOSE: read spherical harmonic coefficients of a gravity model
 def read_ICGEM_harmonics(model_file, **kwargs):
@@ -150,10 +152,10 @@ def read_ICGEM_harmonics(model_file, **kwargs):
         Permanent tide system of gravity model
     """
     # set default keyword arguments
-    kwargs.setdefault('ELLIPSOID','WGS84')
-    kwargs.setdefault('TIDE',None)
-    kwargs.setdefault('FLAG','gfc')
-    kwargs.setdefault('ZIP',False)
+    kwargs.setdefault('ELLIPSOID', 'WGS84')
+    kwargs.setdefault('TIDE', None)
+    kwargs.setdefault('FLAG', 'gfc')
+    kwargs.setdefault('ZIP', False)
     # tilde-expansion of input file
     if not isinstance(model_file, io.IOBase):
         model_file = pathlib.Path(model_file).expanduser().absolute()
@@ -166,8 +168,11 @@ def read_ICGEM_harmonics(model_file, **kwargs):
         # extract zip file with gfc file
         with zipfile.ZipFile(model_file) as zs:
             # find gfc file within zipfile
-            gfc, = [io.BytesIO(zs.read(s)) for s in zs.namelist()
-                if s.endswith('gfc')]
+            (gfc,) = [
+                io.BytesIO(zs.read(s))
+                for s in zs.namelist()
+                if s.endswith('gfc')
+            ]
             # read input gfc data file
             file_contents = gfc.read().decode('ISO-8859-1').splitlines()
     else:
@@ -178,10 +183,17 @@ def read_ICGEM_harmonics(model_file, **kwargs):
     # python dictionary with model input and headers
     model_input = {}
     # extract parameters from header
-    header_parameters = ['modelname','earth_gravity_constant','radius',
-        'max_degree','errors','norm','tide_system']
+    header_parameters = [
+        'modelname',
+        'earth_gravity_constant',
+        'radius',
+        'max_degree',
+        'errors',
+        'norm',
+        'tide_system',
+    ]
     parameters_regex = '(' + '|'.join(header_parameters) + ')'
-    header = [l for l in file_contents if re.match(parameters_regex,l)]
+    header = [l for l in file_contents if re.match(parameters_regex, l)]
     for line in header:
         # split the line into individual components
         line_contents = line.split()
@@ -189,42 +201,47 @@ def read_ICGEM_harmonics(model_file, **kwargs):
     # set degree of truncation from model if not presently set
     LMAX = kwargs.get('LMAX') or np.int64(model_input['max_degree'])
     # update maximum degree attribute if truncating
-    if (LMAX != np.int64(model_input['max_degree'])):
+    if LMAX != np.int64(model_input['max_degree']):
         model_input['max_degree'] = str(LMAX)
     # output dimensions
-    model_input['l'] = np.arange(LMAX+1)
-    model_input['m'] = np.arange(LMAX+1)
+    model_input['l'] = np.arange(LMAX + 1)
+    model_input['m'] = np.arange(LMAX + 1)
     # allocate for each coefficient
-    model_input['clm'] = np.zeros((LMAX+1, LMAX+1))
-    model_input['slm'] = np.zeros((LMAX+1, LMAX+1))
-    model_input['eclm'] = np.zeros((LMAX+1, LMAX+1))
-    model_input['eslm'] = np.zeros((LMAX+1, LMAX+1))
+    model_input['clm'] = np.zeros((LMAX + 1, LMAX + 1))
+    model_input['slm'] = np.zeros((LMAX + 1, LMAX + 1))
+    model_input['eclm'] = np.zeros((LMAX + 1, LMAX + 1))
+    model_input['eslm'] = np.zeros((LMAX + 1, LMAX + 1))
     # reduce file_contents to input data using data marker flag
-    input_data = [l for l in file_contents if re.match(kwargs['FLAG'],l)]
+    input_data = [l for l in file_contents if re.match(kwargs['FLAG'], l)]
     # for each line of data in the gravity file
     for line in input_data:
         # split the line into individual components replacing fortran d
-        line_contents = re.sub('d','e',line,flags=re.IGNORECASE).split()
+        line_contents = re.sub('d', 'e', line, flags=re.IGNORECASE).split()
         # degree and order for the line
         l1 = int(line_contents[1])
         m1 = int(line_contents[2])
         # if degree and order are below the truncation limits
-        if ((l1 <= LMAX) and (m1 <= LMAX)):
-            model_input['clm'][l1,m1] = np.float64(line_contents[3])
-            model_input['slm'][l1,m1] = np.float64(line_contents[4])
+        if (l1 <= LMAX) and (m1 <= LMAX):
+            model_input['clm'][l1, m1] = np.float64(line_contents[3])
+            model_input['slm'][l1, m1] = np.float64(line_contents[4])
             # check if model contains errors
             try:
-                model_input['eclm'][l1,m1] = np.float64(line_contents[5])
-                model_input['eslm'][l1,m1] = np.float64(line_contents[6])
+                model_input['eclm'][l1, m1] = np.float64(line_contents[5])
+                model_input['eslm'][l1, m1] = np.float64(line_contents[6])
             except Exception as exc:
                 pass
     # calculate the tidal offset if changing the tide system
-    if kwargs['TIDE'] in ('mean_tide','zero_tide','tide_free'):
+    if kwargs['TIDE'] in ('mean_tide', 'zero_tide', 'tide_free'):
         # earth parameters
         GM = np.float64(model_input['earth_gravity_constant'])
         R = np.float64(model_input['radius'])
-        model_input['clm'][2,0] += calculate_tidal_offset(kwargs['TIDE'],
-            GM,R,kwargs['ELLIPSOID'],REFERENCE=model_input['tide_system'])
+        model_input['clm'][2, 0] += calculate_tidal_offset(
+            kwargs['TIDE'],
+            GM,
+            R,
+            kwargs['ELLIPSOID'],
+            REFERENCE=model_input['tide_system'],
+        )
         # update attribute for tide system
         model_input['tide_system'] = kwargs['TIDE']
     # return the spherical harmonics and parameters
