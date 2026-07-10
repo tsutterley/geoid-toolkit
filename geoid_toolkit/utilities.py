@@ -76,26 +76,6 @@ def get_data_path(relpath: list | str | pathlib.Path):
     if isinstance(relpath, list):
         # use *splat operator to extract from list
         return filepath.joinpath(*relpath)
-    elif isinstance(relpath, (str, pathlib.Path)):
-        return filepath.joinpath(relpath)
-
-
-# PURPOSE: get absolute path within a package from a relative path
-def get_data_path(relpath: list | str | pathlib.Path):
-    """
-    Get the absolute path within a package from a relative path
-
-    Parameters
-    ----------
-    relpath: list, str or pathlib.Path
-        relative path
-    """
-    # current file path
-    filename = inspect.getframeinfo(inspect.currentframe()).filename
-    filepath = pathlib.Path(filename).absolute().parent
-    if isinstance(relpath, list):
-        # use *splat operator to extract from list
-        return filepath.joinpath(*relpath)
     elif isinstance(relpath, str):
         return filepath.joinpath(relpath)
 
