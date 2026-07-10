@@ -72,7 +72,7 @@ testpaths = [
 [tool.coverage.run]
 branch = true
 source = [
-    "geoid-toolkit",
+    "geoid_toolkit",
     "test",
 ]
 omit = [

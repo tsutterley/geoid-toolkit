@@ -160,7 +160,7 @@ def ncdf_geoid_write(dinput, attributes, FILENAME=None):
 
     # Defining global attributes of NetCDF file
     for att_name, att_val in attributes['ROOT'].items():
-        fileID.setncattr(key, att_val)
+        fileID.setncattr(att_name, att_val)
 
     # add software information
     fileID.software_reference = geoidtk.version.project_name

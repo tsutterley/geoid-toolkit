@@ -148,7 +148,7 @@ def corrected_geoid_undulation(
     U, dUdr, dUdt = norm_potential(lat, lon, 0.0, refell, lmax)
     # topographic potential correction
     T = topographic_potential(
-        lon, lat, refell, R, tclm, tslm, lmax, density, GAUSS=GAUSS
+        lat, lon, refell, tclm, tslm, lmax, R, density, GAUSS=GAUSS
     )
     # normal gravity at latitude
     gamma_h, dgamma_dh = norm_gravity(lat, 0.0, refell)
