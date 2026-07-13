@@ -143,12 +143,13 @@ def topographic_potential(
         Ylm1 = np.einsum('l...,lm...->lm...', wt, Ylm1)
 
     # calculate clenshaw summations
-    cs_m = np.zeros((nlat, lmax + 1))
+    cs_m = np.zeros((nlat, lmax + 1), dtype=np.clongdouble)
     for m in range(lmax, -1, -1):
         cs_m[:, m] = _clenshaw_s_m(t, m, Ylm1, lmax)
 
     # calculating cos(m*phi) and sin(m*phi) using Euler's formula
-    m_phi = np.exp(1j * np.einsum("m...,p...->pm...", m, phi))
+    mm = np.arange(lmax + 1)
+    m_phi = np.exp(1j * np.einsum('m...,p...->pm...', mm, phi))
 
     # calculate summation and drop imaginary component
     s_m = (cs_m[:, lmax] * m_phi[:, lmax]).real
@@ -170,9 +171,9 @@ def topographic_potential(
 def _clenshaw_s_m(t, m, Ylm1, lmax, SCALE=1e-280):
     # allocate for output matrix
     N = len(t)
-    cs_m = np.zeros((N), dtype=np.longdouble)
+    cs_m = np.zeros((N), dtype=np.clongdouble)
     # scaling to prevent overflow
-    ylm = SCALE * Ylm1.astype(np.longdouble)
+    ylm = SCALE * Ylm1.astype(np.clongdouble)
     # convert lmax and m to float
     lm = np.longdouble(lmax)
     mm = np.longdouble(m)

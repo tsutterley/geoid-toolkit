@@ -162,7 +162,8 @@ def real_potential(lat, lon, h, refell, clm, slm, lmax, R, GM, GAUSS=0):
         dcs_m_dr[:, m] = _clenshaw_ds_m_dr(t, q, m, Ylm1, lmax)
 
     # calculating cos(m*phi) and sin(m*phi) using Euler's formula
-    m_phi = np.exp(1j * np.einsum("m...,p...->pm...", m, phi))
+    mm = np.arange(lmax + 1)
+    m_phi = np.exp(1j * np.einsum('m...,p...->pm...', mm, phi))
     # calculate summation and drop imaginary component
     s_m = (cs_m[:, lmax] * m_phi[:, lmax]).real
     ds_m_dr = (dcs_m_dr[:, lmax] * m_phi[:, lmax]).real
@@ -257,7 +258,7 @@ def _clenshaw_s_m(t, q, m, Ylm1, lmax, SCALE=1e-280):
             s_mm_l = a_lm * s_mm_minus_1 - b_lm * s_mm_minus_2 + ylm[l, 0]
             s_mm_minus_2 = np.copy(s_mm_minus_1)
             s_mm_minus_1 = np.copy(s_mm_l)
-        cs_m[:, 0] = np.copy(s_mm_l)
+        cs_m[:] = np.copy(s_mm_l)
     # return rescaled cs_m
     return cs_m / SCALE
 
@@ -333,7 +334,7 @@ def _clenshaw_ds_m(t, u, q, m, Ylm1, lmax, SCALE=1e-280):
             s_mm_minus_1 = np.copy(s_mm_l)
             s_dot_mm_minus_2 = np.copy(s_dot_mm_minus_1)
             s_dot_mm_minus_1 = np.copy(s_dot_mm)
-        dcs_m[:, 0] = -u * s_dot_mm
+        dcs_m[:] = -u * s_dot_mm
     # return rescaled dcs_m
     return dcs_m / SCALE
 
