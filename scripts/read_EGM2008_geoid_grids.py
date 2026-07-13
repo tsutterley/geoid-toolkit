@@ -107,7 +107,7 @@ def read_EGM2008_geoid_grids(
 
     # calculate Legendre polynomial of degree 2 (unnormalized)
     gridlon, gridlat = np.meshgrid(dinput['lon'], dinput['lat'])
-    P2 = 0.5 * (3.0 * np.sin(gridlat * np.pi / 180.0) ** 2 - 1.0)
+    P2 = 0.5 * (3.0 * np.sin(np.radians(gridlat)) ** 2 - 1.0)
     # offset for converting from tide_free to mean_tide
     # from Rapp 1991 (Consideration of Permanent Tidal Deformation)
     dinput['geoid_free2mean'] = np.zeros((nlat, nlon), dtype=np.float32)

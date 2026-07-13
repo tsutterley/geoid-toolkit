@@ -60,6 +60,7 @@ UPDATE HISTORY:
 """
 
 import numpy as np
+from geoid_toolkit.spatial import to_cartesian
 from geoid_toolkit.ref_ellipsoid import ref_ellipsoid
 from geoid_toolkit.legendre_polynomials import legendre_polynomials
 
@@ -114,15 +115,18 @@ def norm_potential(lat, lon, h, refell, lmax):
     GM = np.longdouble(ellip['GM'])
     J2 = np.longdouble(ellip['J2'])
 
-    # convert from geodetic latitude to geocentric latitude
-    latitude_geodetic_rad = (np.pi * lat / 180.0).astype(np.longdouble)
-    longitude_rad = (np.pi * lon / 180.0).astype(np.longdouble)
-    N = a / np.sqrt(1.0 - ecc1**2.0 * np.sin(latitude_geodetic_rad) ** 2.0)
-    X = (N + h) * np.cos(latitude_geodetic_rad) * np.cos(longitude_rad)
-    Y = (N + h) * np.cos(latitude_geodetic_rad) * np.sin(longitude_rad)
-    Z = (N * (1.0 - ecc1**2.0) + h) * np.sin(latitude_geodetic_rad)
+    # convert coordinates to cartesian
+    X, Y, Z = to_cartesian(
+        lon,
+        lat,
+        h,
+        a_axis=ellip['a'],
+        flat=ellip['f'],
+    )
+    # height of the observation point above the ellipsoid
     rr = np.sqrt(X**2.0 + Y**2.0 + Z**2.0)
-    latitude_geocentric = np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))
+    # colatitude in radians
+    theta = np.pi / 2.0 - np.arctan(Z / np.hypot(X, Y))
 
     # calculate even zonal harmonics
     n = np.arange(2, 12 + 2, 2, dtype=np.longdouble)
@@ -142,9 +146,7 @@ def norm_potential(lat, lon, h, refell, lmax):
     C_12 = -J2n[5] / np.sqrt(25.0)
 
     # calculate legendre polynomials at latitude and their first derivative
-    Pl, dPl = legendre_polynomials(
-        lmax, np.sin(latitude_geocentric), ASTYPE=np.longdouble
-    )
+    Pl, dPl = legendre_polynomials(lmax, np.cos(theta), ASTYPE=np.longdouble)
 
     # normal potentials and derivatives
     U = (GM / rr) * (

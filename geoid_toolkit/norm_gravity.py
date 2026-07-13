@@ -99,7 +99,7 @@ def norm_gravity(lat, h, refell):
     """
 
     # convert latitude from degrees to radians
-    phi = np.pi * lat / 180.0
+    phi = np.radians(lat)
 
     # get ellipsoid parameters for refell
     ellip = ref_ellipsoid(refell)
