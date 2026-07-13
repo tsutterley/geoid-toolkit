@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 spatial.py
-Written by Tyler Sutterley (12/2024)
+Written by Tyler Sutterley (06/2026)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -28,6 +28,10 @@ PROGRAM DEPENDENCIES:
     ref_ellipsoid.py: Computes parameters for a reference ellipsoid
 
 UPDATE HISTORY:
+    Updated 06/2026: use item() to extract scalars from 0-dimensional arrays
+        updated scale factors to add case where reference latitude is at pole
+        convert angles with numpy radians and degrees functions
+    Updated 02/2026: add function to compute geocentric latitudes
     Updated 12/2024: add latitude and longitude as potential dimension names
     Updated 11/2024: added function to calculate the altitude and azimuth
     Updated 09/2024: deprecation fix case where an array is output to scalars
@@ -1408,7 +1412,7 @@ def inverse_mapping(field_mapping):
 
 
 def convert_ellipsoid(
-    phi1: np.ndarray,
+    lat1: np.ndarray,
     h1: np.ndarray,
     a1: float,
     f1: float,
@@ -1423,70 +1427,70 @@ def convert_ellipsoid(
 
     Parameters
     ----------
-    phi1: np.ndarray
-        latitude of input ellipsoid in degrees
+    lat1: np.ndarray
+        Latitude of input ellipsoid (degrees)
     h1: np.ndarray
-        height above input ellipsoid in meters
+        Height above input ellipsoid (meters)
     a1: float
-        semi-major axis of input ellipsoid
+        Semi-major axis of input ellipsoid
     f1: float
-        flattening of input ellipsoid
+        Flattening of input ellipsoid
     a2: float
-        semi-major axis of output ellipsoid
+        Semi-major axis of output ellipsoid
     f2: float
-        flattening of output ellipsoid
+        Flattening of output ellipsoid
     eps: float, default 1e-12
-        tolerance to prevent division by small numbers and
+        Tolerance to prevent division by small numbers and
         to determine convergence
     itmax: int, default 10
-        maximum number of iterations to use in Newton-Raphson
+        Maximum number of iterations to use in Newton-Raphson
 
     Returns
     -------
-    phi2: np.ndarray
-        latitude of output ellipsoid in degrees
+    lat2: np.ndarray
+        Latitude of output ellipsoid (degrees)
     h2: np.ndarray
-        height above output ellipsoid in meters
+        Height above output ellipsoid (meters)
     """
-    if len(phi1) != len(h1):
-        raise ValueError('phi and h have incompatible dimensions')
+    if len(lat1) != len(h1):
+        raise ValueError('lat and h have incompatible dimensions')
     # semiminor axis of input and output ellipsoid
     b1 = (1.0 - f1) * a1
     b2 = (1.0 - f2) * a2
     # initialize output arrays
-    npts = len(phi1)
-    phi2 = np.zeros((npts))
-    h2 = np.zeros((npts))
+    npts = len(lat1)
+    lat2 = np.zeros(npts)
+    h2 = np.zeros(npts)
     # for each point
     for N in range(npts):
-        # force phi1 into range -90 <= phi1 <= 90
-        if np.abs(phi1[N]) > 90.0:
-            phi1[N] = np.sign(phi1[N]) * 90.0
+        # force lat1 into range -90 <= lat1 <= 90
+        if np.abs(lat1[N]) > 90.0:
+            lat1[N] = np.sign(lat1[N]) * 90.0
         # handle special case near the equator
-        # phi2 = phi1 (latitudes congruent)
+        # lat2 = lat1 (latitudes congruent)
         # h2 = h1 + a1 - a2
-        if np.abs(phi1[N]) < eps:
-            phi2[N] = np.copy(phi1[N])
+        if np.abs(lat1[N]) < eps:
+            lat2[N] = np.copy(lat1[N])
             h2[N] = h1[N] + a1 - a2
         # handle special case near the poles
-        # phi2 = phi1 (latitudes congruent)
+        # lat2 = lat1 (latitudes congruent)
         # h2 = h1 + b1 - b2
-        elif (90.0 - np.abs(phi1[N])) < eps:
-            phi2[N] = np.copy(phi1[N])
+        elif (90.0 - np.abs(lat1[N])) < eps:
+            lat2[N] = np.copy(lat1[N])
             h2[N] = h1[N] + b1 - b2
         # handle case if latitude is within 45 degrees of equator
-        elif np.abs(phi1[N]) <= 45:
-            # convert phi1 to radians
-            phi1r = phi1[N] * np.pi / 180.0
-            sinphi1 = np.sin(phi1r)
-            cosphi1 = np.cos(phi1r)
+        elif np.abs(lat1[N]) <= 45:
+            # convert lat1 to radians
+            lat1r = np.radians(lat1[N])
+            sinlat1 = np.sin(lat1r)
+            coslat1 = np.cos(lat1r)
             # prevent division by very small numbers
-            cosphi1 = np.copy(eps) if (cosphi1 < eps) else cosphi1
+            coslat1 = np.copy(eps) if (coslat1 < eps) else coslat1
             # calculate tangent
-            tanphi1 = sinphi1 / cosphi1
-            u1 = np.arctan(b1 / a1 * tanphi1)
-            hpr1sin = b1 * np.sin(u1) + h1[N] * sinphi1
-            hpr1cos = a1 * np.cos(u1) + h1[N] * cosphi1
+            tanlat1 = sinlat1 / coslat1
+            u1 = np.arctan(b1 / a1 * tanlat1)
+            hpr1sin = b1 * np.sin(u1) + h1[N] * sinlat1
+            hpr1cos = a1 * np.cos(u1) + h1[N] * coslat1
             # set initial value for u2
             u2 = np.copy(u1)
             # setup constants
@@ -1494,7 +1498,7 @@ def convert_ellipsoid(
             k1 = a2 * hpr1cos
             k2 = b2 * hpr1sin
             # perform newton-raphson iteration to solve for u2
-            # cos(u2) will not be close to zero since abs(phi1) <= 45
+            # cos(u2) will not be close to zero since abs(lat1) <= 45
             for i in range(0, itmax + 1):
                 cosu2 = np.cos(u2)
                 fu2 = k0 * np.sin(u2) + k1 * np.tan(u2) - k2
@@ -1507,25 +1511,23 @@ def convert_ellipsoid(
                     if np.abs(delta) < eps:
                         break
             # convert latitude to degrees and verify values between +/- 90
-            phi2r = np.arctan(a2 / b2 * np.tan(u2))
-            phi2[N] = phi2r * 180.0 / np.pi
-            if np.abs(phi2[N]) > 90.0:
-                phi2[N] = np.sign(phi2[N]) * 90.0
+            lat2r = np.arctan(a2 / b2 * np.tan(u2))
+            lat2[N] = np.clip(np.degrees(lat2r), -90.0, 90.0)
             # calculate height
-            h2[N] = (hpr1cos - a2 * np.cos(u2)) / np.cos(phi2r)
+            h2[N] = (hpr1cos - a2 * np.cos(u2)) / np.cos(lat2r)
         # handle final case where latitudes are between 45 degrees and pole
         else:
-            # convert phi1 to radians
-            phi1r = phi1[N] * np.pi / 180.0
-            sinphi1 = np.sin(phi1r)
-            cosphi1 = np.cos(phi1r)
+            # convert lat1 to radians
+            lat1r = np.radians(lat1[N])
+            sinlat1 = np.sin(lat1r)
+            coslat1 = np.cos(lat1r)
             # prevent division by very small numbers
-            cosphi1 = np.copy(eps) if (cosphi1 < eps) else cosphi1
+            coslat1 = np.copy(eps) if (coslat1 < eps) else coslat1
             # calculate tangent
-            tanphi1 = sinphi1 / cosphi1
-            u1 = np.arctan(b1 / a1 * tanphi1)
-            hpr1sin = b1 * np.sin(u1) + h1[N] * sinphi1
-            hpr1cos = a1 * np.cos(u1) + h1[N] * cosphi1
+            tanlat1 = sinlat1 / coslat1
+            u1 = np.arctan(b1 / a1 * tanlat1)
+            hpr1sin = b1 * np.sin(u1) + h1[N] * sinlat1
+            hpr1cos = a1 * np.cos(u1) + h1[N] * coslat1
             # set initial value for u2
             u2 = np.copy(u1)
             # setup constants
@@ -1533,7 +1535,7 @@ def convert_ellipsoid(
             k1 = b2 * hpr1sin
             k2 = a2 * hpr1cos
             # perform newton-raphson iteration to solve for u2
-            # sin(u2) will not be close to zero since abs(phi1) > 45
+            # sin(u2) will not be close to zero since abs(lat1) > 45
             for i in range(0, itmax + 1):
                 sinu2 = np.sin(u2)
                 fu2 = k0 * np.cos(u2) + k1 / np.tan(u2) - k2
@@ -1546,19 +1548,21 @@ def convert_ellipsoid(
                     if np.abs(delta) < eps:
                         break
             # convert latitude to degrees and verify values between +/- 90
-            phi2r = np.arctan(a2 / b2 * np.tan(u2))
-            phi2[N] = phi2r * 180.0 / np.pi
-            if np.abs(phi2[N]) > 90.0:
-                phi2[N] = np.sign(phi2[N]) * 90.0
+            lat2r = np.arctan(a2 / b2 * np.tan(u2))
+            lat2[N] = np.clip(np.degrees(lat2r), -90.0, 90.0)
             # calculate height
-            h2[N] = (hpr1sin - b2 * np.sin(u2)) / np.sin(phi2r)
+            h2[N] = (hpr1sin - b2 * np.sin(u2)) / np.sin(lat2r)
 
     # return the latitude and height
-    return (phi2, h2)
+    return (lat2, h2)
 
 
 def compute_delta_h(
-    lat: np.ndarray, a1: float, f1: float, a2: float, f2: float
+    lat: np.ndarray,
+    a1: float,
+    f1: float,
+    a2: float,
+    f2: float,
 ):
     """
     Compute difference in elevation for two ellipsoids at a given
@@ -1567,23 +1571,23 @@ def compute_delta_h(
     Parameters
     ----------
     lat: np.ndarray
-        latitudes (degrees north)
+        Latitudes (degrees north)
     a1: float
-        semi-major axis of input ellipsoid
+        Semi-major axis of input ellipsoid
     f1: float
-        flattening of input ellipsoid
+        Flattening of input ellipsoid
     a2: float
-        semi-major axis of output ellipsoid
+        Semi-major axis of output ellipsoid
     f2: float
-        flattening of output ellipsoid
+        Flattening of output ellipsoid
 
     Returns
     -------
     delta_h: np.ndarray
-        difference in elevation for two ellipsoids
+        Difference in elevation for two ellipsoids
     """
     # force latitudes to be within -90 to 90 and convert to radians
-    phi = np.clip(lat, -90.0, 90.0) * np.pi / 180.0
+    phi = np.radians(np.clip(lat, -90.0, 90.0))
     # semi-minor axis of input and output ellipsoid
     b1 = (1.0 - f1) * a1
     b2 = (1.0 - f2) * a2
@@ -1603,11 +1607,11 @@ def wrap_longitudes(lon: float | np.ndarray):
     Parameters
     ----------
     lon: float or np.ndarray
-        longitude (degrees east)
+        Longitude (degrees east)
     """
-    phi = np.arctan2(np.sin(lon * np.pi / 180.0), np.cos(lon * np.pi / 180.0))
-    # convert phi from radians to degrees
-    return phi * 180.0 / np.pi
+    lmda = np.arctan2(np.sin(np.radians(lon)), np.cos(np.radians(lon)))
+    # convert longitudes from radians to degrees
+    return np.degrees(lmda)
 
 
 def to_dms(d: np.ndarray):
@@ -1617,16 +1621,16 @@ def to_dms(d: np.ndarray):
     Parameters
     ----------
     d: np.ndarray
-        decimal degrees
+        Angle (decimal degrees)
 
     Returns
     -------
     degree: np.ndarray
-        degrees
+        Degrees
     minute: np.ndarray
-        minutes (arcminutes)
+        Minutes (arcminutes)
     second: np.ndarray
-        seconds (arcseconds)
+        Seconds (arcseconds)
     """
     sign = np.sign(d)
     minute, second = np.divmod(np.abs(d) * 3600.0, 60.0)
@@ -1634,23 +1638,27 @@ def to_dms(d: np.ndarray):
     return (sign * degree, minute, second)
 
 
-def from_dms(degree: np.ndarray, minute: np.ndarray, second: np.ndarray):
+def from_dms(
+    degree: np.ndarray,
+    minute: np.ndarray,
+    second: np.ndarray,
+):
     """
     Convert degrees, minutes and seconds to decimal degrees
 
     Parameters
     ----------
     degree: np.ndarray
-        degrees
+        Degrees
     minute: np.ndarray
-        minutes (arcminutes)
+        Minutes (arcminutes)
     second: np.ndarray
-        seconds (arcseconds)
+        Seconds (arcseconds)
 
     Returns
     -------
     d: np.ndarray
-        decimal degrees
+        Angle (decimal degrees)
     """
     sign = np.sign(degree)
     d = np.abs(degree) + minute / 60.0 + second / 3600.0
@@ -1674,59 +1682,80 @@ def to_cartesian(
     Parameters
     ----------
     lon: np.ndarray
-        longitude (degrees east)
+        Longitude (degrees east)
     lat: np.ndarray
-        latitude (degrees north)
+        Latitude (degrees north)
     h: float or np.ndarray, default 0.0
-        height above ellipsoid (or sphere)
+        Height above ellipsoid (or sphere)
     a_axis: float, default 6378137.0
-        semimajor axis of the ellipsoid
+        Semi-major axis of the ellipsoid
 
-        for spherical coordinates set to radius of the Earth
+        For spherical coordinates set to radius of the Earth
     flat: float, default 1.0/298.257223563
-        ellipsoidal flattening
+        Ellipsoidal flattening
 
-        for spherical coordinates set to 0
+        For spherical coordinates set to 0
+
+    Returns
+    -------
+    x: np.ndarray
+        Cartesian x-coordinates (meters)
+    y: np.ndarray
+        Cartesian y-coordinates (meters)
+    z: np.ndarray
+        Cartesian z-coordinates (meters)
     """
     # verify axes and copy to not modify inputs
     singular_values = np.ndim(lon) == 0
     lon = np.atleast_1d(np.copy(lon)).astype(np.float64)
     lat = np.atleast_1d(np.copy(lat)).astype(np.float64)
     # fix coordinates to be 0:360
-    lon[lon < 0] += 360.0
+    lon = np.where(lon < 0, lon + 360, lon)
     # Linear eccentricity and first numerical eccentricity
     lin_ecc = np.sqrt((2.0 * flat - flat**2) * a_axis**2)
     ecc1 = lin_ecc / a_axis
     # convert from geodetic latitude to geocentric latitude
-    dtr = np.pi / 180.0
     # geodetic latitude in radians
-    latitude_geodetic_rad = lat * dtr
+    latitude_geodetic_rad = np.radians(lat)
     # prime vertical radius of curvature
     N = a_axis / np.sqrt(1.0 - ecc1**2.0 * np.sin(latitude_geodetic_rad) ** 2.0)
     # calculate X, Y and Z from geodetic latitude and longitude
-    X = (N + h) * np.cos(latitude_geodetic_rad) * np.cos(lon * dtr)
-    Y = (N + h) * np.cos(latitude_geodetic_rad) * np.sin(lon * dtr)
-    Z = (N * (1.0 - ecc1**2.0) + h) * np.sin(latitude_geodetic_rad)
+    x = (N + h) * np.cos(latitude_geodetic_rad) * np.cos(np.radians(lon))
+    y = (N + h) * np.cos(latitude_geodetic_rad) * np.sin(np.radians(lon))
+    z = (N * (1.0 - ecc1**2.0) + h) * np.sin(latitude_geodetic_rad)
     # return the cartesian coordinates
     # flattened to singular values if necessary
     if singular_values:
-        return (X[0], Y[0], Z[0])
+        return (x.item(), y.item(), z.item())
     else:
-        return (X, Y, Z)
+        return (x, y, z)
 
 
-def to_sphere(x: np.ndarray, y: np.ndarray, z: np.ndarray):
+def to_sphere(
+    x: np.ndarray,
+    y: np.ndarray,
+    z: np.ndarray,
+):
     """
     Convert from cartesian coordinates to spherical coordinates
 
     Parameters
     ----------
     x, np.ndarray
-        cartesian x-coordinates
+        Cartesian x-coordinates (meters)
     y, np.ndarray
-        cartesian y-coordinates
+        Cartesian y-coordinates (meters)
     z, np.ndarray
-        cartesian z-coordinates
+        Cartesian z-coordinates (meters)
+
+    Returns
+    -------
+    lon: np.ndarray
+        Longitude (degrees east)
+    lat: np.ndarray
+        Latitude (degrees north)
+    rad: np.ndarray
+        Radius (meters)
     """
     # verify axes and copy to not modify inputs
     singular_values = np.ndim(x) == 0
@@ -1736,22 +1765,20 @@ def to_sphere(x: np.ndarray, y: np.ndarray, z: np.ndarray):
     # calculate radius
     rad = np.sqrt(x**2.0 + y**2.0 + z**2.0)
     # calculate angular coordinates
-    # phi: azimuthal angle
-    phi = np.arctan2(y, x)
+    # lmda: azimuthal angle
+    lmda = np.arctan2(y, x)
     # th: polar angle
     th = np.arccos(z / rad)
     # convert to degrees and fix to 0:360
-    lon = 180.0 * phi / np.pi
-    if np.any(lon < 0):
-        lt0 = np.nonzero(lon < 0)
-        lon[lt0] += 360.0
+    lon = np.degrees(lmda)
+    lon = np.where(lon < 0, lon + 360.0, lon)
     # convert to degrees and fix to -90:90
-    lat = 90.0 - (180.0 * th / np.pi)
+    lat = 90.0 - np.degrees(th)
     np.clip(lat, -90, 90, out=lat)
     # return longitude, latitude and radius
     # flattened to singular values if necessary
     if singular_values:
-        return (lon[0], lat[0], rad[0])
+        return (lon.item(), lat.item(), rad.item())
     else:
         return (lon, lat, rad)
 
@@ -1773,25 +1800,34 @@ def to_geodetic(
     Parameters
     ----------
     x, np.ndarray
-        cartesian x-coordinates
+        Cartesian x-coordinates (meters)
     y, np.ndarray
-        cartesian y-coordinates
+        Cartesian y-coordinates (meters)
     z, np.ndarray
-        cartesian z-coordinates
+        Cartesian z-coordinates (meters)
     a_axis: float, default 6378137.0
-        semimajor axis of the ellipsoid
+        Semi-major axis of the ellipsoid
     flat: float, default 1.0/298.257223563
-        ellipsoidal flattening
+        Ellipsoidal flattening
     method: str, default 'bowring'
-        method to use for conversion
+        Method to use for conversion
 
             - ``'moritz'``: iterative solution
             - ``'bowring'``: iterative solution
             - ``'zhu'``: closed-form solution
     eps: float, default np.finfo(np.float64).eps
-        tolerance for iterative methods
+        Tolerance for iterative methods
     iterations: int, default 10
-        maximum number of iterations
+        Maximum number of iterations
+
+    Returns
+    -------
+    lon: np.ndarray
+        Longitude (degrees east)
+    lat: np.ndarray
+        Latitude (degrees north)
+    h: np.ndarray
+        Height above ellipsoid (meters)
     """
     # verify axes and copy to not modify inputs
     singular_values = np.ndim(x) == 0
@@ -1814,7 +1850,7 @@ def to_geodetic(
     # return longitude, latitude and height
     # flattened to singular values if necessary
     if singular_values:
-        return (lon[0], lat[0], h[0])
+        return (lon.item(), lat.item(), h.item())
     else:
         return (lon, lat, h)
 
@@ -1835,27 +1871,25 @@ def _moritz_iterative(
     Parameters
     ----------
     x, np.ndarray
-        cartesian x-coordinates
+        Cartesian x-coordinates (meters)
     y, np.ndarray
-        cartesian y-coordinates
+        Cartesian y-coordinates (meters)
     z, np.ndarray
-        cartesian z-coordinates
+        Cartesian z-coordinates (meters)
     a_axis: float, default 6378137.0
-        semimajor axis of the ellipsoid
+        Semi-major axis of the ellipsoid
     flat: float, default 1.0/298.257223563
-        ellipsoidal flattening
+        Ellipsoidal flattening
     eps: float, default np.finfo(np.float64).eps
-        tolerance for iterative method
+        Tolerance for iterative method
     iterations: int, default 10
-        maximum number of iterations
+        Maximum number of iterations
     """
     # Linear eccentricity and first numerical eccentricity
     lin_ecc = np.sqrt((2.0 * flat - flat**2) * a_axis**2)
     ecc1 = lin_ecc / a_axis
-    # degrees to radians
-    dtr = np.pi / 180.0
     # calculate longitude
-    lon = np.arctan2(y, x) / dtr
+    lon = np.degrees(np.arctan2(y, x))
     # set initial estimate of height to 0
     h = np.zeros_like(lon)
     h0 = np.inf * np.ones_like(lon)
@@ -1876,8 +1910,10 @@ def _moritz_iterative(
         phi = np.arctan(z / (p * (1.0 - ecc1**2 * N / (N + h))))
         # add to iterator
         i += 1
+    # convert latitudes and fix values
+    lat = np.clip(np.degrees(phi), -90.0, 90.0)
     # return longitude, latitude and height
-    return (lon, phi / dtr, h)
+    return (lon, lat, h)
 
 
 def _bowring_iterative(
@@ -1896,19 +1932,19 @@ def _bowring_iterative(
     Parameters
     ----------
     x, np.ndarray
-        cartesian x-coordinates
+        Cartesian x-coordinates (meters)
     y, np.ndarray
-        cartesian y-coordinates
+        Cartesian y-coordinates (meters)
     z, np.ndarray
-        cartesian z-coordinates
+        Cartesian z-coordinates (meters)
     a_axis: float, default 6378137.0
-        semimajor axis of the ellipsoid
+        Semi-major axis of the ellipsoid
     flat: float, default 1.0/298.257223563
-        ellipsoidal flattening
+        Ellipsoidal flattening
     eps: float, default np.finfo(np.float64).eps
-        tolerance for iterative method
+        Tolerance for iterative method
     iterations: int, default 10
-        maximum number of iterations
+        Maximum number of iterations
     """
     # semiminor axis of the WGS84 ellipsoid [m]
     b_axis = (1.0 - flat) * a_axis
@@ -1917,10 +1953,8 @@ def _bowring_iterative(
     # square of first and second numerical eccentricity
     e12 = lin_ecc**2 / a_axis**2
     e22 = lin_ecc**2 / b_axis**2
-    # degrees to radians
-    dtr = np.pi / 180.0
     # calculate longitude
-    lon = np.arctan2(y, x) / dtr
+    lon = np.degrees(np.arctan2(y, x))
     # calculate radius of parallel
     p = np.sqrt(x**2 + y**2)
     # initial estimated value for reduced parametric latitude
@@ -1949,8 +1983,10 @@ def _bowring_iterative(
     N = a_axis / np.sqrt(1.0 - e12 * np.sin(phi) ** 2)
     # estimate final height (Bowring, 1985)
     h = p * np.cos(phi) + z * np.sin(phi) - a_axis**2 / N
+    # convert latitudes and fix values
+    lat = np.clip(np.degrees(phi), -90.0, 90.0)
     # return longitude, latitude and height
-    return (lon, phi / dtr, h)
+    return (lon, lat, h)
 
 
 def _zhu_closed_form(
@@ -1967,15 +2003,15 @@ def _zhu_closed_form(
     Parameters
     ----------
     x, np.ndarray
-        cartesian x-coordinates
+        Cartesian x-coordinates (meters)
     y, np.ndarray
-        cartesian y-coordinates
+        Cartesian y-coordinates (meters)
     z, np.ndarray
-        cartesian z-coordinates
+        Cartesian z-coordinates (meters)
     a_axis: float, default 6378137.0
-        semimajor axis of the ellipsoid
+        Semi-major axis of the ellipsoid
     flat: float, default 1.0/298.257223563
-        ellipsoidal flattening
+        Ellipsoidal flattening
     """
     # semiminor axis of the WGS84 ellipsoid [m]
     b_axis = (1.0 - flat) * a_axis
@@ -1983,10 +2019,8 @@ def _zhu_closed_form(
     lin_ecc = np.sqrt((2.0 * flat - flat**2) * a_axis**2)
     # square of first numerical eccentricity
     e12 = lin_ecc**2 / a_axis**2
-    # degrees to radians
-    dtr = np.pi / 180.0
     # calculate longitude
-    lon = np.arctan2(y, x) / dtr
+    lon = np.degrees(np.arctan2(y, x))
     # calculate radius of parallel
     w = np.sqrt(x**2 + y**2)
     # allocate for output latitude and height
@@ -2014,7 +2048,7 @@ def _zhu_closed_form(
         wi = w / (t + l)
         zi = (1.0 - e12) * z[ind] / (t - l)
         # calculate latitude and height
-        lat[ind] = np.arctan2(zi, ((1.0 - e12) * wi)) / dtr
+        lat[ind] = np.degrees(np.arctan2(zi, ((1.0 - e12) * wi)))
         h[ind] = np.sign(t - 1.0 + l) * np.sqrt(
             (w - wi) ** 2.0 + (z[ind] - zi) ** 2.0
         )
@@ -2039,33 +2073,31 @@ def to_ENU(
     Parameters
     ----------
     x, np.ndarray
-        cartesian x-coordinates
+        Cartesian x-coordinates (meters)
     y, np.ndarray
-        cartesian y-coordinates
+        Cartesian y-coordinates (meters)
     z, np.ndarray
-        cartesian z-coordinates
+        Cartesian z-coordinates (meters)
     lon0: float or np.ndarray, default 0.0
-        reference longitude (degrees east)
+        Reference longitude (degrees east)
     lat0: float or np.ndarray, default 0.0
-        reference latitude (degrees north)
+        Reference latitude (degrees north)
     h0: float or np.ndarray, default 0.0
-        reference height (meters)
+        Reference height (meters)
     a_axis: float, default 6378137.0
-        semimajor axis of the ellipsoid
+        Semi-major axis of the ellipsoid
     flat: float, default 1.0/298.257223563
-        ellipsoidal flattening
+        Ellipsoidal flattening
 
     Returns
     -------
     E: np.ndarray
-        east coordinates
+        East coordinates (meters)
     N: np.ndarray
-        north coordinates
+        North coordinates (meters)
     U: np.ndarray
-        up coordinates
+        Up coordinates (meters)
     """
-    # degrees to radians
-    dtr = np.pi / 180.0
     # verify axes and copy to not modify inputs
     singular_values = np.ndim(x) == 0
     x = np.atleast_1d(np.copy(x)).astype(np.float64)
@@ -2073,23 +2105,26 @@ def to_ENU(
     z = np.atleast_1d(np.copy(z)).astype(np.float64)
     # convert latitude and longitude to ECEF
     X0, Y0, Z0 = to_cartesian(lon0, lat0, h=h0, a_axis=a_axis, flat=flat)
+    # latitude and longitude in radians
+    theta0 = np.radians(lat0)
+    lambda0 = np.radians(lon0)
     # calculate the rotation matrix
     R = np.zeros((3, 3))
-    R[0, 0] = -np.sin(dtr * lon0)
-    R[0, 1] = np.cos(dtr * lon0)
+    R[0, 0] = -np.sin(lambda0)
+    R[0, 1] = np.cos(lambda0)
     R[0, 2] = 0.0
-    R[1, 0] = -np.sin(dtr * lat0) * np.cos(dtr * lon0)
-    R[1, 1] = -np.sin(dtr * lat0) * np.sin(dtr * lon0)
-    R[1, 2] = np.cos(dtr * lat0)
-    R[2, 0] = np.cos(dtr * lat0) * np.cos(dtr * lon0)
-    R[2, 1] = np.cos(dtr * lat0) * np.sin(dtr * lon0)
-    R[2, 2] = np.sin(dtr * lat0)
+    R[1, 0] = -np.sin(theta0) * np.cos(lambda0)
+    R[1, 1] = -np.sin(theta0) * np.sin(lambda0)
+    R[1, 2] = np.cos(theta0)
+    R[2, 0] = np.cos(theta0) * np.cos(lambda0)
+    R[2, 1] = np.cos(theta0) * np.sin(lambda0)
+    R[2, 2] = np.sin(theta0)
     # calculate the ENU coordinates
     E, N, U = np.dot(R, np.vstack((x - X0, y - Y0, z - Z0)))
     # return the ENU coordinates
     # flattened to singular values if necessary
     if singular_values:
-        return (E[0], N[0], U[0])
+        return (E.item(), N.item(), U.item())
     else:
         return (E, N, U)
 
@@ -2111,33 +2146,31 @@ def from_ENU(
     Parameters
     ----------
     E, np.ndarray
-        east coordinates
+        East coordinates (meters)
     N, np.ndarray
-        north coordinates
+        North coordinates (meters)
     U, np.ndarray
-        up coordinates
+        Up coordinates (meters)
     lon0: float or np.ndarray, default 0.0
-        reference longitude (degrees east)
+        Reference longitude (degrees east)
     lat0: float or np.ndarray, default 0.0
-        reference latitude (degrees north)
+        Reference latitude (degrees north)
     h0: float or np.ndarray, default 0.0
-        reference height (meters)
+        Reference height (meters)
     a_axis: float, default 6378137.0
-        semimajor axis of the ellipsoid
+        Semi-major axis of the ellipsoid
     flat: float, default 1.0/298.257223563
-        ellipsoidal flattening
+        Ellipsoidal flattening
 
     Returns
     -------
     x, float
-        cartesian x-coordinates
+        Cartesian x-coordinates (meters)
     y, float
-        cartesian y-coordinates
+        Cartesian y-coordinates (meters)
     z, float
-        cartesian z-coordinates
+        Cartesian z-coordinates (meters)
     """
-    # degrees to radians
-    dtr = np.pi / 180.0
     # verify axes and copy to not modify inputs
     singular_values = np.ndim(E) == 0
     E = np.atleast_1d(np.copy(E)).astype(np.float64)
@@ -2145,17 +2178,20 @@ def from_ENU(
     U = np.atleast_1d(np.copy(U)).astype(np.float64)
     # convert latitude and longitude to ECEF
     X0, Y0, Z0 = to_cartesian(lon0, lat0, h=h0, a_axis=a_axis, flat=flat)
+    # latitude and longitude in radians
+    theta0 = np.radians(lat0)
+    lambda0 = np.radians(lon0)
     # calculate the rotation matrix
     R = np.zeros((3, 3))
-    R[0, 0] = -np.sin(dtr * lon0)
-    R[1, 0] = np.cos(dtr * lon0)
+    R[0, 0] = -np.sin(lambda0)
+    R[1, 0] = np.cos(lambda0)
     R[2, 0] = 0.0
-    R[0, 1] = -np.sin(dtr * lat0) * np.cos(dtr * lon0)
-    R[1, 1] = -np.sin(dtr * lat0) * np.sin(dtr * lon0)
-    R[2, 1] = np.cos(dtr * lat0)
-    R[0, 2] = np.cos(dtr * lat0) * np.cos(dtr * lon0)
-    R[1, 2] = np.cos(dtr * lat0) * np.sin(dtr * lon0)
-    R[2, 2] = np.sin(dtr * lat0)
+    R[0, 1] = -np.sin(theta0) * np.cos(lambda0)
+    R[1, 1] = -np.sin(theta0) * np.sin(lambda0)
+    R[2, 1] = np.cos(theta0)
+    R[0, 2] = np.cos(theta0) * np.cos(lambda0)
+    R[1, 2] = np.cos(theta0) * np.sin(lambda0)
+    R[2, 2] = np.sin(theta0)
     # calculate the ECEF coordinates
     x, y, z = np.dot(R, np.vstack((E, N, U)))
     # add reference coordinates
@@ -2165,7 +2201,7 @@ def from_ENU(
     # return the ECEF coordinates
     # flattened to singular values if necessary
     if singular_values:
-        return (x[0], y[0], z[0])
+        return (x.item(), y.item(), z.item())
     else:
         return (x, y, z)
 
@@ -2182,28 +2218,28 @@ def to_horizontal(
     Parameters
     ----------
     E: np.ndarray
-        east coordinates
+        East coordinates (meters)
     N: np.ndarray
-        north coordinates
+        North coordinates (meters)
     U: np.ndarray
-        up coordinates
+        Up coordinates (meters)
 
     Returns
     -------
     alpha: np.ndarray
-        altitude (elevation) angle in degrees
+        Altitude (elevation) angle (degrees)
     phi: np.ndarray
-        azimuth angle in degrees
+        Azimuth angle (degrees)
     D: np.ndarray
-        distance from observer to object in meters
+        Distance from observer to object (meters)
     """
     # calculate distance to object
     # convert coordinates to unit vectors
     D = np.sqrt(E**2 + N**2 + U**2)
     # altitude (elevation) angle in degrees
-    alpha = np.arcsin(U / D) * 180.0 / np.pi
+    alpha = np.degrees(np.arcsin(U / D))
     # azimuth angle in degrees (fixed to 0 to 360)
-    phi = np.mod(np.arctan2(E / D, N / D) * 180.0 / np.pi, 360.0)
+    phi = np.mod(np.degrees(np.arctan2(E / D, N / D)), 360.0)
     return (alpha, phi, D)
 
 
@@ -2224,26 +2260,26 @@ def to_zenith(
     Parameters
     ----------
     x, np.ndarray
-        cartesian x-coordinates
+        Cartesian x-coordinates (meters)
     y, np.ndarray
-        cartesian y-coordinates
+        Cartesian y-coordinates (meters)
     z, np.ndarray
-        cartesian z-coordinates
+        Cartesian z-coordinates (meters)
     lon0: float or np.ndarray, default 0.0
-        reference longitude (degrees east)
+        Reference longitude (degrees east)
     lat0: float or np.ndarray, default 0.0
-        reference latitude (degrees north)
+        Reference latitude (degrees north)
     h0: float or np.ndarray, default 0.0
-        reference height (meters)
+        Reference height (meters)
     a_axis: float, default 6378137.0
-        semimajor axis of the ellipsoid
+        Semi-major axis of the ellipsoid
     flat: float, default 1.0/298.257223563
-        ellipsoidal flattening
+        Ellipsoidal flattening
 
     Returns
     -------
     zenith: np.ndarray
-        zenith angle of object in degrees
+        Zenith angle of object (degrees)
     """
     # convert from ECEF to ENU
     E, N, U = to_ENU(
@@ -2257,45 +2293,33 @@ def to_zenith(
     return zenith
 
 
-# PURPOSE: calculate the geocentric latitudes
 def geocentric_latitude(
-    lon: np.ndarray,
     lat: np.ndarray,
-    a_axis: float = _wgs84['a'],
     flat: float = _wgs84['f'],
 ):
     """
-    Converts from geodetic latitude to geocentric latitude for an ellipsoid
-    :cite:p:`Snyder:1982gf`
+    Compute the geocentric latitude from a geodetic latitude
+    using a simplified empirical relation :cite:p:`Snyder:1982gf`
 
     Parameters
     ----------
-    lon: np.ndarray,
-        longitude (degrees east)
-    lat: np.ndarray,
-        geodetic latitude (degrees north)
-    a_axis: float, default 6378137.0
-        semimajor axis of the ellipsoid
+    lat: np.ndarray
+        Geodetic latitudes (degrees north)
     flat: float, default 1.0/298.257223563
-        ellipsoidal flattening
+        Ellipsoidal flattening
 
     Returns
     -------
-    geocentric_latitude: np.ndarray
-        latitude intersecting the center of the Earth (degrees north)
+    geolat: np.ndarray
+        Geocentric latitude (degrees)
     """
-    # first numerical eccentricity
-    ecc1 = np.sqrt((2.0 * flat - flat**2) * a_axis**2) / a_axis
-    # geodetic latitude in radians
-    latitude_geodetic_rad = np.pi * lat / 180.0
-    # prime vertical radius of curvature
-    N = a_axis / np.sqrt(1.0 - ecc1**2.0 * np.sin(latitude_geodetic_rad) ** 2.0)
-    # calculate X, Y and Z from geodetic latitude and longitude
-    X = N * np.cos(latitude_geodetic_rad) * np.cos(np.pi * lon / 180.0)
-    Y = N * np.cos(latitude_geodetic_rad) * np.sin(np.pi * lon / 180.0)
-    Z = (N * (1.0 - ecc1**2.0)) * np.sin(latitude_geodetic_rad)
-    # calculate geocentric latitude and convert to degrees
-    return 180.0 * np.arctan(Z / np.sqrt(X**2.0 + Y**2.0)) / np.pi
+    # convert latitude to radians
+    phi = np.radians(lat)
+    # compute difference between geodetic and geocentric latitudes
+    d2 = (flat + flat**2 / 2.0) * np.sin(2.0 * phi)
+    d4 = (flat**2 / 2.0) * np.sin(4.0 * phi)
+    geolat = lat - np.degrees(d2 - d4)
+    return geolat
 
 
 def scale_areas(*args, **kwargs):
@@ -2320,13 +2344,13 @@ def scale_factors(
     Parameters
     ----------
     lat: np.ndarray
-        latitude (degrees north)
+        Latitude (degrees north)
     flat: float, default 1.0/298.257223563
-        ellipsoidal flattening
+        Ellipsoidal flattening
     reference_latitude: float, default 70.0
-        reference latitude (true scale latitude)
+        Reference latitude (true scale latitude)
     metric: str, default 'area'
-        metric to calculate scaling factors
+        Metric to calculate scaling factors
 
             - ``'distance'``: scale factors for distance
             - ``'area'``: scale factors for area
@@ -2334,42 +2358,52 @@ def scale_factors(
     Returns
     -------
     scale: np.ndarray
-        scaling factors at input latitudes
+        Scaling factors at input latitudes
     """
-    assert metric.lower() in ['distance', 'area'], 'Unknown metric'
-    # convert latitude from degrees to positive radians
-    theta = np.abs(lat) * np.pi / 180.0
-    # convert reference latitude from degrees to positive radians
-    theta_ref = np.abs(reference_latitude) * np.pi / 180.0
+    if metric.lower() not in ['distance', 'area']:
+        raise ValueError('Unknown metric')
+    # power for scaling factors
+    power = 1.0 if metric.lower() == 'distance' else 2.0
+    # convert latitude to positive radians
+    phi = np.radians(np.abs(lat))
+    # convert reference latitude to positive radians
+    phi_ref = np.radians(np.abs(reference_latitude))
     # square of the eccentricity of the ellipsoid
     # ecc2 = (1-b**2/a**2) = 2.0*flat - flat^2
     ecc2 = 2.0 * flat - flat**2
     # eccentricity of the ellipsoid
     ecc = np.sqrt(ecc2)
-    # calculate ratio at input latitudes
-    m = np.cos(theta) / np.sqrt(1.0 - ecc2 * np.sin(theta) ** 2)
-    t = np.tan(np.pi / 4.0 - theta / 2.0) / (
-        (1.0 - ecc * np.sin(theta)) / (1.0 + ecc * np.sin(theta))
-    ) ** (ecc / 2.0)
-    # calculate ratio at reference latitude
-    mref = np.cos(theta_ref) / np.sqrt(1.0 - ecc2 * np.sin(theta_ref) ** 2)
-    tref = np.tan(np.pi / 4.0 - theta_ref / 2.0) / (
-        (1.0 - ecc * np.sin(theta_ref)) / (1.0 + ecc * np.sin(theta_ref))
-    ) ** (ecc / 2.0)
-    # distance scaling
-    k = (mref / m) * (t / tref)
-    kp = (
-        0.5
-        * mref
-        * np.sqrt(((1.0 + ecc) ** (1.0 + ecc)) * ((1.0 - ecc) ** (1.0 - ecc)))
-        / tref
+    # get p values following equations 17.33 and 17.35
+    p = np.sqrt(np.power(1.0 + ecc, 1.0 + ecc) * np.power(1.0 - ecc, 1.0 - ecc))
+    # calculate m factors using equation 12.15
+    m = np.cos(phi) / np.sqrt(1.0 - ecc2 * np.sin(phi) ** 2)
+    m_ref = np.cos(phi_ref) / np.sqrt(1.0 - ecc2 * np.sin(phi_ref) ** 2)
+    # calculate t factors using equation 13.9
+    t = np.tan(np.pi / 4.0 - phi / 2.0) / np.power(
+        (1.0 - ecc * np.sin(phi)) / (1.0 + ecc * np.sin(phi)), ecc / 2.0
     )
-    if metric.lower() == 'distance':
-        # distance scaling
-        scale = np.where(np.isclose(theta, np.pi / 2.0), 1.0 / kp, 1.0 / k)
-    elif metric.lower() == 'area':
-        # area scaling
+    t_ref = np.tan(np.pi / 4.0 - phi_ref / 2.0) / np.power(
+        (1.0 - ecc * np.sin(phi_ref)) / (1.0 + ecc * np.sin(phi_ref)), ecc / 2.0
+    )
+    # calculate scaling factors following Snyder (1982)
+    # ignore divide by zero and invalid value warnings
+    with np.errstate(divide='ignore', invalid='ignore'):
+        # check if reference latitude is at the pole
+        if np.isclose(phi_ref, np.pi / 2.0):
+            # equations 17.32 and 17.33
+            k = 2.0 * t / (p * m)
+            # at the pole (true scale)
+            k_pole = 1.0
+        else:
+            # equations 17.32 and 17.34
+            k = (m_ref / m) * (t / t_ref)
+            # at the pole from equation 17.35
+            k_pole = 0.5 * m_ref * p / t_ref
+        # distance and area scaling factors with special case at the pole
         scale = np.where(
-            np.isclose(theta, np.pi / 2.0), 1.0 / (kp**2), 1.0 / (k**2)
+            np.isclose(phi, np.pi / 2.0),
+            np.power(1.0 / k_pole, power),
+            np.power(1.0 / k, power),
         )
+    # return the scaling factors
     return scale

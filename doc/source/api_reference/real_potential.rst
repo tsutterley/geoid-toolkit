@@ -10,7 +10,7 @@ Calling Sequence
 .. code-block:: python
 
     from geoid_toolkit.real_potential import real_potential
-    W, dW_dr, dW_dtheta = real_potential(lat, lon, h, clm, slm, lmax, R, GM)
+    W, dW_dr = real_potential(lat, lon, h, clm, slm, lmax, R, GM)
 
 `Source code`__
 
