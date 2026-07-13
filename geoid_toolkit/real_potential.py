@@ -6,7 +6,7 @@ Calculates the real potential at a given latitude and height using
     coefficients from a gravity model
 
 CALLING SEQUENCE:
-    W, dW_dr, dW_dtheta = real_potential(lat, lon, h, clm, slm, lmax, R, GM)
+    W, dW_dr = real_potential(lat, lon, h, clm, slm, lmax, R, GM)
 
 INPUT:
     latitude: latitude in degrees
@@ -24,7 +24,6 @@ OPTIONS:
 OUTPUT:
     W: real potential at height h
     dW_dr: derivative of real potential with respect to radius
-    dW_dtheta: derivative of real potential with respect to theta
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
@@ -118,14 +117,10 @@ def real_potential(lat, lon, h, refell, clm, slm, lmax, R, GM, GAUSS=0):
         real potential at height h
     dW_dr: float
         derivative of real potential with respect to radius
-    dW_dtheta: float
-        derivative of real potential with respect to theta
     """
 
     # get ellipsoid parameters for refell
     ellip = ref_ellipsoid(refell)
-    # convert from geodetic latitude to geocentric latitude
-    phi = np.radians(lon)
     # convert coordinates to cartesian
     X, Y, Z = to_cartesian(
         lon,
@@ -136,7 +131,8 @@ def real_potential(lat, lon, h, refell, clm, slm, lmax, R, GM, GAUSS=0):
     )
     # height of the observation point above the ellipsoid
     rr = np.sqrt(X**2.0 + Y**2.0 + Z**2.0)
-    # colatitude in radians
+    # longitude and colatitude in radians
+    phi = np.radians(lon)
     theta = np.pi / 2.0 - np.arctan(Z / np.hypot(X, Y))
     # number of observations
     nlat = len(lat)
@@ -268,9 +264,9 @@ def _clenshaw_s_m(t, q, m, Ylm1, lmax, SCALE=1e-280):
 def _clenshaw_ds_m(t, u, q, m, Ylm1, lmax, SCALE=1e-280):
     # allocate for output matrix
     N = len(t)
-    dcs_m = np.zeros((N, 2), dtype=np.longdouble)
+    dcs_m = np.zeros((N), dtype=np.clongdouble)
     # scaling to prevent overflow
-    ylm = SCALE * Ylm1.astype(np.longdouble)
+    ylm = SCALE * Ylm1.astype(np.clongdouble)
     # convert lmax and m to float
     lm = np.longdouble(lmax)
     mm = np.longdouble(m)
@@ -344,9 +340,9 @@ def _clenshaw_ds_m(t, u, q, m, Ylm1, lmax, SCALE=1e-280):
 def _clenshaw_ds_m_dr(t, q, m, Ylm1, lmax, SCALE=1e-280):
     # allocate for output matrix
     N = len(t)
-    dcs_m_dr = np.zeros((N), dtype=np.longdouble)
+    dcs_m_dr = np.zeros((N), dtype=np.clongdouble)
     # scaling to prevent overflow
-    ylm = SCALE * Ylm1.astype(np.longdouble)
+    ylm = SCALE * Ylm1.astype(np.clongdouble)
     # convert lmax and m to float
     lm = np.longdouble(lmax)
     mm = np.longdouble(m)

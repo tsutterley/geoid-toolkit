@@ -116,8 +116,6 @@ def topographic_potential(
     # universal gravitational constant
     G = 6.67408e-11
 
-    # convert from geodetic latitude to geocentric latitude
-    phi = np.radians(lon)
     # convert coordinates to cartesian
     X, Y, Z = to_cartesian(
         lon,
@@ -126,7 +124,8 @@ def topographic_potential(
         a_axis=ellip['a'],
         flat=ellip['f'],
     )
-    # colatitude in radians
+    # longitude and colatitude in radians
+    phi = np.radians(lon)
     theta = np.pi / 2.0 - np.arctan(Z / np.hypot(X, Y))
     # number of observations
     nlat = len(lat)
