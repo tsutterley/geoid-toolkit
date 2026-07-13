@@ -148,7 +148,7 @@ def topographic_potential(
         cs_m[:, m] = _clenshaw_s_m(t, m, Ylm1, lmax)
 
     # calculating cos(m*phi) and sin(m*phi) using Euler's formula
-    m_phi = np.exp(1j * np.einsum('m...,p...->mp...', m, phi))
+    m_phi = np.exp(1j * np.einsum("m...,p...->pm...", m, phi))
 
     # calculate summation and drop imaginary component
     s_m = (cs_m[:, lmax] * m_phi[:, lmax]).real

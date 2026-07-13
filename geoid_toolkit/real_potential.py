@@ -162,7 +162,7 @@ def real_potential(lat, lon, h, refell, clm, slm, lmax, R, GM, GAUSS=0):
         dcs_m_dr[:, m] = _clenshaw_ds_m_dr(t, q, m, Ylm1, lmax)
 
     # calculating cos(m*phi) and sin(m*phi) using Euler's formula
-    m_phi = np.exp(1j * np.einsum('m...,p...->mp...', m, phi))
+    m_phi = np.exp(1j * np.einsum("m...,p...->pm...", m, phi))
     # calculate summation and drop imaginary component
     s_m = (cs_m[:, lmax] * m_phi[:, lmax]).real
     ds_m_dr = (dcs_m_dr[:, lmax] * m_phi[:, lmax]).real
