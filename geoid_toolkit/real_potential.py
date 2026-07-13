@@ -150,34 +150,31 @@ def real_potential(lat, lon, h, refell, clm, slm, lmax, R, GM, GAUSS=0):
         wt = 2.0 * np.pi * gauss_weights(GAUSS, lmax)
         Ylm1 = np.einsum('l...,lm...->lm...', wt, Ylm1)
 
-    # calculate clenshaw summations
-    cs_m = np.zeros((nlat, lmax + 1), dtype=np.clongdouble)
-    dcs_m_dr = np.zeros((nlat, lmax + 1), dtype=np.clongdouble)
-    for m in range(lmax, -1, -1):
-        cs_m[:, m] = _clenshaw_s_m(t, q, m, Ylm1, lmax)
-        dcs_m_dr[:, m] = _clenshaw_ds_m_dr(t, q, m, Ylm1, lmax)
-
     # calculating cos(m*phi) and sin(m*phi) using Euler's formula
     mm = np.arange(lmax + 1)
     m_phi = np.exp(1j * np.einsum('m...,p...->pm...', mm, phi))
-    # calculate summation and drop imaginary component
-    s_m = (cs_m[:, lmax] * m_phi[:, lmax]).real
-    ds_m_dr = (dcs_m_dr[:, lmax] * m_phi[:, lmax]).real
-
+    # initate summations
+    s_m = 0.0
+    ds_m_dr = 0.0
     # iterate to calculate complete summation
-    for m in range(lmax - 1, 0, -1):
+    for m in range(lmax, 0, -1):
+        # calculate clenshaw conditioned arrays
+        cs_m = _clenshaw_s_m(t, q, m, Ylm1, lmax)
+        dcs_m_dr = _clenshaw_ds_m_dr(t, q, m, Ylm1, lmax)
         # update summations and discard imaginary components
         a_m = np.sqrt((2.0 * m + 3.0) / (2.0 * m + 2.0))
-        s_m = a_m * u * q * s_m + (cs_m[:, m] * m_phi[:, m]).real
-        ds_m_dr = a_m * u * q * ds_m_dr + (dcs_m_dr[:, m] * m_phi[:, m]).real
-
-    # add the final terms
-    s_m = np.sqrt(3.0) * u * q * s_m + cs_m[:, 0].real
-    ds_m_dr = np.sqrt(3.0) * u * q * ds_m_dr + dcs_m_dr[:, 0].real
+        s_m = a_m * u * q * s_m + (cs_m * m_phi[:, m]).real
+        ds_m_dr = a_m * u * q * ds_m_dr + (dcs_m_dr * m_phi[:, m]).real
+    # calculate clenshaw conditioned arrays for order 0
+    cs_m = _clenshaw_s_m(t, q, 0, Ylm1, lmax)
+    dcs_m_dr = _clenshaw_ds_m_dr(t, q, 0, Ylm1, lmax)
+    # add the final terms and discard imaginary components
+    s_m = np.sqrt(3.0) * u * q * s_m + cs_m.real
+    ds_m_dr = np.sqrt(3.0) * u * q * ds_m_dr + dcs_m_dr.real
     # compute the real potential and derivatives
     W = (GM / rr) * s_m
     dW_dr = (GM / (rr**2.0)) * ds_m_dr
-    # return the real potential and derivatives
+    # return potentials
     return (W, dW_dr)
 
 

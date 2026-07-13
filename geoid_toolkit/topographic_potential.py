@@ -141,24 +141,23 @@ def topographic_potential(
         wt = 2.0 * np.pi * gauss_weights(GAUSS, lmax)
         Ylm1 = np.einsum('l...,lm...->lm...', wt, Ylm1)
 
-    # calculate clenshaw summations
-    cs_m = np.zeros((nlat, lmax + 1), dtype=np.clongdouble)
-    for m in range(lmax, -1, -1):
-        cs_m[:, m] = _clenshaw_s_m(t, m, Ylm1, lmax)
-
     # calculating cos(m*phi) and sin(m*phi) using Euler's formula
     mm = np.arange(lmax + 1)
     m_phi = np.exp(1j * np.einsum('m...,p...->pm...', mm, phi))
 
-    # calculate summation and drop imaginary component
-    s_m = (cs_m[:, lmax] * m_phi[:, lmax]).real
+    # initiate summation
+    s_m = 0.0
     # iterate to calculate complete summation
-    for m in range(lmax - 1, 0, -1):
+    for m in range(lmax, 0, -1):
+        # compute clenshaw conditioned arrays
+        cs_m = _clenshaw_s_m(t, m, Ylm1, lmax)
         # update summations and discard imaginary components
         a_m = np.sqrt((2.0 * m + 3.0) / (2.0 * m + 2.0))
-        s_m = a_m * u * s_m + (cs_m[:, m] * m_phi[:, m]).real
+        s_m = a_m * u * s_m + (cs_m * m_phi[:, m]).real
+    # calculate clenshaw conditioned arrays for order 0
+    cs_m = _clenshaw_s_m(t, 0, Ylm1, lmax)
     # add the final terms
-    s_m = np.sqrt(3.0) * u * s_m + cs_m[:, 0].real
+    s_m = np.sqrt(3.0) * u * s_m + cs_m.real
     # compute the topographic potential
     T = 2.0 * np.pi * G * density * (R * s_m) ** 2
     # return the topographic potential
