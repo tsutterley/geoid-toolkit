@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 """
 read_EGM2008_geoid_grids.py
-Written by Tyler Sutterley (06/2025)
+Written by Tyler Sutterley (07/2026)
 Reads EGM2008 geoid height spatial grids from unformatted binary files
-provided by the National Geospatial-Intelligence Agency
+    provided by the National Geospatial-Intelligence Agency
 Outputs spatial grids as netCDF4 files
 
 NGA Office of Geomatics
@@ -14,6 +14,8 @@ INPUTS:
 
 COMMAND LINE OPTIONS:
     -F X, --filename X: Output filename
+    -n X, --love X: Degree 2 load Love number
+    -G, --gzip: Input file is gzip compressed
     -V, --verbose: Output information for each output file
     -M X, --mode X: Permission mode of output files
 
@@ -24,6 +26,8 @@ PYTHON DEPENDENCIES:
         https://unidata.github.io/netcdf4-python/
 
 UPDATE HISTORY:
+    Updated 07/2026: input files can be gzip compressed
+        added output attribute for the degree 2 load Love number
     Updated 06/2025: use import_dependency to import optional packages
     Updated 05/2023: use pathlib to define and operate on paths
     Updated 12/2022: single implicit import of geoid toolkit
@@ -33,6 +37,7 @@ UPDATE HISTORY:
 
 from __future__ import print_function
 
+import gzip
 import logging
 import pathlib
 import argparse
@@ -45,7 +50,12 @@ netCDF4 = geoidtk.utilities.import_dependency('netCDF4')
 
 
 def read_EGM2008_geoid_grids(
-    FILE, FILENAME=None, LOVE=0.3, VERBOSE=False, MODE=0o775
+    FILE,
+    FILENAME=None,
+    LOVE=0.3,
+    GZIP=False,
+    VERBOSE=False,
+    MODE=0o775,
 ):
     # create logger
     loglevel = logging.INFO if VERBOSE else logging.CRITICAL
@@ -55,8 +65,10 @@ def read_EGM2008_geoid_grids(
     FILE = pathlib.Path(FILE).expanduser().absolute()
     if not FILE.exists():
         raise FileNotFoundError(f'{str(FILE)} not found')
-    # open input file and read contents
-    file_contents = np.fromfile(FILE, dtype='<f4')
+    opener = gzip.open if GZIP else open
+    with opener(FILE, mode='rb') as f:
+        # open input file and read contents
+        file_contents = np.frombuffer(f.read(), dtype='<f4')
 
     # set grid parameters
     dlon, dlat = (2.5 / 60.0), (2.5 / 60.0)
@@ -87,12 +99,14 @@ def read_EGM2008_geoid_grids(
     # geoid_free2mean
     attributes['geoid_free2mean']['long_name'] = 'Free-to-Mean conversion'
     attributes['geoid_free2mean']['description'] = (
-        'Additive value to '
-        'convert geoid heights from the tide-free system to the mean-tide system'
+        'Additive value to convert geoid heights from the tide-free '
+        'system to the mean-tide system'
     )
     attributes['geoid_free2mean']['units'] = 'meters'
     attributes['geoid_free2mean']['fill_value'] = -9999.0
     attributes['geoid_free2mean']['tide_system'] = 'tide_free'
+    attributes['geoid_free2mean']['source'] = 'derived'
+    attributes['geoid_free2mean']['k2'] = LOVE
 
     # output variables
     dinput = {}
@@ -200,6 +214,14 @@ def arguments():
         default=0.3,
         help='Degree 2 load Love number',
     )
+    # input file is gzip compressed
+    parser.add_argument(
+        '--gzip',
+        '-G',
+        default=False,
+        action='store_true',
+        help='Input file is gzip compressed',
+    )
     # verbose will output information about each output file
     parser.add_argument(
         '--verbose',
@@ -239,6 +261,7 @@ def main():
         args.gravity,
         FILENAME=args.filename,
         LOVE=args.love,
+        GZIP=args.gzip,
         VERBOSE=args.verbose,
         MODE=args.mode,
     )

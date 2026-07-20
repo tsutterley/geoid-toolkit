@@ -14,6 +14,7 @@ API Reference
     ./gravity_anomaly.rst
     ./gravity_disturbance.rst
     ./height_anomaly.rst
+    ./interpolate.rst
     ./legendre_polynomials.rst
     ./norm_gravity.rst
     ./norm_potential.rst
