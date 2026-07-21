@@ -1,3 +1,4 @@
+import geoid_toolkit.interpolate
 import geoid_toolkit.spatial
 import geoid_toolkit.utilities
 import geoid_toolkit.version
