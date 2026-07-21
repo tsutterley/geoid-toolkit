@@ -51,7 +51,11 @@ class Interpolate:
 
     def update(self, values):
         """Update the interpolation grid values"""
-        self.fp[:] = np.copy(values)
+        if getattr(self, '_flip_y', False):
+            self.fp[:] = values[::-1, :]
+        else:
+            self.fp[:] = np.copy(values)
+        # validate the shape of the input values
         self.__validate__()
 
     def __call__(self, points, **kwargs):
@@ -92,6 +96,8 @@ class Interpolate:
         if self.yp[1] - self.yp[0] <= 0.0:
             self.yp = self.yp[::-1]
             self.fp = self.fp[::-1, :]
+            # set flag to flip over y-coordinates for future updates
+            self._flip_y = True
 
     @staticmethod
     def _interp(points, coords, fp, **kwargs):
@@ -182,7 +188,7 @@ class Interpolate:
             + (disty * distx * fp[i + 1, j + 1])
         )
         # replace NaN values with fill_value
-        if fill_value is not np.nan:
+        if (fill_value is not None) and not np.isnan(fill_value):
             f = np.where(np.isnan(f), fill_value, f)
         # replace values outside of the grid with fill_value or zero
         if extrapolate == 'zero':
@@ -220,7 +226,9 @@ def geoid_height(
         - ``'tide_free'``: tide-free system
         - ``'zero_tide'``: zero-tide system
     method: str, default "linear"
-        Interpolation method to use ("linear", "nearest", "cubic")
+        Interpolation method to use ("linear", "nearest")
+    kwargs: keyword arguments
+        Additional keyword arguments for the Interpolate class
 
     Returns
     -------
@@ -239,18 +247,18 @@ def geoid_height(
         # assume a default value of 0.3 if not present in the file
         k2 = getattr(fileID.variables['geoid_free2mean'], 'k2', 0.3)
     # interpolate values for a given method
-    interpolant = Interpolate((lat, lon), geoid_h, method=method, **kwargs)
+    interp = Interpolate((lat, lon), geoid_h, method=method, **kwargs)
     # interpolate geoid heights for input lat/lon points
-    geoid_undulation = interpolant((latitude, longitude))
+    geoid_undulation = interp((latitude, longitude))
     if tide_system.lower() == 'mean_tide':
         # update values for interpolator
-        interpolant.update(geoid_free2mean)
+        interp.update(geoid_free2mean)
         # convert to mean-tide system using free-to-mean conversion
-        geoid_undulation += interpolant((latitude, longitude))
+        geoid_undulation += interp((latitude, longitude))
     elif tide_system.lower() == 'zero_tide':
         # update values for interpolator
-        interpolant.update(geoid_free2mean)
+        interp.update(geoid_free2mean)
         # convert to zero-tide system using free-to-mean conversion and k2
-        geoid_undulation += interpolant((latitude, longitude)) / (1.0 + k2)
+        geoid_undulation += interp((latitude, longitude)) / (1.0 + k2)
     # return geoid undulation
     return geoid_undulation

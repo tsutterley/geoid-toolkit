@@ -33,5 +33,4 @@ def test_interpolate_geoid(method, model='EGM2008'):
     )
     validation = rgi((gridlat, gridlon))
     # assert that the interpolated values are close to the expected values
-    eps = np.finfo(np.float64).eps
-    assert np.allclose(test, validation, atol=eps)
+    assert np.allclose(test, validation, rtol=0.0, atol=1e-6)

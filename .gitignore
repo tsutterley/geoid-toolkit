@@ -39,7 +39,13 @@ wheels/
 .installed.cfg
 *.egg
 .pytest_cache
+.coverage
 pythonenv*/
+venv/
+*build-commands.txt
+setup-miniconda-patched-environment.yml
+pytest.xml
+coverage.xml
 # OS generated files #
 ######################
 .DS_Store
@@ -85,4 +91,9 @@ None*.png
 # Jupyter Checkpoints #
 #######################
 .ipynb_checkpoints
-Untitled.ipynb
+Untitled*.ipynb
+core.*
+# pixi environments #
+#####################
+.pixi/*
+!.pixi/config.toml
