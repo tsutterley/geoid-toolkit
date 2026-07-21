@@ -227,7 +227,7 @@ def geoid_height(
         - ``'zero_tide'``: zero-tide system
     method: str, default "linear"
         Interpolation method to use
-        
+
         - ``'linear'``: linear interpolation
         - ``'nearest'``: nearest-neighbor interpolation
     kwargs: keyword arguments
