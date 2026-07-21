@@ -32,3 +32,11 @@ jobs:
         pixi run lint
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         pixi run lint "--exit-zero --max-complexity=10 --max-line-length=127"
+    - name: Test with pytest
+      run: |
+        pixi run coverage
+    - name: Archive code coverage results
+      uses: actions/upload-artifact@v4
+      with:
+        name: code-coverage-report-${{ matrix.os }}
+        path: ./coverage.xml

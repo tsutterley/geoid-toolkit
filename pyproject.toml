@@ -53,7 +53,7 @@ Issues = "https://github.com/tsutterley/geoid-toolkit/issues"
 [project.optional-dependencies]
 all = ["cartopy", "gdal", "h5py", "jupyterlab", "matplotlib", "netCDF4", "notebook", "pyproj"]
 doc = ["docutils", "graphviz", "myst-nb", "numpydoc", "sphinx", "sphinx-argparse>=0.4", "sphinxcontrib-bibtex", "sphinx-design", "sphinx_rtd_theme"]
-dev = ["flake8", "pytest>=4.6", "pytest-cov", "pytest-xdist"]
+dev = ["flake8", "pytest>=4.6", "pytest-cov", "pytest-xdist", "scipy"]
 
 [tool.setuptools.packages.find]
 exclude = ["test*", "run*"]
@@ -134,6 +134,16 @@ cmd = "make clean && make {{ builder }} {{ flags }}"
 cwd = "doc"
 description = "Remove build artifacts and rebuild the documentation with sphinx"
 
+[tool.pixi.feature.dev.tasks.test]
+args = [ { "arg" = "flags", "default" = "" }, { "arg" = "test", "default" = "." } ]
+cmd = "pytest {{ flags }} {{ test }}"
+cwd = "test"
+description = "Run the pytest suite"
+
+[tool.pixi.feature.dev.tasks.coverage]
+cmd = "pytest -n=0 --cov=geoid_toolkit --junitxml=pytest.xml --cov-report=xml test"
+description = "Run the pytest suite and create coverage reports"
+
 [tool.pixi.feature.dev.tasks.lint]
 args = [ { "arg" = "flags", "default" = "--select=E9,F63,F7,F82 --show-source" }, { "arg" = "test", "default" = "." } ]
 cmd = "flake8 {{ test }} --count {{ flags }} --statistics --extend-exclude 'build/,run/,*.ipynb_checkpoints/,.pixi/'"
@@ -160,6 +170,7 @@ flake8 = "*"
 pytest = "*"
 pytest-cov = "*"
 pytest-xdist = "*"
+scipy = "*"
 
 [tool.pixi.feature.doc.dependencies]
 docutils = "*"
