@@ -17,8 +17,8 @@ repository-code: 'https://github.com/tsutterley/geoid-toolkit'
 url: 'https://geoid-toolkit.readthedocs.io'
 repository: 'https://pypi.org/project/geoid-toolkit'
 doi: "10.5281/zenodo.5768711"
-version: "1.1.2"
-date-released: "2025-06-12"
+version: "1.1.3"
+date-released: "2026-07-21"
 keywords:
   - geophysics
   - geodesy
