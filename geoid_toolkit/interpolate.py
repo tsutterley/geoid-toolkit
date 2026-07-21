@@ -226,9 +226,12 @@ def geoid_height(
         - ``'tide_free'``: tide-free system
         - ``'zero_tide'``: zero-tide system
     method: str, default "linear"
-        Interpolation method to use ("linear", "nearest")
+        Interpolation method to use
+        
+        - ``'linear'``: linear interpolation
+        - ``'nearest'``: nearest-neighbor interpolation
     kwargs: keyword arguments
-        Additional keyword arguments for the Interpolate class
+        Additional keyword arguments for the ``Interpolate`` class
 
     Returns
     -------
