@@ -6,13 +6,13 @@
 
 `Source code`__
 
-.. __: https://github.com/tsutterley/geoid-toolkit/blob/main/scripts/compute_geoid_grids.py
+.. __: https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/scripts/compute_geoid_grids.py
 
 Calling Sequence
 ################
 
 .. argparse::
-    :filename: compute_geoid_grids.py
+    :module: geoid_toolkit.scripts.compute_geoid_grids
     :func: arguments
     :prog: compute_geoid_grids.py
     :nodescription:

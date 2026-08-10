@@ -6,13 +6,13 @@
 
 `Source code`__
 
-.. __: https://github.com/tsutterley/geoid-toolkit/blob/main/scripts/compute_geoidal_undulation.py
+.. __: https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/scripts/compute_geoidal_undulation.py
 
 Calling Sequence
 ################
 
 .. argparse::
-    :filename: compute_geoidal_undulation.py
+    :module: geoid_toolkit.scripts.compute_geoidal_undulation
     :func: arguments
     :prog: compute_geoidal_undulation.py
     :nodescription:

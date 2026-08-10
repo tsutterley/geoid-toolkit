@@ -7,13 +7,13 @@
 
 `Source code`__
 
-.. __: https://github.com/tsutterley/geoid-toolkit/blob/main/scripts/read_EGM2008_geoid_grids.py
+.. __: https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/scripts/read_EGM2008_geoid_grids.py
 
 Calling Sequence
 ################
 
 .. argparse::
-    :filename: read_EGM2008_geoid_grids.py
+    :module: geoid_toolkit.scripts.read_EGM2008_geoid_grids
     :func: arguments
     :prog: read_EGM2008_geoid_grids.py
     :nodescription:

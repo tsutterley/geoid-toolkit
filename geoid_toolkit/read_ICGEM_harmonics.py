@@ -55,9 +55,6 @@ PYTHON DEPENDENCIES:
         https://numpy.org
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
-PROGRAM DEPENDENCIES:
-    calculate_tidal_offset.py: calculates the C20 offset for a tidal system
-
 UPDATE HISTORY:
     Updated 05/2023: use pathlib to define and operate on paths
     Updated 04/2022: updated docstrings to numpy documentation format
@@ -79,11 +76,17 @@ import io
 import pathlib
 import zipfile
 import numpy as np
-from geoid_toolkit.calculate_tidal_offset import calculate_tidal_offset
+
+__all__ = [
+    'read_ICGEM_harmonics',
+]
 
 
 # PURPOSE: read spherical harmonic coefficients of a gravity model
-def read_ICGEM_harmonics(model_file, **kwargs):
+def read_ICGEM_harmonics(
+    model_file: str | pathlib.Path,
+    **kwargs,
+):
     """
     Extract gravity model spherical harmonics from GFZ ICGEM ``gfc`` files
 
@@ -235,7 +238,7 @@ def read_ICGEM_harmonics(model_file, **kwargs):
         # earth parameters
         GM = np.float64(model_input['earth_gravity_constant'])
         R = np.float64(model_input['radius'])
-        model_input['clm'][2, 0] += calculate_tidal_offset(
+        model_input['clm'][2, 0] += _tidal_offset(
             kwargs['TIDE'],
             GM,
             R,
@@ -246,3 +249,85 @@ def read_ICGEM_harmonics(model_file, **kwargs):
         model_input['tide_system'] = kwargs['TIDE']
     # return the spherical harmonics and parameters
     return model_input
+
+
+def _tidal_offset(
+    TIDE: str,
+    GM: float,
+    R: float,
+    refell: str,
+    LOVE: float = 0.3,
+    REFERENCE: str = 'tide_free',
+):
+    """
+    Calculates the spherical harmonic offset to change permanent tide systems
+    :cite:p:`HofmannWellenhof:2006hy,Losch:2003ve`
+
+    Parameters
+    ----------
+    TIDE: str
+        Output permanent tidal system
+
+            - ``'tide_free'``: no permanent direct and indirect tidal potentials
+            - ``'mean_tide'``: permanent tidal potentials (direct and indirect)
+            - ``'zero_tide'``: permanent direct tidal potential removed
+    R: float
+        Average radius used in gravity model
+    GM: float
+        Geocentric gravitational constant used in gravity model
+    refell: str
+        Reference ellipsoid name
+
+            - ``'CLK66'``: Clarke 1866
+            - ``'GRS67'``: Geodetic Reference System 1967
+            - ``'GRS80'``: Geodetic Reference System 1980
+            - ``'HGH80'``: Hughes 1980 Ellipsoid
+            - ``'WGS72'``: World Geodetic System 1972
+            - ``'WGS84'``: World Geodetic System 1984
+            - ``'ATS77'``: Quasi-earth centred ellipsoid for ATS77
+            - ``'NAD27'``: North American Datum 1927
+            - ``'NAD83'``: North American Datum 1983
+            - ``'INTER'``: International
+            - ``'KRASS'``: Krassovsky (USSR)
+            - ``'MAIRY'``: Modified Airy (Ireland 1965/1975)
+            - ``'TOPEX'``: TOPEX/POSEIDON ellipsoid
+            - ``'EGM96'``: EGM 1996 gravity model
+    LOVE: float, default 0.3
+        Load love number for degree 2
+    REFERENCE: str, default 'tide_free'
+        Original permanent tidal system of gravity modeld
+
+            - ``'tide_free'``: no permanent direct and indirect tidal potentials
+            - ``'mean_tide'``: permanent tidal potentials (direct and indirect)
+            - ``'zero_tide'``: permanent direct tidal potential removed
+
+    Returns
+    -------
+    delta: float
+        Offset for changing to tide system
+    """
+    # import reference ellipsoid tools
+    from geoid_toolkit.datum import ref_ellipsoid
+
+    # get ellipsoid parameters for refell
+    ellip = ref_ellipsoid(refell)
+    # standard gravitational acceleration
+    gamma = 9.80665
+    trans = (-0.198 * gamma * R**3) / (np.sqrt(5.0) * GM * ellip['a'] ** 2)
+    # conversion to switch to tide free
+    if REFERENCE == 'tide_free':
+        tide_free_conv = 0.0
+    elif REFERENCE == 'mean_tide':
+        tide_free_conv = -(1.0 + LOVE)
+    elif REFERENCE == 'zero_tide':
+        tide_free_conv = -LOVE
+    # conversion for each tidal system
+    if TIDE == 'mean_tide':
+        conv = (1.0 + LOVE) + tide_free_conv
+    elif TIDE == 'zero_tide':
+        conv = LOVE + tide_free_conv
+    elif TIDE == 'tide_free':
+        conv = 0.0 + tide_free_conv
+    # return the C20 offset to change tide systems
+    delta = conv * trans
+    return delta

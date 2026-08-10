@@ -55,6 +55,12 @@ all = ["cartopy", "gdal", "h5py", "jupyterlab", "matplotlib", "netCDF4", "notebo
 doc = ["docutils", "graphviz", "myst-nb", "numpydoc", "sphinx", "sphinx-argparse>=0.4", "sphinxcontrib-bibtex", "sphinx-design", "sphinx_rtd_theme"]
 dev = ["flake8", "pytest>=4.6", "pytest-cov", "pytest-xdist", "scipy"]
 
+[project.scripts]
+"compute_geoidal_undulation.py" = "geoid_toolkit.scripts.compute_geoidal_undulation:main"
+"compute_geoid_grids.py" = "geoid_toolkit.scripts.compute_geoid_grids:main"
+"read_EGM2008_geoid_grids.py" = "geoid_toolkit.scripts.read_EGM2008_geoid_grids:main"
+"read_ICGEM_geoid_grids.py" = "geoid_toolkit.scripts.read_ICGEM_geoid_grids:main"
+
 [tool.setuptools.packages.find]
 exclude = ["test*", "run*"]
 

@@ -28,12 +28,18 @@ UPDATE HISTORY:
     Written 07/2017
 """
 
+import pathlib
 import numpy as np
+
+
+__all__ = [
+    'read_topography_harmonics',
+]
 
 
 # PURPOSE: read Earth 2014 topography harmonics
 # http://ddfe.curtin.edu.au/gravitymodels/Earth2014/potential_model/
-def read_topography_harmonics(model_file):
+def read_topography_harmonics(model_file: str | pathlib.Path):
     """
     Reads Earth 2014 topography harmonics from :cite:t:`Rexer:2016gr`
 

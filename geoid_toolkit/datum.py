@@ -72,10 +72,20 @@ UPDATE HISTORY:
     Updated 02/2014: minor update to if statements
 """
 
+from __future__ import annotations
+
 import numpy as np
+import geoid_toolkit.math
 
 
-def ref_ellipsoid(refell, UNITS='MKS'):
+__all__ = [
+    'ref_ellipsoid',
+    'norm_gravity',
+    'norm_potential',
+]
+
+
+def ref_ellipsoid(refell: str, UNITS: str = 'MKS') -> dict:
     """
     Computes parameters for a reference ellipsoid
     :cite:p:`HofmannWellenhof:2006hy`
@@ -322,3 +332,241 @@ def ref_ellipsoid(refell, UNITS='MKS'):
         'volume': vol,
         'rho_e': rho_e,
     }
+
+
+def norm_gravity(lat: float | np.ndarray, h: float | np.ndarray, refell: str):
+    """
+    Calculates the normal gravity of an ellipsoid and calculates the derivative
+    with respect to height following :cite:t:`HofmannWellenhof:2006hy`
+
+    Parameters
+    ----------
+    lat: float
+        latitude in degrees
+    h: float
+        ellipsoidal height in meters
+    refell: str
+        Reference ellipsoid name
+
+            - ``'CLK66'``: Clarke 1866
+            - ``'GRS67'``: Geodetic Reference System 1967
+            - ``'GRS80'``: Geodetic Reference System 1980
+            - ``'HGH80'``: Hughes 1980 Ellipsoid
+            - ``'WGS72'``: World Geodetic System 1972
+            - ``'WGS84'``: World Geodetic System 1984
+            - ``'ATS77'``: Quasi-earth centred ellipsoid for ATS77
+            - ``'NAD27'``: North American Datum 1927
+            - ``'NAD83'``: North American Datum 1983
+            - ``'INTER'``: International
+            - ``'KRASS'``: Krassovsky (USSR)
+            - ``'MAIRY'``: Modified Airy (Ireland 1965/1975)
+            - ``'TOPEX'``: TOPEX/POSEIDON ellipsoid
+            - ``'EGM96'``: EGM 1996 gravity model
+
+    Returns
+    -------
+    gamma_h: float
+        normal gravity for ellipsoid at height
+    dgamma_dh: float
+        derivative of normal gravity with respect to height
+    """
+
+    # convert latitude from degrees to radians
+    phi = np.radians(lat)
+
+    # get ellipsoid parameters for refell
+    ellip = ref_ellipsoid(refell)
+    a = ellip['a']
+    b = ellip['b']
+    # eccentricity
+    ecc2 = ellip['ecc2']
+    GM = ellip['GM']
+    # m parameter [omega^2*a^2*b/(GM)]
+    m = ellip['mp']
+    # flattening components
+    f = ellip['f']
+    f_2 = (
+        -f
+        + (5.0 / 2.0) * m
+        + (1.0 / 2.0) * f**2.0
+        - (26.0 / 7.0) * f * m
+        + (15.0 / 4.0) * m**2.0
+    )
+    f_4 = -(1.0 / 2.0) * f**2.0 + (5.0 / 2.0) * f * m
+
+    # Normal gravity at the equator.
+    # p. 79, Eqn.(2-186)
+    gamma_a = (GM / (a * b)) * (
+        1.0 - (3.0 / 2.0) * m - (3.0 / 14.0) * ecc2**2.0 * m
+    )
+    # Normal gravity
+    # p. 80, Eqn.(2-199)
+    gamma_0 = gamma_a * (
+        1.0 + f_2 * np.sin(phi) ** 2.0 + f_4 * np.sin(phi) ** 4.0
+    )
+    # Normal gravity at height
+    # p. 82, Eqn.(2-215)
+    p_1 = 1.0 + f + m - 2.0 * f * np.sin(phi) ** 2.0
+    gamma_h = gamma_0 * (1.0 - (2.0 / a) * p_1 * h + (3.0 / (a**2.0)) * h**2.0)
+    # approximate derivative of normal gravity with respect to height
+    dgamma_dh = ((-2.0 * gamma_0) / a) * p_1
+    # return the normal gravity and the derivative
+    return (gamma_h, dgamma_dh)
+
+
+def norm_potential(
+    lat: float | np.ndarray,
+    lon: float | np.ndarray,
+    h: float | np.ndarray,
+    refell: str,
+    lmax: int,
+):
+    """
+    Calculates the normal potential following
+    :cite:t:`Barthelmes:2013fy,HofmannWellenhof:2006hy,Moazezi:2012fb,Molodensky:1958jv`
+
+    Parameters
+    ----------
+    lat: float
+        latitude in degrees
+    lon: float
+        longitude in degrees
+    h: float
+        ellipsoidal height in meters
+    refell: str
+        Reference ellipsoid name
+
+            - ``'CLK66'``: Clarke 1866
+            - ``'GRS67'``: Geodetic Reference System 1967
+            - ``'GRS80'``: Geodetic Reference System 1980
+            - ``'HGH80'``: Hughes 1980 Ellipsoid
+            - ``'WGS72'``: World Geodetic System 1972
+            - ``'WGS84'``: World Geodetic System 1984
+            - ``'ATS77'``: Quasi-earth centred ellipsoid for ATS77
+            - ``'NAD27'``: North American Datum 1927
+            - ``'NAD83'``: North American Datum 1983
+            - ``'INTER'``: International
+            - ``'KRASS'``: Krassovsky (USSR)
+            - ``'MAIRY'``: Modified Airy (Ireland 1965/1975)
+            - ``'TOPEX'``: TOPEX/POSEIDON ellipsoid
+            - ``'EGM96'``: EGM 1996 gravity model
+    lmax: int
+        maximum spherical harmonic degree
+
+    Returns
+    -------
+    U: float
+        normal potential at height
+    dU_dr: float
+        derivative of normal potential with respect to radius
+    dU_dtheta: float
+        derivative of normal potential with respect to theta
+    """
+    # import function to convert from geodetic to cartesian coordinates
+    from geoid_toolkit.spatial import to_cartesian
+
+    # get ellipsoid parameters for refell
+    ellip = ref_ellipsoid(refell)
+    a = np.longdouble(ellip['a'])
+    ecc1 = np.longdouble(ellip['ecc1'])
+    GM = np.longdouble(ellip['GM'])
+    J2 = np.longdouble(ellip['J2'])
+
+    # convert coordinates to cartesian
+    X, Y, Z = to_cartesian(
+        lon,
+        lat,
+        h,
+        a_axis=ellip['a'],
+        flat=ellip['f'],
+    )
+    # height of the observation point above the ellipsoid
+    rr = np.sqrt(X**2.0 + Y**2.0 + Z**2.0)
+    # colatitude in radians
+    theta = np.pi / 2.0 - np.arctan(Z / np.hypot(X, Y))
+
+    # calculate even zonal harmonics
+    n = np.arange(2, 12 + 2, 2, dtype=np.longdouble)
+    J2n = _cosine_even_zonals(J2, ecc1, n / 2.0)
+    # normalized cosine harmonics: Cn = -Jn/np.sqrt(2.0*n+1.0)
+    # J2 = 0.108262982131e-2
+    C_2 = -J2n[0] / np.sqrt(5.0)
+    # J4 = -0.237091120053e-5
+    C_4 = -J2n[1] / np.sqrt(9.0)
+    # J6 = 0.608346498882e-8
+    C_6 = -J2n[2] / np.sqrt(13.0)
+    # J8 = -0.142681087920e-10
+    C_8 = -J2n[3] / np.sqrt(17.0)
+    # J10 = 0.121439275882e-13
+    C_10 = -J2n[4] / np.sqrt(21.0)
+    # J12 = 0.205395070709e-15
+    C_12 = -J2n[5] / np.sqrt(25.0)
+
+    # calculate legendre polynomials at latitude and their first derivative
+    Pl, dPl = geoid_toolkit.math.legendre_polynomials(
+        lmax, np.cos(theta), ASTYPE=np.longdouble
+    )
+
+    # normal potentials and derivatives
+    U = (GM / rr) * (
+        1.0
+        + (a / rr) ** 2.0 * C_2 * Pl[2, :]
+        + (a / rr) ** 4.0 * C_4 * Pl[4, :]
+        + (a / rr) ** 6.0 * C_6 * Pl[6, :]
+        + (a / rr) ** 8.0 * C_8 * Pl[8, :]
+        + (a / rr) ** 10.0 * C_10 * Pl[10, :]
+        + (a / rr) ** 12.0 * C_12 * Pl[12, :]
+    )
+    dU_dr = GM * (
+        -1.0 / rr**2.0
+        - 3.0 * (a**2.0 / rr**4.0) * C_2 * Pl[2, :]
+        - 5.0 * (a**4.0 / rr**6.0) * C_4 * Pl[4, :]
+        - 7.0 * (a**6.0 / rr**8.0) * C_6 * Pl[6, :]
+        - 9.0 * (a**8.0 / rr**10.0) * C_8 * Pl[8, :]
+        - 11.0 * (a**10.0 / rr**12.0) * C_10 * Pl[10, :]
+        - 13.0 * (a**12.0 / rr**14.0) * C_12 * Pl[12, :]
+    )
+    dU_dtheta = (GM / rr) * (
+        1.0
+        + (a / rr) ** 2.0 * C_2 * dPl[2, :]
+        + (a / rr) ** 4.0 * C_4 * dPl[4, :]
+        + (a / rr) ** 6.0 * C_6 * dPl[6, :]
+        + (a / rr) ** 8.0 * C_8 * dPl[8, :]
+        + (a / rr) ** 10.0 * C_10 * dPl[10, :]
+        + (a / rr) ** 12.0 * C_12 * dPl[12, :]
+    )
+
+    # return the potentials
+    return (U, dU_dr, dU_dtheta)
+
+
+# PURPOSE: Calculate even zonal harmonics using J2 and first eccentricity
+def _cosine_even_zonals(
+    J2: float,
+    e: float,
+    n: int,
+) -> float:
+    """
+    Calculate even zonal harmonics using J2 and first eccentricity
+
+    Parameters
+    ----------
+    J2: float
+        Oblateness
+    e: float
+        First eccentricity
+    n: int
+        spherical harmonic degree
+
+    Returns
+    -------
+    J2n: float
+        Even zonal harmonics
+    """
+    # p. 76 Eqn.(2-170)
+    J2n = (
+        (-1.0) ** (n + 1.0)
+        * ((3.0 * e ** (2.0 * n)) / ((2.0 * n + 1.0) * (2.0 * n + 3.0)))
+        * (1.0 - n + 5.0 * n * J2 / (e**2.0))
+    )
+    return J2n
