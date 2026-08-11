@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 compute_geoidal_undulation.py
-Written by Tyler Sutterley (06/2025)
+Written by Tyler Sutterley (08/2026)
 Computes geoid undulations from a gravity model for an input file
 
 INPUTS:
@@ -52,13 +52,14 @@ PYTHON DEPENDENCIES:
 
 PROGRAM DEPENDENCIES:
     compute.py: utilities for computing functionals from a gravity model
+    datum.py: computes parameters for a reference ellipsoid
     math.py: special functions of mathematical physics
     spatial.py: utilities for reading, writing and operating on spatial data
     utilities.py: download and management utilities for syncing files
     read_ICGEM_harmonics.py: reads the coefficients for a given gravity model file
-    ref_ellipsoid.py: Computes parameters for a reference ellipsoid
 
 UPDATE HISTORY:
+    Updated 08/2026: refactored functions to geoid_toolkit.compute
     Updated 06/2025: use import_dependency to import optional packages
     Updated 05/2023: use pathlib to define and operate on paths
     Updated 12/2022: single implicit import of geoid toolkit
@@ -206,7 +207,7 @@ def compute_geoidal_undulation(
         gridx, gridy = np.meshgrid(dinput['x'], dinput['y'])
         lon, lat = transformer.transform(gridx, gridy)
         # calculate geoid at coordinates and reshape to output
-        N = geoidtk.geoid_undulation(
+        N = geoidtk.compute.geoid_undulation(
             lat.flatten(),
             lon.flatten(),
             REFERENCE,
@@ -220,7 +221,7 @@ def compute_geoidal_undulation(
     elif TYPE == 'drift':
         lon, lat = transformer.transform(dinput['x'], dinput['y'])
         # calculate geoid at coordinates
-        N = geoidtk.geoid_undulation(
+        N = geoidtk.compute.geoid_undulation(
             lat,
             lon,
             REFERENCE,
@@ -248,12 +249,24 @@ def compute_geoidal_undulation(
             columns=['lat', 'lon', 'geoid_h'],
         )
     elif FORMAT == 'netCDF4':
-        geoidtk.spatial.to_netCDF4(output, attrib, output_file)
+        geoidtk.spatial.to_netCDF4(
+            output,
+            attrib,
+            output_file,
+            data_type=TYPE,
+        )
     elif FORMAT == 'HDF5':
-        geoidtk.spatial.to_HDF5(output, attrib, output_file)
+        geoidtk.spatial.to_HDF5(
+            output,
+            attrib,
+            output_file,
+        )
     elif FORMAT in ('GTiff', 'cog'):
         geoidtk.spatial.to_geotiff(
-            output, attrib, output_file, varname='geoid_h'
+            output,
+            attrib,
+            output_file,
+            varname='geoid_h',
         )
     # change the permissions level to MODE
     output_file.chmod(mode=MODE)

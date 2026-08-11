@@ -41,13 +41,14 @@ PYTHON DEPENDENCIES:
 
 PROGRAM DEPENDENCIES:
     compute.py: utilities for computing functionals from a gravity model
+    datum.py: computes parameters for a reference ellipsoid
     math.py: special functions of mathematical physics
     spatial.py: utilities for reading, writing and operating on spatial data
     utilities.py: download and management utilities for syncing files
     read_ICGEM_harmonics.py: reads the coefficients for a given gravity model file
-    ref_ellipsoid.py: Computes parameters for a reference ellipsoid
 
 UPDATE HISTORY:
+    Updated 08/2026: refactored functions to geoid_toolkit.compute
     Updated 06/2025: use import_dependency to import optional packages
     Updated 05/2023: use pathlib to define and operate on paths
     Updated 12/2022: single implicit import of geoid toolkit
@@ -210,16 +211,29 @@ def compute_geoid_grids(
             columns=['y', 'x', 'geoid_h'],
         )
     elif FORMAT == 'netCDF4':
-        geoidtk.spatial.to_netCDF4(output, attrib, output_file)
+        geoidtk.spatial.to_netCDF4(
+            output,
+            attrib,
+            output_file,
+            data_type='grid',
+        )
     elif FORMAT == 'HDF5':
-        geoidtk.spatial.to_HDF5(output, attrib, output_file)
+        geoidtk.spatial.to_HDF5(
+            output,
+            attrib,
+            output_file,
+        )
     elif FORMAT in ('GTiff', 'cog'):
         # copy global geotiff attributes for projection and grid parameters
         attrib['wkt'] = crs1.to_wkt()
         attrib['spacing'] = (dx, -dy)
         attrib['extent'] = np.copy(BOUNDS)
         geoidtk.spatial.to_geotiff(
-            output, attrib, output_file, varname='geoid_h', driver=FORMAT
+            output,
+            attrib,
+            output_file,
+            varname='geoid_h',
+            driver=FORMAT,
         )
     # change the permissions level to MODE
     output_file.chmod(mode=MODE)

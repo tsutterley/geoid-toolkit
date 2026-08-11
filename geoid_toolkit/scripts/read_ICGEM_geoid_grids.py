@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 read_ICGEM_geoid_grids.py
-Written by Tyler Sutterley (06/2025)
+Written by Tyler Sutterley (08/2026)
 Reads geoid height spatial grids from the GFZ Geoid Calculation Service
     http://icgem.gfz-potsdam.de/home
 Outputs spatial grids as netCDF4 files
@@ -23,6 +23,7 @@ PYTHON DEPENDENCIES:
         https://unidata.github.io/netcdf4-python/
 
 UPDATE HISTORY:
+    Updated 08/2026: use structured netCDF4 output to reduce redundancy
     Updated 06/2025: use import_dependency to import optional packages
     Updated 05/2023: use pathlib to define and operate on paths
     Updated 12/2022: single implicit import of geoid toolkit
@@ -52,13 +53,15 @@ import datetime
 import numpy as np
 import geoid_toolkit as geoidtk
 
-# attempt imports
-netCDF4 = geoidtk.utilities.import_dependency('netCDF4')
-
 
 # PURPOSE: Reads .gdf grids from the GFZ calculation service
 def read_ICGEM_geoid_grids(
-    FILE, FILENAME=None, MARKER='', SPACING=None, VERBOSE=False, MODE=0o775
+    FILE,
+    FILENAME=None,
+    MARKER='',
+    SPACING=None,
+    VERBOSE=False,
+    MODE=0o775,
 ):
     # create logger
     loglevel = logging.INFO if VERBOSE else logging.CRITICAL
@@ -115,10 +118,52 @@ def read_ICGEM_geoid_grids(
 
     # output dataset
     dinput = {}
-    functional = parameters['functional']
-    dinput[functional] = np.zeros((nlat, nlon))
+    # variable name and fill value
+    functional = parameters.pop('functional')
+    gapvalue = parameters.pop('gapvalue', np.nan)
+    # allocate for output variable and mask
+    dinput[functional] = np.ma.zeros((nlat, nlon), fill_value=gapvalue)
+    dinput[functional].mask = np.zeros((nlat, nlon), dtype=bool)
+    # create arrays of longitude and latitude
     dinput['lon'] = longlimit_west + np.arange(nlon) * dlon
     dinput['lat'] = latlimit_north - np.arange(nlat) * dlat
+    # dictionary describing the output netCDF4 structure
+    struct = dict(
+        dimensions=('lat', 'lon'),
+        variables={
+            functional: ('lat', 'lon'),
+        },
+    )
+
+    # get attributes from parameters
+    attributes = {'ROOT': {}, functional: {}}
+    # variable attributes
+    variable_attributes = [
+        'unit',
+        'weighted_mean',
+        'maxvalue',
+        'minvalue',
+        'signal_wrms',
+        'zero_degree_term',
+    ]
+    for att_name in variable_attributes:
+        attributes[functional][att_name] = parameters.pop(att_name, '')
+    # attributes for longitude and latitude
+    long_lat_unit = parameters.pop('unit_long_lat', 'degrees')
+    attributes['lon'] = {}
+    attributes['lon']['long_name'] = 'longitude'
+    attributes['lon']['units'] = 'degrees_east'
+    attributes['lon']['valid_min'] = longlimit_west
+    attributes['lon']['valid_max'] = longlimit_east
+    attributes['lat'] = {}
+    attributes['lat']['long_name'] = 'latitude'
+    attributes['lat']['units'] = 'degrees_north'
+    attributes['lat']['valid_min'] = latlimit_south
+    attributes['lat']['valid_max'] = latlimit_north
+    # file-level attributes
+    attributes['ROOT'].update(parameters)
+    reference = f'Output from {pathlib.Path(sys.argv[0]).name}'
+    attributes['ROOT']['reference'] = reference
 
     # for each file line
     bin_count = np.zeros((nlat, nlon))
@@ -133,13 +178,20 @@ def read_ICGEM_geoid_grids(
 
     # take the mean of the binned data (if not regridding will divide by 1)
     ii, jj = np.nonzero(bin_count > 0)
-    dinput[functional][ii, jj] /= bin_count[ii, jj]
+    dinput[functional].data[ii, jj] /= bin_count[ii, jj]
     ii, jj = np.nonzero(bin_count == 0)
-    dinput[functional][ii, jj] = np.float64(parameters['gapvalue'])
+    dinput[functional].data[ii, jj] = dinput[functional].fill_value
+    dinput[functional].mask[ii, jj] = True
 
     # output data and parameters to netCDF4
     FILENAME = pathlib.Path(FILENAME).expanduser().absolute()
-    ncdf_geoid_write(dinput, parameters, FILENAME=FILENAME)
+    geoidtk.spatial.to_netCDF4(
+        dinput,
+        parameters,
+        filename=FILENAME,
+        structure=struct,
+        data_type='structured',
+    )
     # change permissions mode to MODE
     FILENAME.chmod(mode=MODE)
 
@@ -151,60 +203,6 @@ def removekey(d, key):
     return r
 
 
-# PURPOSE: write output geoid height data to file
-def ncdf_geoid_write(dinput, parameters, FILENAME=None):
-    # opening NetCDF file for writing
-    fileID = netCDF4.Dataset(FILENAME, 'w', format='NETCDF4')
-
-    # Defining the NetCDF dimensions
-    for key in ['lon', 'lat']:
-        fileID.createDimension(key, len(dinput[key]))
-
-    # defining the NetCDF variables
-    nc = {}
-    functional = parameters['functional']
-    gapvalue = np.float64(parameters['gapvalue'])
-    nc['lat'] = fileID.createVariable('lat', dinput['lat'].dtype, ('lat',))
-    nc['lon'] = fileID.createVariable('lon', dinput['lon'].dtype, ('lon',))
-    nc[functional] = fileID.createVariable(
-        functional,
-        dinput[functional].dtype,
-        (
-            'lat',
-            'lon',
-        ),
-        fill_value=gapvalue,
-        zlib=True,
-    )
-    # filling NetCDF variables
-    for key, val in dinput.items():
-        nc[key][:] = val[:].copy()
-
-    # Defining attributes for longitude and latitude
-    nc['lon'].long_name = 'longitude'
-    nc['lon'].units = 'degrees_east'
-    nc['lat'].long_name = 'latitude'
-    nc['lat'].units = 'degrees_north'
-    # Defining attributes for functional
-    nc[functional].units = parameters['unit']
-    # global variables of NetCDF file
-    for key in sorted(parameters.keys()):
-        fileID.setncattr(key, parameters[key])
-
-    # add software information
-    fileID.software_reference = geoidtk.version.project_name
-    fileID.software_version = geoidtk.version.full_version
-    # add attribute for date created
-    fileID.date_created = datetime.datetime.now().isoformat()
-
-    # Output NetCDF structure information
-    logging.info(FILENAME)
-    logging.info(list(fileID.variables.keys()))
-
-    # Closing the NetCDF file
-    fileID.close()
-
-
 # PURPOSE: create argument parser
 def arguments():
     parser = argparse.ArgumentParser(
@@ -214,11 +212,16 @@ def arguments():
     )
     # command line parameters
     parser.add_argument(
-        'gravity', type=pathlib.Path, help='Geoid height spatial grid file'
+        'gravity',
+        type=pathlib.Path,
+        help='Geoid height spatial grid file',
     )
     # output filename (will default to input file with netCDF4 suffix)
     parser.add_argument(
-        '--filename', '-F', type=pathlib.Path, help='Output netCDF4 filename'
+        '--filename',
+        '-F',
+        type=pathlib.Path,
+        help='Output netCDF4 filename',
     )
     # marker denoting the end of the header text
     parser.add_argument(
