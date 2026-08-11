@@ -39,6 +39,7 @@ __all__ = [
     'gravity_disturbance',
     'height_anomaly',
     'real_potential',
+    'topographic_potential',
 ]
 
 
@@ -114,7 +115,7 @@ def geoid_height(
     TOPOGRAPHY = kwargs.get('TOPOGRAPHY', None)
     if TOPOGRAPHY is not None:
         # read topography model Ylms
-        topoYlms = read_topography_harmonics(TOPOGRAPHY)
+        topoYlms = read_topography_harmonics(TOPOGRAPHY, **kwargs)
         # calculate corrected geoid at coordinates
         N = corrected_geoid_undulation(
             lat,
@@ -345,7 +346,6 @@ def gravity_anomaly(
     lmax: int,
     R: float,
     GM: float,
-    density: float,
     METHOD: str = 'first',
     GAUSS: int | float = 0,
 ):
