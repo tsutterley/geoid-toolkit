@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 read_ICGEM_harmonics.py
-Written by Tyler Sutterley (05/2023)
+Written by Tyler Sutterley (08/2026)
 Reads the coefficients for a given gravity model file
 
 GFZ International Centre for Global Earth Models (ICGEM)
@@ -56,6 +56,8 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 08/2026: move tidal offset function back into this program
+        raise ValueError for invalid tide system inputs
     Updated 05/2023: use pathlib to define and operate on paths
     Updated 04/2022: updated docstrings to numpy documentation format
         include utf-8 encoding in reads to be windows compliant
@@ -79,6 +81,7 @@ import numpy as np
 
 __all__ = [
     'read_ICGEM_harmonics',
+    '_tidal_offset',
 ]
 
 
@@ -321,6 +324,8 @@ def _tidal_offset(
         tide_free_conv = -(1.0 + LOVE)
     elif REFERENCE == 'zero_tide':
         tide_free_conv = -LOVE
+    else:
+        raise ValueError(f'Invalid input permanent tide system {REFERENCE}')
     # conversion for each tidal system
     if TIDE == 'mean_tide':
         conv = (1.0 + LOVE) + tide_free_conv
@@ -328,6 +333,8 @@ def _tidal_offset(
         conv = LOVE + tide_free_conv
     elif TIDE == 'tide_free':
         conv = 0.0 + tide_free_conv
+    else:
+        raise ValueError(f'Invalid output permanent tide system {TIDE}')
     # return the C20 offset to change tide systems
     delta = conv * trans
     return delta

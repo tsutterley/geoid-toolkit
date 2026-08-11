@@ -230,7 +230,7 @@ def geoid_undulation(
         # add geoid height for iteration
         N_1 += (W - U) / gamma_h
         # calculate RMS between iterations
-        RMS = np.sqrt(np.sum((N - N_1) ** 2) / len(lat))
+        RMS = np.sqrt(np.sum((N - N_1) ** 2) / np.size(lat))
         # set N to the previous iteration
         N = np.copy(N_1)
     # return the geoid height
@@ -329,7 +329,7 @@ def corrected_geoid_undulation(
         # add geoid height for iteration
         N_1 += (W - U - T) / gamma_h
         # calculate RMS between iterations
-        RMS = np.sqrt(np.sum((N - N_1) ** 2) / len(lat))
+        RMS = np.sqrt(np.sum((N - N_1) ** 2) / np.size(lat))
         # set N to the previous iteration
         N = np.copy(N_1)
     # return the geoid height
@@ -591,7 +591,7 @@ def height_anomaly(
         # add height anomaly for iteration
         zeta_1 += (W - U) / gamma_h
         # calculate RMS between iterations
-        RMS = np.sqrt(np.sum((zeta - zeta_1) ** 2) / len(lat))
+        RMS = np.sqrt(np.sum((zeta - zeta_1) ** 2) / np.size(lat))
         # set zeta to the previous iteration
         zeta = np.copy(zeta_1)
     # return the height anomaly
@@ -676,8 +676,6 @@ def real_potential(
     # longitude and colatitude in radians
     phi = np.radians(lon)
     theta = np.pi / 2.0 - np.arctan(Z / np.hypot(X, Y))
-    # number of observations
-    nlat = len(lat)
     # cos and sin of colatitude
     t = np.cos(theta)
     u = np.sin(theta)
@@ -797,8 +795,6 @@ def topographic_potential(
     # longitude and colatitude in radians
     phi = np.radians(lon)
     theta = np.pi / 2.0 - np.arctan(Z / np.hypot(X, Y))
-    # number of observations
-    nlat = len(lat)
     # cos and sin of colatitude
     t = np.cos(theta)
     u = np.sin(theta)
