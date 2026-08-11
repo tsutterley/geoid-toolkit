@@ -971,7 +971,7 @@ def to_netCDF4(
     fileID = netCDF4.Dataset(filename, kwargs['mode'], format='NETCDF4')
     data_type = kwargs.pop('data_type')
     if data_type in ('structured',):
-        struct = kwargs.pop('structure', {})
+        struct = kwargs.pop('structure', dict(dimensions=[], variables={}))
         _structured_netCDF4(fileID, output, attributes, struct, **kwargs)
     elif data_type in ('drift',):
         _drift_netCDF4(fileID, output, attributes, **kwargs)

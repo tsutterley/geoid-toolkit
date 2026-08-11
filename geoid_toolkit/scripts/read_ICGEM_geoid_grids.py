@@ -120,7 +120,7 @@ def read_ICGEM_geoid_grids(
     dinput = {}
     # variable name and fill value
     functional = parameters.pop('functional')
-    gapvalue = parameters.pop('gapvalue', np.nan)
+    gapvalue = np.float64(parameters.pop('gapvalue', np.nan))
     # allocate for output variable and mask
     dinput[functional] = np.ma.zeros((nlat, nlon), fill_value=gapvalue)
     dinput[functional].mask = np.zeros((nlat, nlon), dtype=bool)
@@ -187,7 +187,7 @@ def read_ICGEM_geoid_grids(
     FILENAME = pathlib.Path(FILENAME).expanduser().absolute()
     geoidtk.spatial.to_netCDF4(
         dinput,
-        parameters,
+        attributes,
         filename=FILENAME,
         structure=struct,
         data_type='structured',

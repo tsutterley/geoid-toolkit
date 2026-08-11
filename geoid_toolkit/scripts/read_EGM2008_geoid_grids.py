@@ -81,8 +81,8 @@ def read_EGM2008_geoid_grids(
     attributes = dict(ROOT={})
     fill_value = -9999.0
     # root attributes
-    attributes['ROOT']['source'] = 'EGM2008'
-    attributes['ROOT']['reference'] = 'http://earth-info.nima.mil/GandG/'
+    attributes['ROOT']['model'] = 'EGM2008'
+    attributes['ROOT']['source'] = 'http://earth-info.nima.mil/GandG/'
     attributes['ROOT']['earth_gravity_constant'] = 0.3986004415e15
     attributes['ROOT']['radius'] = 0.63781363e07
     attributes['ROOT']['max_degree'] = 2190
@@ -109,7 +109,7 @@ def read_EGM2008_geoid_grids(
     attributes['geoid_h']['units'] = 'meters'
     attributes['geoid_h']['fill_value'] = fill_value
     attributes['geoid_h']['tide_system'] = 'tide_free'
-    attributes['geoid_h']['source'] = 'EGM2008'
+    attributes['geoid_h']['model'] = 'EGM2008'
     # geoid_free2mean
     attributes['geoid_free2mean'] = {}
     attributes['geoid_free2mean']['long_name'] = 'Free-to-Mean conversion'
@@ -120,6 +120,7 @@ def read_EGM2008_geoid_grids(
     attributes['geoid_free2mean']['units'] = 'meters'
     attributes['geoid_free2mean']['fill_value'] = fill_value
     attributes['geoid_free2mean']['tide_system'] = 'tide_free'
+    attributes['geoid_free2mean']['model'] = 'Rapp1991'
     attributes['geoid_free2mean']['source'] = 'derived'
     attributes['geoid_free2mean']['k2'] = LOVE
 
