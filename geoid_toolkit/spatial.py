@@ -29,6 +29,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 08/2026: use np.hypot to calculate euclidean distances
+        add structured as a valid output netCDF4 data type
     Updated 06/2026: use item() to extract scalars from 0-dimensional arrays
         updated scale factors to add case where reference latitude is at pole
         convert angles with numpy radians and degrees functions
@@ -863,7 +864,10 @@ def to_file(
 
 
 def to_ascii(
-    output: dict, attributes: dict, filename: str | pathlib.Path, **kwargs
+    output: dict,
+    attributes: dict,
+    filename: str | pathlib.Path,
+    **kwargs,
 ):
     """
     Write data to an ascii file
@@ -933,7 +937,10 @@ def to_ascii(
 
 
 def to_netCDF4(
-    output: dict, attributes: dict, filename: str | pathlib.Path, **kwargs
+    output: dict,
+    attributes: dict,
+    filename: str | pathlib.Path,
+    **kwargs,
 ):
     """
     Wrapper function for writing data to a netCDF4 file
@@ -951,6 +958,7 @@ def to_netCDF4(
     data_type: str, default 'drift'
         Input data type
 
+            - ``'structured'``
             - ``'time series'``
             - ``'drift'``
             - ``'grid'``
@@ -961,15 +969,18 @@ def to_netCDF4(
     # opening NetCDF file for writing
     filename = pathlib.Path(filename).expanduser().absolute()
     fileID = netCDF4.Dataset(filename, kwargs['mode'], format='NETCDF4')
-    if kwargs['data_type'] in ('drift',):
-        kwargs.pop('data_type')
+    data_type = kwargs.pop('data_type')
+    if data_type in ('structured',):
+        struct = kwargs.pop('structure', dict(dimensions=[], variables={}))
+        _structured_netCDF4(fileID, output, attributes, struct, **kwargs)
+    elif data_type in ('drift',):
         _drift_netCDF4(fileID, output, attributes, **kwargs)
-    elif kwargs['data_type'] in ('grid',):
-        kwargs.pop('data_type')
+    elif data_type in ('grid',):
         _grid_netCDF4(fileID, output, attributes, **kwargs)
-    elif kwargs['data_type'] in ('time series',):
-        kwargs.pop('data_type')
+    elif data_type in ('time series',):
         _time_series_netCDF4(fileID, output, attributes, **kwargs)
+    else:
+        raise ValueError(f'Invalid data type {data_type}')
     # add attribute for date created
     fileID.date_created = datetime.datetime.now().isoformat()
     # add attributes for software information
@@ -984,10 +995,73 @@ def to_netCDF4(
     logging.info(str(filename))
     logging.info(list(fileID.variables.keys()))
     # Closing the NetCDF file
-    fileID.close()
+    return fileID.close()
 
 
-def _drift_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
+def _structured_netCDF4(
+    fileID,
+    output: dict,
+    attributes: dict,
+    struct: dict,
+    **kwargs,
+):
+    """
+    Write structured data fields to a netCDF4 file object
+
+    Parameters
+    ----------
+    fileID: obj
+        open netCDF4 file object
+    output: dict
+        dictionary containing output data arrays
+    attributes: dict
+        dictionary containing file-level and variable attributes
+    struct: dict
+        dictionary containing dimensions and variables
+    """
+    # dictionary with netCDF4 variable objects
+    nc = {}
+    # defining the netCDF4 dimensions
+    for dim in struct['dimensions']:
+        fileID.createDimension(dim, len(output[dim]))
+        nc[dim] = fileID.createVariable(dim, output[dim].dtype, (dim,))
+        # add data to netCDF4 dimension variable
+        nc[dim][:] = output[dim].copy()
+        # set netCDF4 attributes for dimensions
+        for att_name, att_val in attributes[dim].items():
+            nc[dim].setncattr(att_name, att_val)
+
+    # defining the netCDF4 variables
+    for var, dimensions in struct['variables'].items():
+        if hasattr(output[var], 'fill_value'):
+            nc[var] = fileID.createVariable(
+                var,
+                output[var].dtype,
+                dimensions,
+                fill_value=output[var].fill_value,
+                zlib=True,
+            )
+        elif output[var].shape:
+            nc[var] = fileID.createVariable(
+                var,
+                output[var].dtype,
+                dimensions,
+            )
+        else:
+            nc[var] = fileID.createVariable(var, output[var].dtype, ())
+        # add data to netCDF4 variable
+        nc[var][:] = output[var].copy()
+        # set netCDF4 attributes for variables
+        for att_name, att_val in attributes[var].items():
+            nc[var].setncattr(att_name, att_val)
+
+
+def _drift_netCDF4(
+    fileID,
+    output: dict,
+    attributes: dict,
+    **kwargs,
+):
     """
     Write drift data variables to a netCDF4 file object
 
@@ -1028,7 +1102,12 @@ def _drift_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
             nc[key].setncattr(att_name, att_val)
 
 
-def _grid_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
+def _grid_netCDF4(
+    fileID,
+    output: dict,
+    attributes: dict,
+    **kwargs,
+):
     """
     Write gridded data variables to a netCDF4 file object
 
@@ -1084,7 +1163,12 @@ def _grid_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
             nc[key].setncattr(att_name, att_val)
 
 
-def _time_series_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
+def _time_series_netCDF4(
+    fileID,
+    output: dict,
+    attributes: dict,
+    **kwargs,
+):
     """
     Write time series data variables to a netCDF4 file object
 
@@ -1136,7 +1220,10 @@ def _time_series_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
 
 
 def to_HDF5(
-    output: dict, attributes: dict, filename: str | pathlib.Path, **kwargs
+    output: dict,
+    attributes: dict,
+    filename: str | pathlib.Path,
+    **kwargs,
 ):
     """
     Write data to a HDF5 file

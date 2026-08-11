@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 read_EGM2008_geoid_grids.py
-Written by Tyler Sutterley (07/2026)
+Written by Tyler Sutterley (08/2026)
 Reads EGM2008 geoid height spatial grids from unformatted binary files
     provided by the National Geospatial-Intelligence Agency
 Outputs spatial grids as netCDF4 files
@@ -26,6 +26,7 @@ PYTHON DEPENDENCIES:
         https://unidata.github.io/netcdf4-python/
 
 UPDATE HISTORY:
+    Updated 08/2026: use structured netCDF4 output to reduce redundancy
     Updated 07/2026: input files can be gzip compressed
         added output attribute for the degree 2 load Love number
     Updated 06/2025: use import_dependency to import optional packages
@@ -37,6 +38,7 @@ UPDATE HISTORY:
 
 from __future__ import print_function
 
+import sys
 import gzip
 import logging
 import pathlib
@@ -44,9 +46,6 @@ import argparse
 import datetime
 import numpy as np
 import geoid_toolkit as geoidtk
-
-# attempt imports
-netCDF4 = geoidtk.utilities.import_dependency('netCDF4')
 
 
 def read_EGM2008_geoid_grids(
@@ -79,41 +78,70 @@ def read_EGM2008_geoid_grids(
     nlon = np.abs((longlimit_west - longlimit_east) / dlon).astype('i') + 1
 
     # variable and file-level attributes
-    attributes = dict(geoid_h={}, geoid_free2mean={}, ROOT={})
+    attributes = dict(ROOT={})
+    fill_value = -9999.0
     # root attributes
-    attributes['ROOT']['source'] = 'EGM2008'
-    attributes['ROOT']['reference'] = 'http://earth-info.nima.mil/GandG/'
+    attributes['ROOT']['model'] = 'EGM2008'
+    attributes['ROOT']['source'] = 'http://earth-info.nima.mil/GandG/'
     attributes['ROOT']['earth_gravity_constant'] = 0.3986004415e15
     attributes['ROOT']['radius'] = 0.63781363e07
     attributes['ROOT']['max_degree'] = 2190
     attributes['ROOT']['norm'] = 'fully_normalized'
+    reference = f'Output from {pathlib.Path(sys.argv[0]).name}'
+    attributes['ROOT']['reference'] = reference
+    # latitude and longitude
+    attributes['lon'] = {}
+    attributes['lon']['long_name'] = 'longitude'
+    attributes['lon']['units'] = 'degrees_east'
+    attributes['lon']['valid_min'] = longlimit_west
+    attributes['lon']['valid_max'] = longlimit_east
+    attributes['lat'] = {}
+    attributes['lat']['long_name'] = 'latitude'
+    attributes['lat']['units'] = 'degrees_north'
+    attributes['lat']['valid_min'] = latlimit_south
+    attributes['lat']['valid_max'] = latlimit_north
     # geoid_h
+    attributes['geoid_h'] = {}
     attributes['geoid_h']['long_name'] = 'Geoidal_Undulation'
     attributes['geoid_h']['description'] = (
         'Geoid undulations with respect to WGS84'
     )
     attributes['geoid_h']['units'] = 'meters'
-    attributes['geoid_h']['fill_value'] = -9999.0
+    attributes['geoid_h']['fill_value'] = fill_value
     attributes['geoid_h']['tide_system'] = 'tide_free'
-    attributes['geoid_h']['source'] = 'EGM2008'
+    attributes['geoid_h']['model'] = 'EGM2008'
     # geoid_free2mean
+    attributes['geoid_free2mean'] = {}
     attributes['geoid_free2mean']['long_name'] = 'Free-to-Mean conversion'
     attributes['geoid_free2mean']['description'] = (
         'Additive value to convert geoid heights from the tide-free '
         'system to the mean-tide system'
     )
     attributes['geoid_free2mean']['units'] = 'meters'
-    attributes['geoid_free2mean']['fill_value'] = -9999.0
+    attributes['geoid_free2mean']['fill_value'] = fill_value
     attributes['geoid_free2mean']['tide_system'] = 'tide_free'
+    attributes['geoid_free2mean']['model'] = 'Rapp1991'
     attributes['geoid_free2mean']['source'] = 'derived'
     attributes['geoid_free2mean']['k2'] = LOVE
 
+    # dictionary describing the output netCDF4 structure
+    struct = dict(
+        dimensions=('lat', 'lon'),
+        variables={
+            'geoid_h': ('lat', 'lon'),
+            'geoid_free2mean': ('lat', 'lon'),
+        },
+    )
+
     # output variables
     dinput = {}
+    # create arrays of longitude and latitude
     dinput['lon'] = longlimit_west + np.arange(nlon) * dlon
     dinput['lat'] = latlimit_north - np.arange(nlat) * dlat
     # geoid undulation
-    dinput['geoid_h'] = np.zeros((nlat, nlon), dtype=np.float32)
+    dinput['geoid_h'] = np.ma.zeros((nlat, nlon), dtype=np.float32)
+    dinput['geoid_h'].fill_value = fill_value
+    # reshape data to matrix
     geoid_h = file_contents.reshape(nlat, nlon + 1)
     dinput['geoid_h'][:, :-1] = geoid_h[:, 1:-1]
     # repeat values for 360
@@ -124,70 +152,21 @@ def read_EGM2008_geoid_grids(
     P2 = 0.5 * (3.0 * np.sin(np.radians(gridlat)) ** 2 - 1.0)
     # offset for converting from tide_free to mean_tide
     # from Rapp 1991 (Consideration of Permanent Tidal Deformation)
-    dinput['geoid_free2mean'] = np.zeros((nlat, nlon), dtype=np.float32)
+    dinput['geoid_free2mean'] = np.ma.zeros((nlat, nlon), dtype=np.float32)
+    dinput['geoid_free2mean'].fill_value = fill_value
     dinput['geoid_free2mean'][:, :] = -0.198 * P2 * (1.0 + LOVE)
 
     # output data and parameters to netCDF4
     FILENAME = pathlib.Path(FILENAME).expanduser().absolute()
-    ncdf_geoid_write(dinput, attributes, FILENAME=FILENAME)
+    geoidtk.spatial.to_netCDF4(
+        dinput,
+        attributes,
+        filename=FILENAME,
+        structure=struct,
+        data_type='structured',
+    )
     # change permissions mode to MODE
     FILENAME.chmod(mode=MODE)
-
-
-# PURPOSE: write output geoid height data to file
-def ncdf_geoid_write(dinput, attributes, FILENAME=None):
-    # opening NetCDF file for writing
-    fileID = netCDF4.Dataset(FILENAME, 'w', format='NETCDF4')
-    # dictionary for netCDF4 variables
-    nc = {}
-
-    # defining the NetCDF dimensions
-    for key in ['lon', 'lat']:
-        fileID.createDimension(key, len(dinput[key]))
-    nc['lat'] = fileID.createVariable('lat', dinput['lat'].dtype, ('lat',))
-    nc['lon'] = fileID.createVariable('lon', dinput['lon'].dtype, ('lon',))
-    # Defining attributes for longitude and latitude
-    nc['lon'].long_name = 'longitude'
-    nc['lon'].units = 'degrees_east'
-    nc['lat'].long_name = 'latitude'
-    nc['lat'].units = 'degrees_north'
-    # defining the NetCDF functional variables
-    for functional in ['geoid_h', 'geoid_free2mean']:
-        fill_value = np.float64(attributes[functional]['fill_value'])
-        nc[functional] = fileID.createVariable(
-            functional,
-            dinput[functional].dtype,
-            (
-                'lat',
-                'lon',
-            ),
-            fill_value=fill_value,
-            zlib=True,
-        )
-        # Defining attributes for functional
-        for att_name, att_val in attributes[functional].items():
-            nc[functional].setncattr(att_name, att_val)
-
-    # filling NetCDF variables
-    for key, val in dinput.items():
-        nc[key][:] = val[:].copy()
-
-    # Defining global attributes of NetCDF file
-    for att_name, att_val in attributes['ROOT'].items():
-        fileID.setncattr(att_name, att_val)
-
-    # add software information
-    fileID.software_reference = geoidtk.version.project_name
-    fileID.software_version = geoidtk.version.full_version
-    # add attribute for date created
-    fileID.date_created = datetime.datetime.now().isoformat()
-
-    # Output NetCDF structure information
-    logging.info(FILENAME)
-    logging.info(list(fileID.variables.keys()))
-
-    # Closing the NetCDF file
-    fileID.close()
 
 
 # PURPOSE: create argument parser
@@ -200,11 +179,16 @@ def arguments():
     )
     # command line parameters
     parser.add_argument(
-        'gravity', type=pathlib.Path, help='Geoid height spatial grid file'
+        'gravity',
+        type=pathlib.Path,
+        help='Geoid height spatial grid file',
     )
     # output filename (will default to input file with netCDF4 suffix)
     parser.add_argument(
-        '--filename', '-F', type=pathlib.Path, help='Output netCDF4 filename'
+        '--filename',
+        '-F',
+        type=pathlib.Path,
+        help='Output netCDF4 filename',
     )
     # load love number of degree 2 (default EGM2008 value)
     parser.add_argument(
