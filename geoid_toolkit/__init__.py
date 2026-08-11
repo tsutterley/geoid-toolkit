@@ -1,23 +1,30 @@
+import geoid_toolkit.compute
+import geoid_toolkit.datum
 import geoid_toolkit.interpolate
+import geoid_toolkit.math
 import geoid_toolkit.spatial
 import geoid_toolkit.utilities
 import geoid_toolkit.version
-from geoid_toolkit.calculate_geoid_undulation import calculate_geoid_undulation
-from geoid_toolkit.calculate_tidal_offset import calculate_tidal_offset
-from geoid_toolkit.corrected_geoid_undulation import corrected_geoid_undulation
-from geoid_toolkit.gauss_weights import gauss_weights
-from geoid_toolkit.geoid_undulation import geoid_undulation
-from geoid_toolkit.gravity_anomaly import gravity_anomaly
-from geoid_toolkit.gravity_disturbance import gravity_disturbance
-from geoid_toolkit.height_anomaly import height_anomaly
-from geoid_toolkit.legendre_polynomials import legendre_polynomials
-from geoid_toolkit.norm_gravity import norm_gravity
-from geoid_toolkit.norm_potential import norm_potential
 from geoid_toolkit.read_ICGEM_harmonics import read_ICGEM_harmonics
 from geoid_toolkit.read_topography_harmonics import read_topography_harmonics
-from geoid_toolkit.real_potential import real_potential
-from geoid_toolkit.ref_ellipsoid import ref_ellipsoid
-from geoid_toolkit.topographic_potential import topographic_potential
+
+# import functions for backwards compatibility
+from geoid_toolkit.compute import (
+    geoid_undulation,
+    gravity_anomaly,
+    gravity_disturbance,
+    height_anomaly,
+    real_potential,
+    topographic_potential,
+)
+from geoid_toolkit.datum import (
+    ref_ellipsoid,
+    norm_gravity,
+    norm_potential,
+)
+
+# executable scripts
+from geoid_toolkit import scripts
 
 # get version number
 __version__ = geoid_toolkit.version.version

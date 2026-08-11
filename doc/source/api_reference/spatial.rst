@@ -1,13 +1,13 @@
-===========
-``spatial``
-===========
+=========================
+``geoid_toolkit.spatial``
+=========================
 
 Utilities for reading, writing and operating on spatial data
 
 - Can read/write ascii, netCDF4, HDF5, and (cloud optimized) geotiff
 
 Calling Sequence
-----------------
+================
 
 Reading a netCDF4 file
 
@@ -27,9 +27,9 @@ Reading a HDF5 file
 
 .. __: https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/spatial.py
 
+
 General Methods
 ===============
-
 
 .. autofunction:: geoid_toolkit.spatial.case_insensitive_filename
 

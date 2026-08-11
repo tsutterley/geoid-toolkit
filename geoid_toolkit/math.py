@@ -1,186 +1,233 @@
 #!/usr/bin/env python
 """
-real_potential.py
-Written by Tyler Sutterley (07/2026)
-Calculates the real potential at a given latitude and height using
-    coefficients from a gravity model
-
-CALLING SEQUENCE:
-    W, dW_dr = real_potential(lat, lon, h, clm, slm, lmax, R, GM)
-
-INPUT:
-    latitude: latitude in degrees
-    longitude: longitude in degrees
-    height: height above reference ellipsoid in meters
-    clm: cosine spherical harmonics for a gravity model
-    slm: sin spherical harmonics for a gravity model
-    lmax: maximum spherical harmonic degree
-    R: average radius used in gravity model
-    GM: geocentric gravitational constant used in gravity model
-
-OPTIONS:
-    GAUSS: Gaussian Smoothing Radius in km (default is no filtering)
-
-OUTPUT:
-    W: real potential at height h
-    dW_dr: derivative of real potential with respect to radius
+math.py
+Written by Tyler Sutterley (08/2026)
+Special functions of mathematical physics
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
         https://numpy.org
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
-PROGRAM DEPENDENCIES:
-    ref_ellipsoid.py: Computes parameters for a reference ellipsoid
-    gauss_weights.py: Computes Gaussian weights as a function of degree
-
-REFERENCE:
-    Hofmann-Wellenhof and Moritz, "Physical Geodesy" (2005)
+REFERENCES:
+    Hofmann-Wellenhof and Moritz (2005)
+        "Physical Geodesy"
         http://www.springerlink.com/content/978-3-211-33544-4
-    Barthelmes, "Definition of Functionals of the Geopotential and Their
-        Calculation from Spherical Harmonic Models", STR09/02 (2009)
-        http://icgem.gfz-potsdam.de/str-0902-revised.pdf
-    Moazezi and Zomorrodian, "GGMCalc a software for calculation of the geoid
-        undulation and the height anomaly using the iteration method, and
-        classical gravity anomaly", Earth Science Informatics (2012)
-        https://doi.org/10.1007/s12145-012-0102-2
-    Holmes and Featherstone, "A Unified Approach to the Clenshaw Summation and
-        the Recursive Computation of Very High Degree and Order Normalised
-        Associated Legendre Functions", Journal of Geodesy (2002)
-        https://doi.org/10.1007/s00190-002-0216-2
-    Tscherning and Poder, "Some Geodetic Applications of Clenshaw Summation",
-        Bollettino di Geodesia e Scienze (1982)
+    Christopher Jekeli (1981)
+        "Alternative Methods to Smooth the Earth's Gravity Field"
+        http://www.geology.osu.edu/~jekeli.1/OSUReports/reports/report_327.pdf
+
+NOTES:
+    IDL code gauss_weights.pro was written by Sean Swenson
+
+    Differences from recurs function in combine.mac.f:
+    weighting from gauss_weights is normalized outside of the function
+        wt = 2.0*pi*gauss_weights(rad,LMAX)
+    weighting from recurs is normalized inside of the function
+    call recurs(alpha,bcoef) calculates bcoef up to LMAX 150 (=wt[0:150])
+        alpha = alog(2.)/(1.-cos(rad/6371.))
 
 UPDATE HISTORY:
+    Updated 08/2026: separated mathematical functions into a new math module
+        simplify Clenshaw summation to reduce memory usage
     Updated 07/2026: use np.einsum for spherical harmonic summations
         use complex form of spherical harmonics for summations
         use np.radians to convert from degrees to radians
     Updated 04/2022: updated docstrings to numpy documentation format
-    Updated 11/2020: added function docstrings
+    Updated 09/2021: added option for setting minimum value threshold
+    Updated 05/2021: define int/float precision to prevent deprecation warning
+    Updated 09/2020: verify dimensions of x variable
+    Updated 08/2020: prevent zero divisions by changing u==0 to eps of data type
+    Updated 07/2020: added function docstrings
     Updated 07/2017: added Gaussian smoothing with option GAUSS
         changed dtypes to long double for high degree and order models
-    Written 07/2017
+        added first derivative of Legendre polynomials (dpl)
+        added option ASTYPE to output as different variable types
+    Updated 06/2015: adjusted threshold from 1e-9 to 1e-10
+    Updated 12/2014: updated comments and header text updating full reference
+    Updated 02/2014: changed variables from ints to floats to prevent truncation
+    Written 03/2013
 """
 
+from __future__ import annotations
 import numpy as np
-from geoid_toolkit.spatial import to_cartesian
-from geoid_toolkit.ref_ellipsoid import ref_ellipsoid
-from geoid_toolkit.gauss_weights import gauss_weights
 
 
-def real_potential(lat, lon, h, refell, clm, slm, lmax, R, GM, GAUSS=0):
-    """
-    Calculates the real potential using gravity model coefficients following
-    :cite:t:`Barthelmes:2013fy,HofmannWellenhof:2006hy,Moazezi:2012fb,Molodensky:1958jv`
+__all__ = [
+    'gauss_weights',
+    'legendre_polynomials',
+    'clenshaw_s_m',
+    'clenshaw_ds_m',
+    'clenshaw_ds_m_dr',
+    'condon_shortley',
+    'kronecker_delta',
+]
+
+
+def gauss_weights(hw, LMAX, CUTOFF=1e-10):
+    r"""
+    Computes the Gaussian weights as a function of degree using
+    a normalized form from :cite:t:`Jekeli:1981vj`
 
     Parameters
     ----------
-    lat: float
-        latitude in degrees
-    lon: float
-        longitude in degrees
-    h: float
-        ellipsoidal height in meters
-    refell: str
-        Reference ellipsoid name
+    hw: float
+        Gaussian smoothing radius in kilometers
 
-            - ``'CLK66'``: Clarke 1866
-            - ``'GRS67'``: Geodetic Reference System 1967
-            - ``'GRS80'``: Geodetic Reference System 1980
-            - ``'HGH80'``: Hughes 1980 Ellipsoid
-            - ``'WGS72'``: World Geodetic System 1972
-            - ``'WGS84'``: World Geodetic System 1984
-            - ``'ATS77'``: Quasi-earth centred ellipsoid for ATS77
-            - ``'NAD27'``: North American Datum 1927
-            - ``'NAD83'``: North American Datum 1983
-            - ``'INTER'``: International
-            - ``'KRASS'``: Krassovsky (USSR)
-            - ``'MAIRY'``: Modified Airy (Ireland 1965/1975)
-            - ``'TOPEX'``: TOPEX/POSEIDON ellipsoid
-            - ``'EGM96'``: EGM 1996 gravity model
-    clm: float
-        cosine spherical harmonics for a gravity model
-    slm: float
-        sine spherical harmonics for a gravity model
-    lmax: int
-        maximum spherical harmonic degree
-    R: float
-        average radius used in gravity model
-    GM: float
-        geocentric gravitational constant used in gravity model
-    GAUSS: float, default 0
-        Gaussian Smoothing Radius in km
+        Radius :math:`r` corresponds to the distance at which the
+        weight drops to half its peak value at the shortest wavelength
+    LMAX: int
+        Maximum degree of spherical harmonic coefficients
+    CUTOFF: float, default 1e-10
+        minimum value for tail of Gaussian averaging function
 
     Returns
     -------
-    W: float
-        real potential at height h
-    dW_dr: float
-        derivative of real potential with respect to radius
+    wl: float
+        degree dependent weighting function
     """
+    # allocate for output weights
+    wl = np.zeros((LMAX + 1))
+    # radius of the Earth in km
+    rad_e = 6371.0
+    if hw < CUTOFF:
+        # distance is smaller than cutoff
+        wl[:] = 1.0 / (2.0 * np.pi)
+    else:
+        # calculate gaussian weights using recursion
+        b = np.log(2.0) / (1.0 - np.cos(hw / rad_e))
+        # weight for degree 0
+        wl[0] = 1.0 / (2.0 * np.pi)
+        # weight for degree 1
+        wl[1] = wl[0] * (
+            (1.0 + np.exp(-2.0 * b)) / (1.0 - np.exp(-2.0 * b)) - 1.0 / b
+        )
+        # valid flag
+        valid = True
+        # spherical harmonic degree
+        l = 2
+        # while valid (within cutoff)
+        # and spherical harmonic degree is less than LMAX
+        while valid and (l <= LMAX):
+            # calculate weight with recursion
+            wl[l] = (1.0 - 2.0 * l) / b * wl[l - 1] + wl[l - 2]
+            # weight is less than cutoff
+            if wl[l] < CUTOFF:
+                # set all weights to cutoff
+                wl[l : LMAX + 1] = CUTOFF
+                # set valid flag
+                valid = False
+            # add 1 to l
+            l += 1
+    # return the gaussian weights
+    return wl
 
-    # get ellipsoid parameters for refell
-    ellip = ref_ellipsoid(refell)
-    # convert coordinates to cartesian
-    X, Y, Z = to_cartesian(
-        lon,
-        lat,
-        h,
-        a_axis=ellip['a'],
-        flat=ellip['f'],
-    )
-    # height of the observation point above the ellipsoid
-    rr = np.sqrt(X**2.0 + Y**2.0 + Z**2.0)
-    # longitude and colatitude in radians
-    phi = np.radians(lon)
-    theta = np.pi / 2.0 - np.arctan(Z / np.hypot(X, Y))
-    # number of observations
-    nlat = len(lat)
-    # cos and sin of colatitude
-    t = np.cos(theta)
-    u = np.sin(theta)
-    # radius ratio
-    q = (R / rr).astype(np.longdouble)
 
-    # convert harmonics to complex form
-    Ylm1 = clm - 1j * slm
+def legendre_polynomials(lmax, x, ASTYPE=np.float64):
+    r"""
+    Computes fully-normalized Legendre polynomials and their first derivative
+    following :cite:t:`HofmannWellenhof:2006hy`
 
-    # smooth the global gravity field with a Gaussian function
-    if GAUSS != 0:
-        wt = 2.0 * np.pi * gauss_weights(GAUSS, lmax)
-        Ylm1 = np.einsum('l...,lm...->lm...', wt, Ylm1)
+    Calculates Legendre polynomials for zonal harmonics (order 0)
 
-    # calculating cos(m*phi) and sin(m*phi) using Euler's formula
-    mm = np.arange(lmax + 1)
-    m_phi = np.exp(1j * np.einsum('m...,p...->pm...', mm, phi))
-    # initate summations
-    s_m = 0.0
-    ds_m_dr = 0.0
-    # iterate to calculate complete summation
-    for m in range(lmax, 0, -1):
-        # calculate clenshaw conditioned arrays
-        cs_m = _clenshaw_s_m(t, q, m, Ylm1, lmax)
-        dcs_m_dr = _clenshaw_ds_m_dr(t, q, m, Ylm1, lmax)
-        # update summations and discard imaginary components
-        a_m = np.sqrt((2.0 * m + 3.0) / (2.0 * m + 2.0))
-        s_m = a_m * u * q * s_m + (cs_m * m_phi[:, m]).real
-        ds_m_dr = a_m * u * q * ds_m_dr + (dcs_m_dr * m_phi[:, m]).real
-    # calculate clenshaw conditioned arrays for order 0
-    cs_m = _clenshaw_s_m(t, q, 0, Ylm1, lmax)
-    dcs_m_dr = _clenshaw_ds_m_dr(t, q, 0, Ylm1, lmax)
-    # add the final terms and discard imaginary components
-    s_m = np.sqrt(3.0) * u * q * s_m + cs_m.real
-    ds_m_dr = np.sqrt(3.0) * u * q * ds_m_dr + dcs_m_dr.real
-    # compute the real potential and derivatives
-    W = (GM / rr) * s_m
-    dW_dr = (GM / (rr**2.0)) * ds_m_dr
-    # return potentials
-    return (W, dW_dr)
+    Parameters
+    ----------
+    lmax: int
+        maximum degree of Legendre polynomials
+    x: np.ndarray
+        elements ranging from -1 to 1
+
+        Typically :math:`\cos(\theta)`, where :math:`\theta`
+        is the colatitude in radians
+    ASTYPE: np.dtype, default np.float64
+        output variable data type
+
+    Returns
+    -------
+    pl: np.ndarray
+        fully-normalized Legendre polynomials
+    dpl: np.ndarray
+        first derivative of Legendre polynomials
+    """
+    # verify dimensions
+    x = np.atleast_1d(x).flatten().astype(ASTYPE)
+    # size of the x array
+    nx = len(x)
+    # verify data type of spherical harmonic truncation
+    lmax = np.int64(lmax)
+    # output matrix of normalized legendre polynomials
+    pl = np.zeros((lmax + 1, nx), dtype=ASTYPE)
+    # output matrix of First derivative of Legendre polynomials
+    dpl = np.zeros((lmax + 1, nx), dtype=ASTYPE)
+    # dummy matrix for the recurrence relation
+    ptemp = np.zeros((lmax + 1, nx), dtype=ASTYPE)
+
+    # u is sine of colatitude (cosine of latitude) so that 0 <= s <= 1
+    # for x=cos(th): u=sin(th)
+    u = np.sqrt(1.0 - x**2)
+    # update where u==0 to eps of data type to prevent invalid divisions
+    u0 = np.flatnonzero(u == 0)
+    u[u0] = np.finfo(u.dtype).eps
+
+    # Initialize the recurrence relation
+    # ptemp is a dummy array of length lmax+1 storing unnormalized values
+    ptemp[0, :] = 1.0
+    ptemp[1, :] = x
+    # Normalization is geodesy convention
+    pl[0, :] = ptemp[0, :]
+    pl[1, :] = np.sqrt(3.0) * ptemp[1, :]
+    for l in range(2, lmax + 1):
+        ptemp[l, :] = (((2.0 * l) - 1.0) / l) * x * ptemp[l - 1, :] - (
+            (l - 1.0) / l
+        ) * ptemp[l - 2, :]
+        # Normalization is geodesy convention
+        pl[l, :] = np.sqrt((2.0 * l) + 1.0) * ptemp[l, :]
+        # Overwrite polar case (x == +/-1)
+        pl[l, u0] = np.sqrt((2.0 * l) + 1.0) * x[u0] ** l
+
+    # First derivative of Legendre polynomials
+    for l in range(1, lmax + 1):
+        fl = np.sqrt(((l**2.0) * (2.0 * l + 1.0)) / (2.0 * l - 1.0))
+        dpl[l, :] = (1.0 / u) * (l * x * pl[l, :] - fl * pl[l - 1, :])
+
+    # return the legendre polynomials and their first derivative
+    return (pl, dpl)
 
 
 # PURPOSE: compute Clenshaw summation of the fully normalized associated
 # Legendre's function for constant order m
-def _clenshaw_s_m(t, q, m, Ylm1, lmax, SCALE=1e-280):
+def clenshaw_s_m(
+    t: np.ndarray,
+    q: np.ndarray,
+    m: int,
+    Ylm1: np.ndarray,
+    lmax: int,
+    SCALE: float = 1e-280,
+):
+    r"""
+    Compute conditioned arrays for Clenshaw summation from the fully-normalized
+    associated Legendre's function for an order m
+
+    Parameters
+    ----------
+    t: np.ndarray
+        :math:`\cos(\theta)`, where :math:`\theta` is the colatitude in radians
+    q: np.ndarray
+        degree dependent factors to apply
+    m: int
+        spherical harmonic order
+    Ylm1: np.ndarray
+        complex form of spherical harmonics
+    lmax: int
+        maximum spherical harmonic degree (truncation limit)
+    SCALE: float, default 1e-280
+        scaling factor to prevent underflow in Clenshaw summation
+
+    Returns
+    -------
+    cs_m: np.ndarray
+        conditioned array for clenshaw summation
+    """
     # allocate for output matrix
     N = len(t)
     cs_m = np.zeros((N), dtype=np.clongdouble)
@@ -258,7 +305,33 @@ def _clenshaw_s_m(t, q, m, Ylm1, lmax, SCALE=1e-280):
 
 # PURPOSE: compute Clenshaw summation of derivative with respect to latitude
 # of the fully normalized associated Legendre's function for constant order m
-def _clenshaw_ds_m(t, u, q, m, Ylm1, lmax, SCALE=1e-280):
+def clenshaw_ds_m(t, u, q, m, Ylm1, lmax, SCALE=1e-280):
+    r"""
+    Compute Clenshaw summation of derivative with respect to latitude of
+    the fully normalized associated Legendre's function for order m
+
+    Parameters
+    ----------
+    t: np.ndarray
+        :math:`\cos(\theta)`, where :math:`\theta` is the colatitude in radians
+    u: np.ndarray
+        :math:`\sin(\theta)`, where :math:`\theta` is the colatitude in radians
+    q: np.ndarray
+        degree dependent factors to apply
+    m: int
+        spherical harmonic order
+    Ylm1: np.ndarray
+        complex form of spherical harmonics
+    lmax: int
+        maximum spherical harmonic degree (truncation limit)
+    SCALE: float, default 1e-280
+        scaling factor to prevent underflow in Clenshaw summation
+
+    Returns
+    -------
+    dcs_m: np.ndarray
+        conditioned array for clenshaw summation
+    """
     # allocate for output matrix
     N = len(t)
     dcs_m = np.zeros((N), dtype=np.clongdouble)
@@ -334,7 +407,31 @@ def _clenshaw_ds_m(t, u, q, m, Ylm1, lmax, SCALE=1e-280):
 
 # PURPOSE: compute Clenshaw summation of derivative with respect to radius of
 # the fully normalized associated Legendre's function for constant order m
-def _clenshaw_ds_m_dr(t, q, m, Ylm1, lmax, SCALE=1e-280):
+def clenshaw_ds_m_dr(t, q, m, Ylm1, lmax, SCALE=1e-280):
+    r"""
+    Compute Clenshaw summation of derivative with respect to radius of
+    the fully normalized associated Legendre's function for order m
+
+    Parameters
+    ----------
+    t: np.ndarray
+        :math:`\cos(\theta)`, where :math:`\theta` is the colatitude in radians
+    q: np.ndarray
+        degree dependent factors to apply
+    m: int
+        spherical harmonic order
+    Ylm1: np.ndarray
+        complex form of spherical harmonics
+    lmax: int
+        maximum spherical harmonic degree (truncation limit)
+    SCALE: float, default 1e-280
+        scaling factor to prevent underflow in Clenshaw summation
+
+    Returns
+    -------
+    dcs_m_dr: np.ndarray
+        conditioned array for clenshaw summation
+    """
     # allocate for output matrix
     N = len(t)
     dcs_m_dr = np.zeros((N), dtype=np.clongdouble)
@@ -420,3 +517,39 @@ def _clenshaw_ds_m_dr(t, q, m, Ylm1, lmax, SCALE=1e-280):
         dcs_m_dr[:] = np.copy(ds_mm_dr)
     # return rescaled dcs_m_dr
     return dcs_m_dr / SCALE
+
+
+def condon_shortley(m: int | np.ndarray):
+    r"""
+    Computes the Condon-Shortley phase :math:`(-1)^m` for order :math:`m`
+
+    Parameters
+    ----------
+    m: int or np.ndarray
+        Order of the Legendre polynomials
+    """
+    return np.power(-1.0, m)
+
+
+def kronecker_delta(
+    i: int | np.ndarray,
+    j: int | np.ndarray,
+):
+    r"""
+    Computes the Kronecker delta :math:`\delta_{ij}` function
+
+    .. math::
+        \delta_{ij} =
+            \begin{cases}
+                1 & \text{if } i = j \\
+                0 & \text{if } i \neq j
+            \end{cases}
+
+    Parameters
+    ----------
+    i: int or np.ndarray
+        First index
+    j: int or np.ndarray
+        Second index
+    """
+    return 1.0 * (i == j)

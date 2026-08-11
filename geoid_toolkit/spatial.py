@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 spatial.py
-Written by Tyler Sutterley (06/2026)
+Written by Tyler Sutterley (08/2026)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -28,6 +28,7 @@ PROGRAM DEPENDENCIES:
     ref_ellipsoid.py: Computes parameters for a reference ellipsoid
 
 UPDATE HISTORY:
+    Updated 08/2026: use np.hypot to calculate euclidean distances
     Updated 06/2026: use item() to extract scalars from 0-dimensional arrays
         updated scale factors to add case where reference latitude is at pole
         convert angles with numpy radians and degrees functions
@@ -106,7 +107,7 @@ import collections
 import numpy as np
 import dateutil.parser
 import geoid_toolkit.version
-from geoid_toolkit.ref_ellipsoid import ref_ellipsoid
+from geoid_toolkit.datum import ref_ellipsoid
 from geoid_toolkit.utilities import import_dependency
 
 # attempt imports
@@ -125,6 +126,41 @@ yaml = import_dependency('yaml')
 
 # suppress warnings
 warnings.filterwarnings('ignore', category=RuntimeWarning)
+
+
+__all__ = [
+    'case_insensitive_filename',
+    'data_type',
+    'from_file',
+    'from_ascii',
+    'from_netCDF4',
+    'from_HDF5',
+    'from_geotiff',
+    'from_parquet',
+    'to_file',
+    'to_ascii',
+    'to_netCDF4',
+    'to_HDF5',
+    'to_geotiff',
+    'to_parquet',
+    'expand_dims',
+    'default_field_mapping',
+    'inverse_mapping',
+    'convert_ellipsoid',
+    'compute_delta_h',
+    'wrap_longitudes',
+    'to_dms',
+    'from_dms',
+    'to_cartesian',
+    'to_sphere',
+    'to_geodetic',
+    'to_ENU',
+    'from_ENU',
+    'to_horizontal',
+    'to_zenith',
+    'geocentric_latitude',
+    'scale_factors',
+]
 
 
 def case_insensitive_filename(filename: str | pathlib.Path):
@@ -1894,7 +1930,7 @@ def _moritz_iterative(
     h = np.zeros_like(lon)
     h0 = np.inf * np.ones_like(lon)
     # calculate radius of parallel
-    p = np.sqrt(x**2 + y**2)
+    p = np.hypot(x, y)
     # initial estimated value for phi using h=0
     phi = np.arctan(z / (p * (1.0 - ecc1**2)))
     # iterate to tolerance or to maximum number of iterations
@@ -1956,7 +1992,7 @@ def _bowring_iterative(
     # calculate longitude
     lon = np.degrees(np.arctan2(y, x))
     # calculate radius of parallel
-    p = np.sqrt(x**2 + y**2)
+    p = np.hypot(x, y)
     # initial estimated value for reduced parametric latitude
     u = np.arctan(a_axis * z / (b_axis * p))
     # initial estimated value for latitude
@@ -2022,7 +2058,7 @@ def _zhu_closed_form(
     # calculate longitude
     lon = np.degrees(np.arctan2(y, x))
     # calculate radius of parallel
-    w = np.sqrt(x**2 + y**2)
+    w = np.hypot(x, y)
     # allocate for output latitude and height
     lat = np.zeros_like(lon)
     h = np.zeros_like(lon)
