@@ -6,7 +6,7 @@
 
 `Source code`__
 
-.. __: https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/scripts/compute_geoidal_undulation.py
+.. __: https://github.com/polargeodesy/geoid-toolkit/blob/main/geoid_toolkit/scripts/compute_geoidal_undulation.py
 
 Calling Sequence
 ################
