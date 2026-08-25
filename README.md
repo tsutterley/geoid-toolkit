@@ -12,7 +12,7 @@ Python tools for obtaining and working with static gravity field coefficients an
     <td>
         <a href="https://pypi.python.org/pypi/geoid-toolkit/" alt="PyPI"><img src="https://img.shields.io/pypi/v/geoid-toolkit.svg"></a>
         <a href="https://anaconda.org/conda-forge/geoid-toolkit" alt="conda-forge"><img src="https://img.shields.io/conda/vn/conda-forge/geoid-toolkit"></a>
-        <a href="https://github.com/tsutterley/geoid-toolkit/releases/latest" alt="commits-since"><img src="https://img.shields.io/github/commits-since/tsutterley/geoid-toolkit/latest"></a>
+        <a href="https://github.com/polargeodesy/geoid-toolkit/releases/latest" alt="commits-since"><img src="https://img.shields.io/github/commits-since/polargeodesy/geoid-toolkit/latest"></a>
     </td>
   </tr>
   <tr>
@@ -25,13 +25,13 @@ Python tools for obtaining and working with static gravity field coefficients an
     <td><b>Tests:</b></td>
     <td>
         <a href="https://geoid-toolkit.readthedocs.io/en/latest/?badge=latest" alt="Documentation Status"><img src="https://readthedocs.org/projects/geoid-toolkit/badge/?version=latest"></a>
-        <a href="https://github.com/tsutterley/geoid-toolkit/actions/workflows/ruff-format.yml" alt="Ruff"><img src="https://github.com/tsutterley/geoid-toolkit/actions/workflows/ruff-format.yml/badge.svg"></a>
+        <a href="https://github.com/polargeodesy/geoid-toolkit/actions/workflows/ruff-format.yml" alt="Ruff"><img src="https://github.com/polargeodesy/geoid-toolkit/actions/workflows/ruff-format.yml/badge.svg"></a>
     </td>
   </tr>
   <tr>
     <td><b>License:</b></td>
     <td>
-        <a href="https://github.com/tsutterley/geoid-toolkit/blob/main/LICENSE" alt="License"><img src="https://img.shields.io/github/license/tsutterley/geoid-toolkit"></a>
+        <a href="https://github.com/polargeodesy/geoid-toolkit/blob/main/LICENSE" alt="License"><img src="https://img.shields.io/github/license/polargeodesy/geoid-toolkit"></a>
     </td>
   </tr>
 </table>
@@ -65,7 +65,7 @@ mamba install -c conda-forge geoid-toolkit
 Development version from GitHub:
 
 ```bash
-python3 -m pip install git+https://github.com/tsutterley/geoid-toolkit.git
+python3 -m pip install git+https://github.com/polargeodesy/geoid-toolkit.git
 ```
 
 ### Running with Pixi
@@ -76,7 +76,7 @@ Alternatively, you can use [Pixi](https://pixi.sh/) for a streamlined workspace 
 2. Clone the project repository:
 
 ```bash
-git clone https://github.com/tsutterley/geoid-toolkit.git
+git clone https://github.com/polargeodesy/geoid-toolkit.git
 ```
 
 3. Move into the `geoid-toolkit` directory
@@ -113,10 +113,10 @@ This will automatically create the environment, install all dependencies, and la
 ## Download
 
 The program homepage is:  
-<https://github.com/tsutterley/geoid-toolkit>
+<https://github.com/polargeodesy/geoid-toolkit>
 
 A zip archive of the latest version is available directly at:  
-<https://github.com/tsutterley/geoid-toolkit/archive/main.zip>
+<https://github.com/polargeodesy/geoid-toolkit/archive/main.zip>
 
 ## Disclaimer
 
@@ -129,7 +129,7 @@ The software is provided here for your convenience but *with no guarantees whats
 ## Contributing
 
 This project contains work and contributions from the [scientific community](./CONTRIBUTORS.md).
-If you would like to contribute to the project, please have a look at the [contribution guidelines](./doc/source/getting_started/Contributing.rst), [open issues](https://github.com/tsutterley/geoid-toolkit/issues) and [discussions board](https://github.com/tsutterley/geoid-toolkit/discussions).
+If you would like to contribute to the project, please have a look at the [contribution guidelines](./doc/source/getting_started/Contributing.rst), [open issues](https://github.com/polargeodesy/geoid-toolkit/issues) and [discussions board](https://github.com/polargeodesy/geoid-toolkit/discussions).
 
 ## References
 

@@ -155,7 +155,8 @@ def ref_ellipsoid(refell: str, UNITS: str = 'MKS') -> dict:
         Average density
     """
     # validate units
-    assert UNITS in ('MKS', 'CGS')
+    if UNITS not in ('MKS', 'CGS'):
+        raise ValueError(f'Invalid units: {UNITS}')
 
     # set parameters for ellipsoid
     if refell.upper() in ('CLK66', 'NAD27'):

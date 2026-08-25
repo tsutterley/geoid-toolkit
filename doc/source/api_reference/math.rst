@@ -19,7 +19,7 @@ Calling Sequence
 
 `Source code`__
 
-.. __: https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/math.py
+.. __: https://github.com/polargeodesy/geoid-toolkit/blob/main/geoid_toolkit/math.py
 
 
 General Methods

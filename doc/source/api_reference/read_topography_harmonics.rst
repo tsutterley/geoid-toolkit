@@ -14,6 +14,6 @@ Calling Sequence
 
 `Source code`__
 
-.. __: https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/read_topography_harmonics.py
+.. __: https://github.com/polargeodesy/geoid-toolkit/blob/main/geoid_toolkit/read_topography_harmonics.py
 
 .. autofunction:: geoid_toolkit.read_topography_harmonics

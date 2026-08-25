@@ -13,7 +13,7 @@ Download and management utilities for syncing time and auxiliary files
 
 `Source code`__
 
-.. __: https://github.com/tsutterley/geoid-toolkit/blob/main/geoid_toolkit/utilities.py
+.. __: https://github.com/polargeodesy/geoid-toolkit/blob/main/geoid_toolkit/utilities.py
 
 
 General Methods

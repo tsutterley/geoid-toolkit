@@ -44,7 +44,7 @@ Contribute
 
     .. grid-item-card::  Issues
       :text-align: center
-      :link: https://github.com/tsutterley/geoid-toolkit/issues
+      :link: https://github.com/polargeodesy/geoid-toolkit/issues
 
       :material-outlined:`bug_report;5em`
 

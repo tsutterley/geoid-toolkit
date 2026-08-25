@@ -47,8 +47,8 @@ classifiers=[
 [project.urls]
 Homepage = "https://geoid-toolkit.readthedocs.io"
 Documentation = "https://geoid-toolkit.readthedocs.io"
-Repository = "https://github.com/tsutterley/geoid-toolkit"
-Issues = "https://github.com/tsutterley/geoid-toolkit/issues"
+Repository = "https://github.com/polargeodesy/geoid-toolkit"
+Issues = "https://github.com/polargeodesy/geoid-toolkit/issues"
 
 [project.optional-dependencies]
 all = ["cartopy", "gdal", "h5py", "jupyterlab", "matplotlib", "netCDF4", "notebook", "pyproj"]
